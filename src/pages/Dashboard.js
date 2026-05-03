@@ -8,6 +8,7 @@ export default function Dashboard() {
   const [user, setUser] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ title: '', description: '', duration: 60, price: 0 })
+  const [copiedId, setCopiedId] = useState(null)
 
   useEffect(() => {
     const u = localStorage.getItem('user')
@@ -55,7 +56,16 @@ export default function Dashboard() {
     }
   }
 
+  const copyLink = (id, slug) => {
+    const link = `https://app.kogda.app/${slug}`
+    navigator.clipboard.writeText(link)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
   if (!user) return null
+
+  const bookingLink = `https://app.kogda.app/${user.slug}`
 
   return (
     <div style={{ minHeight: '100vh', background: '#F7F6F1', fontFamily: 'sans-serif' }}>
@@ -67,9 +77,9 @@ export default function Dashboard() {
           kog<span style={{ background: '#E8FF47', padding: '0 6px', borderRadius: 6 }}>DA</span>
         </h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <a href={`https://app.kogda.app/${user.slug}`} target="_blank" rel="noreferrer"
+          <a href={bookingLink} target="_blank" rel="noreferrer"
             style={{ background: '#F0EFE9', padding: '8px 16px', borderRadius: 100, fontSize: 13, fontWeight: 600, textDecoration: 'none', color: '#111' }}>
-            kogda.app/{user.slug}
+            {bookingLink}
           </a>
           <button onClick={() => { localStorage.clear(); window.location.href = '/login' }}
             style={{ background: 'transparent', border: '1.5px solid #E0E0D8', padding: '8px 16px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
@@ -105,20 +115,46 @@ export default function Dashboard() {
             <p style={{ color: '#888', marginTop: 6, fontSize: 15 }}>Управляй своими встречами и расписанием</p>
           </div>
 
+          {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
             {[
               { label: 'Типов встреч', value: meetings.length, icon: '📅' },
-              { label: 'Твоя ссылка', value: `kogda.app/${user.slug}`, icon: '🔗' },
+              { label: 'Твоя ссылка', value: `app.kogda.app/${user.slug}`, icon: '🔗' },
               { label: 'Статус', value: 'Активен', icon: '✅' }
             ].map((s, i) => (
               <div key={i} style={{ background: '#fff', borderRadius: 14, padding: '20px', border: '1px solid #E8E7E0' }}>
                 <div style={{ fontSize: 24, marginBottom: 8 }}>{s.icon}</div>
-                <div style={{ fontSize: 20, fontWeight: 800 }}>{s.value}</div>
+                <div style={{ fontSize: i === 1 ? 13 : 20, fontWeight: 800 }}>{s.value}</div>
                 <div style={{ fontSize: 12, color: '#888', marginTop: 3 }}>{s.label}</div>
               </div>
             ))}
           </div>
 
+          {/* Your link */}
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: '20px 24px',
+            border: '1px solid #E8E7E0', marginBottom: 28,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16
+          }}>
+            <div>
+              <div style={{ fontSize: 12, color: '#888', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>Твоя ссылка для клиентов</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{bookingLink}</div>
+            </div>
+            <button
+              onClick={() => copyLink('main', user.slug)}
+              style={{
+                background: copiedId === 'main' ? '#22C55E' : '#E8FF47',
+                color: copiedId === 'main' ? '#fff' : '#111',
+                border: 'none', padding: '10px 20px', borderRadius: 100,
+                fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                transition: 'all 0.2s', whiteSpace: 'nowrap'
+              }}
+            >
+              {copiedId === 'main' ? '✓ Скопировано!' : 'Скопировать'}
+            </button>
+          </div>
+
+          {/* Onboarding */}
           <div style={{ background: '#fff', borderRadius: 16, padding: '24px', border: '1px solid #E8E7E0', marginBottom: 28 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14, color: '#888', letterSpacing: 1 }}>НАЧАЛО РАБОТЫ</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -143,6 +179,7 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Meeting Types */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Типы встреч</h3>
             <button onClick={() => setShowForm(!showForm)} style={{
@@ -199,24 +236,38 @@ export default function Dashboard() {
               {meetings.map(m => (
                 <div key={m.id} style={{
                   background: '#fff', borderRadius: 14, padding: '20px 24px',
-                  border: '1px solid #E8E7E0', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                  border: '1px solid #E8E7E0'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: '#F0EFE9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📅</div>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 700 }}>{m.title}</div>
-                      <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>{m.duration} мин · {m.price > 0 ? `${m.price} руб` : 'Бесплатно'}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 12, background: '#F0EFE9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📅</div>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 700 }}>{m.title}</div>
+                        <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>{m.duration} мин · {m.price > 0 ? `${m.price} руб` : 'Бесплатно'}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => copyLink(m.id, user.slug)}
+                        style={{
+                          background: copiedId === m.id ? '#22C55E' : '#E8FF47',
+                          color: copiedId === m.id ? '#fff' : '#111',
+                          border: 'none', padding: '8px 14px', borderRadius: 100,
+                          fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {copiedId === m.id ? '✓ Скопировано!' : 'Скопировать ссылку'}
+                      </button>
+                      <button onClick={() => deleteMeeting(m.id)}
+                        style={{ background: 'transparent', border: '1.5px solid #FFE0E0', color: '#DC2626', padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                        Удалить
+                      </button>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => navigator.clipboard.writeText(`https://app.kogda.app/${user.slug}`)}
-                      style={{ background: '#E8FF47', border: 'none', padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                      Скопировать ссылку
-                    </button>
-                    <button onClick={() => deleteMeeting(m.id)}
-                      style={{ background: 'transparent', border: '1.5px solid #FFE0E0', color: '#DC2626', padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                      Удалить
-                    </button>
+                  <div style={{ background: '#F7F6F1', borderRadius: 8, padding: '8px 14px', fontSize: 12, color: '#888', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>🔗</span>
+                    <span>{bookingLink}</span>
                   </div>
                 </div>
               ))}
