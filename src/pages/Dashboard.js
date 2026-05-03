@@ -21,7 +21,7 @@ const NavItem = ({ icon: Icon, label, href, active }) => (
   </a>
 )
 
-const emptyForm = { title: '', description: '', duration: 60, price: 0, buffer_before: 0, buffer_after: 0, min_notice: 0, max_days_ahead: 60, max_per_day: 0 }
+const emptyForm = { title: '', description: '', duration: 60, price: 0, buffer_before: 0, buffer_after: 0, min_notice: 0, max_days_ahead: 60, max_per_day: 0, require_confirm: false }
 
 export default function Dashboard() {
   const [meetings, setMeetings] = useState([])
@@ -210,6 +210,21 @@ export default function Dashboard() {
                 <select value={formData.max_per_day} onChange={e => setFormData({...formData, max_per_day: Number(e.target.value)})} style={selectStyle}>
                   {[0,1,2,3,4,5,6,8,10].map(v => <option key={v} value={v}>{v === 0 ? 'Без лимита' : `${v} встреч`}</option>)}
                 </select>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F7F6F1', borderRadius: 10, padding: '12px 16px' }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>Подтверждать вручную</div>
+                    <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Каждая запись требует твоего подтверждения в Telegram</div>
+                  </div>
+                  <div onClick={() => setFormData({...formData, require_confirm: !formData.require_confirm})} style={{
+                    width: 44, height: 24, borderRadius: 12,
+                    background: formData.require_confirm ? '#111' : '#E0E0D8',
+                    cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background 0.2s'
+                  }}>
+                    <div style={{ width: 18, height: 18, borderRadius: 9, background: '#fff', position: 'absolute', top: 3, left: formData.require_confirm ? 23 : 3, transition: 'left 0.2s' }} />
+                  </div>
+                </div>
               </div>
             </div>
           )}
