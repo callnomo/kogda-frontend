@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Calendar, Clock, BarChart2, Settings, Video, X } from 'lucide-react'
 import axios from 'axios'
 
 const API = 'https://kogda-backend-production.up.railway.app'
@@ -88,10 +89,10 @@ export default function Bookings() {
         <div style={{ width: 200, flexShrink: 0 }}>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {[
-              { icon: '📅', label: 'Встречи', href: '/dashboard', active: false },
-              { icon: '🕐', label: 'Расписание', href: '/schedule', active: false },
-              { icon: '📊', label: 'Брони', href: '/bookings', active: true },
-              { icon: '⚙️', label: 'Настройки', href: '/settings', active: false },
+              { icon: Calendar, label: 'Встречи', href: '/dashboard', active: false },
+              { icon: Clock, label: 'Расписание', href: '/schedule', active: false },
+              { icon: BarChart2, label: 'Брони', href: '/bookings', active: true },
+              { icon: Settings, label: 'Настройки', href: '/settings', active: false },
             ].map(item => (
               <a key={item.href} href={item.href} style={{
                 display: 'flex', alignItems: 'center', gap: 10,
@@ -99,7 +100,7 @@ export default function Bookings() {
                 background: item.active ? '#E8FF47' : 'transparent',
                 color: '#111', fontSize: 14, fontWeight: item.active ? 700 : 500,
               }}>
-                <span>{item.icon}</span>{item.label}
+                <item.icon size={16} strokeWidth={item.active ? 2.5 : 2} />{item.label}
               </a>
             ))}
           </nav>
