@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Calendar, Clock, BarChart2, Settings, Link2, CheckCircle, Plus, Copy, Trash2, ExternalLink } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
+import { User, Clock, BookOpen, Settings, Copy, Trash2, Plus, Check, ExternalLink, Calendar, QrCode } from 'lucide-react'
 
 const API = 'https://kogda-backend-production.up.railway.app'
 
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ title: '', description: '', duration: 60, price: 0 })
   const [copiedId, setCopiedId] = useState(null)
+  const [showQR, setShowQR] = useState(false)
 
   useEffect(() => {
     const u = localStorage.getItem('user')
@@ -70,8 +72,8 @@ export default function Dashboard() {
     }
   }
 
-  const copyLink = (id, slug) => {
-    navigator.clipboard.writeText(`https://app.kogda.app/${slug}`)
+  const copyLink = (id) => {
+    navigator.clipboard.writeText(bookingLink)
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
   }
@@ -96,34 +98,23 @@ export default function Dashboard() {
         <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, fontFamily: 'Syne, sans-serif' }}>
           kog<span style={{ background: '#E8FF47', padding: '0 6px', borderRadius: 6 }}>DA</span>
         </h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <a href={bookingLink} target="_blank" rel="noreferrer"
-            style={{
-              background: '#F0EFE9', padding: '8px 16px', borderRadius: 100,
-              fontSize: 13, fontWeight: 600, textDecoration: 'none', color: '#111',
-              display: 'flex', alignItems: 'center', gap: 6
-            }}>
-            <ExternalLink size={13} />
-            {bookingLink}
-          </a>
-          <button onClick={() => { localStorage.clear(); window.location.href = '/login' }}
-            style={{
-              background: 'transparent', border: '1.5px solid #E0E0D8',
-              padding: '8px 16px', borderRadius: 100, fontSize: 13,
-              fontWeight: 600, cursor: 'pointer'
-            }}>
-            Выйти
-          </button>
-        </div>
+        <button onClick={() => { localStorage.clear(); window.location.href = '/login' }}
+          style={{
+            background: 'transparent', border: '1.5px solid #E0E0D8',
+            padding: '8px 16px', borderRadius: 100, fontSize: 13,
+            fontWeight: 600, cursor: 'pointer'
+          }}>
+          Выйти
+        </button>
       </div>
 
       <div style={{ display: 'flex', maxWidth: 1100, margin: '0 auto', padding: '40px 24px', gap: 32 }}>
         {/* Sidebar */}
         <div style={{ width: 200, flexShrink: 0 }}>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <NavItem icon={Calendar} label="Мой кабинет" href="/dashboard" active={true} />
+            <NavItem icon={User} label="Мой кабинет" href="/dashboard" active={true} />
             <NavItem icon={Clock} label="Расписание" href="/schedule" active={false} />
-            <NavItem icon={BarChart2} label="Брони" href="/bookings" active={false} />
+            <NavItem icon={BookOpen} label="Записи" href="/bookings" active={false} />
             <NavItem icon={Settings} label="Настройки" href="/settings" active={false} />
           </nav>
         </div>
@@ -134,45 +125,65 @@ export default function Dashboard() {
             <p style={{ color: '#888', marginTop: 6, fontSize: 15 }}>Управляй своими встречами и расписанием</p>
           </div>
 
-          {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
-            {[
-              { label: 'Типов встреч', value: meetings.length, icon: <Calendar size={20} color="#888" /> },
-              { label: 'Твоя ссылка', value: `app.kogda.app/${user.slug}`, icon: <Link2 size={20} color="#888" />, small: true },
-              { label: 'Статус', value: 'Активен', icon: <CheckCircle size={20} color="#22C55E" /> }
-            ].map((s, i) => (
-              <div key={i} style={{ background: '#fff', borderRadius: 14, padding: '20px', border: '1px solid #E8E7E0' }}>
-                <div style={{ marginBottom: 8 }}>{s.icon}</div>
-                <div style={{ fontSize: s.small ? 13 : 24, fontWeight: 800, color: '#111' }}>{s.value}</div>
-                <div style={{ fontSize: 12, color: '#888', marginTop: 3 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Link block */}
+          {/* Link block with QR */}
           <div style={{
-            background: '#fff', borderRadius: 16, padding: '20px 24px',
-            border: '1px solid #E8E7E0', marginBottom: 28,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16
+            background: '#fff', borderRadius: 20, padding: '24px',
+            border: '1px solid #E8E7E0', marginBottom: 28
           }}>
-            <div>
-              <div style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>Твоя ссылка для клиентов</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: '#111' }}>{bookingLink}</div>
+            <div style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              Твоя ссылка для клиентов
             </div>
-            <button
-              onClick={() => copyLink('main', user.slug)}
-              style={{
-                background: copiedId === 'main' ? '#22C55E' : '#E8FF47',
-                color: copiedId === 'main' ? '#fff' : '#111',
-                border: 'none', padding: '10px 20px', borderRadius: 100,
-                fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6,
-                transition: 'all 0.2s', whiteSpace: 'nowrap'
-              }}
-            >
-              <Copy size={14} />
-              {copiedId === 'main' ? 'Скопировано!' : 'Скопировать'}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  background: '#F7F6F1', borderRadius: 10, padding: '12px 16px',
+                  fontSize: 14, fontWeight: 600, color: '#111', marginBottom: 12,
+                  wordBreak: 'break-all'
+                }}>
+                  {bookingLink}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => copyLink('main')} style={{
+                    background: copiedId === 'main' ? '#22C55E' : '#111',
+                    color: '#fff', border: 'none', padding: '10px 18px',
+                    borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s'
+                  }}>
+                    {copiedId === 'main' ? <Check size={13} /> : <Copy size={13} />}
+                    {copiedId === 'main' ? 'Скопировано!' : 'Скопировать'}
+                  </button>
+                  <a href={bookingLink} target="_blank" rel="noreferrer" style={{
+                    background: 'transparent', border: '1.5px solid #E0E0D8',
+                    color: '#111', padding: '10px 18px', borderRadius: 100,
+                    fontSize: 13, fontWeight: 600, textDecoration: 'none',
+                    display: 'flex', alignItems: 'center', gap: 6
+                  }}>
+                    <ExternalLink size={13} />
+                    Открыть
+                  </a>
+                  <button onClick={() => setShowQR(!showQR)} style={{
+                    background: showQR ? '#E8FF47' : 'transparent',
+                    border: '1.5px solid #E0E0D8',
+                    color: '#111', padding: '10px 18px', borderRadius: 100,
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 6
+                  }}>
+                    <QrCode size={13} />
+                    QR код
+                  </button>
+                </div>
+              </div>
+
+              {showQR && (
+                <div style={{
+                  background: '#fff', borderRadius: 16, padding: 16,
+                  border: '1px solid #E8E7E0', flexShrink: 0, textAlign: 'center'
+                }}>
+                  <QRCodeSVG value={bookingLink} size={120} />
+                  <div style={{ fontSize: 11, color: '#888', marginTop: 8 }}>Сканируй телефоном</div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Onboarding */}
@@ -205,20 +216,20 @@ export default function Dashboard() {
 
           {/* Meeting Types */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Типы встреч</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Мои услуги</h3>
             <button onClick={() => setShowForm(!showForm)} style={{
               background: '#E8FF47', color: '#111', border: 'none',
               padding: '10px 22px', borderRadius: 100, fontSize: 13, fontWeight: 700, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6
             }}>
               <Plus size={15} />
-              Создать встречу
+              Добавить услугу
             </button>
           </div>
 
           {showForm && (
             <div style={{ background: '#fff', borderRadius: 16, padding: 28, border: '1px solid #E8E7E0', marginBottom: 20 }}>
-              <h4 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700 }}>Новый тип встречи</h4>
+              <h4 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700 }}>Новая услуга</h4>
               <form onSubmit={createMeeting}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
                   <div>
@@ -253,8 +264,8 @@ export default function Dashboard() {
           {meetings.length === 0 ? (
             <div style={{ background: '#fff', borderRadius: 16, padding: '40px', border: '1px solid #E8E7E0', textAlign: 'center' }}>
               <Calendar size={36} color="#ccc" style={{ marginBottom: 12 }} />
-              <h4 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>Пока нет типов встреч</h4>
-              <p style={{ color: '#888', fontSize: 14 }}>Создай первый тип встречи и поделись ссылкой с клиентами</p>
+              <h4 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>Пока нет услуг</h4>
+              <p style={{ color: '#888', fontSize: 14 }}>Добавь первую услугу и поделись ссылкой с клиентами</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -274,12 +285,12 @@ export default function Dashboard() {
                       <div style={{ fontSize: 15, fontWeight: 700 }}>{m.title}</div>
                       <div style={{ fontSize: 13, color: '#888', marginTop: 2, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Clock size={12} />
-                        {m.duration} мин · {m.price > 0 ? `${m.price} руб` : 'Бесплатно'}
+                        {m.duration} мин · {m.price > 0 ? `${m.price} ₽` : 'Бесплатно'}
                       </div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => copyLink(m.id, user.slug)}
+                    <button onClick={() => copyLink(m.id)}
                       style={{
                         background: copiedId === m.id ? '#22C55E' : '#E8FF47',
                         color: copiedId === m.id ? '#fff' : '#111',
@@ -288,7 +299,7 @@ export default function Dashboard() {
                         display: 'flex', alignItems: 'center', gap: 5,
                         transition: 'all 0.2s'
                       }}>
-                      <Copy size={12} />
+                      {copiedId === m.id ? <Check size={12} /> : <Copy size={12} />}
                       {copiedId === m.id ? 'Скопировано!' : 'Скопировать'}
                     </button>
                     <button onClick={() => deleteMeeting(m.id)}
