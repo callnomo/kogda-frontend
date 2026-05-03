@@ -489,16 +489,7 @@ export default function Dashboard() {
                       <ExternalLink size={12} />
                       Открыть
                     </a>
-                    <button onClick={() => copyLink(m.id)} style={{
-                      background: copiedId === m.id ? '#22C55E' : '#E8FF47',
-                      color: copiedId === m.id ? '#fff' : '#111',
-                      border: 'none', padding: '8px 14px', borderRadius: 100,
-                      fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.2s'
-                    }}>
-                      {copiedId === m.id ? <Check size={12} /> : <Copy size={12} />}
-                      {copiedId === m.id ? 'Скопировано!' : 'Скопировать'}
-                    </button>
+
                     <button onClick={() => { setEditMeeting(m); setEditForm({ title: m.title, description: m.description || '', duration: m.duration, price: m.price }) }} style={{
                       background: 'transparent', border: '1.5px solid #E0E0D8',
                       color: '#111', padding: '8px 14px', borderRadius: 100,
