@@ -265,10 +265,7 @@ export default function Dashboard() {
                       </button>
                     </div>
                   </div>
-                  <div style={{ background: '#F7F6F1', borderRadius: 8, padding: '8px 14px', fontSize: 12, color: '#888', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span>🔗</span>
-                    <span>{bookingLink}</span>
-                  </div>
+
                 </div>
               ))}
             </div>
