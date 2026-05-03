@@ -38,7 +38,7 @@ const NavItem = ({ icon: Icon, label, href, active }) => (
 export default function Schedule() {
   const [scheduleType, setScheduleType] = useState('standard')
   const [schedule, setSchedule] = useState(
-    DAYS.map(d => ({ day_of_week: d.id, start_time: '09:00', end_time: '18:00', is_active: d.id >= 1 && d.id <= 5 }))
+    DAYS.map(d => ({ day_of_week: d.id, start_time: '09:00', end_time: '18:00', is_active: false }))
   )
   const [flexSlots, setFlexSlots] = useState([])
   const [saved, setSaved] = useState(false)
@@ -200,6 +200,14 @@ export default function Schedule() {
             ))}
           </div>
 
+          {/* Active status */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 4, background: '#22C55E' }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#22C55E' }}>
+              {scheduleType === 'standard' ? 'Стандартное расписание активно' : 'Гибкое расписание активно'}
+            </span>
+          </div>
+
           {/* Standard schedule */}
           {scheduleType === 'standard' && (
             <div>
@@ -321,9 +329,8 @@ export default function Schedule() {
               <div style={{ background: '#fff', borderRadius: 20, padding: '24px', border: '1px solid #E8E7E0' }}>
                 {selectedDate ? (
                   <>
-                    <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>
-                      {selectedDate.getDate()} {MONTHS[selectedDate.getMonth()].toLowerCase()}
-                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}><div style={{ fontSize: 15, fontWeight: 700 }}>
+                      {selectedDate.getDate()} {MONTHS[selectedDate.getMonth()].toLowerCase()}</div><div style={{ fontSize: 11, color: '#22C55E', fontWeight: 600 }}>● Авто-сохранение</div></div>
 
                     {selectedSlots.length > 0 && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
