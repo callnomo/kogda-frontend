@@ -54,6 +54,21 @@ export default function Settings() {
         headers: { Authorization: `Bearer ${token}` }
       })
       setTelegramLink(res.data.link)
+      // Автоматически проверяем каждые 2 секунды
+      const interval = setInterval(async () => {
+        try {
+          const check = await axios.get(`${API}/settings`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          if (check.data.telegram_chat_id) {
+            setTelegramConnected(true)
+            setTelegramLink(null)
+            clearInterval(interval)
+          }
+        } catch {}
+      }, 2000)
+      // Останавливаем через 5 минут
+      setTimeout(() => clearInterval(interval), 300000)
     } catch (err) {
       console.error(err)
     }
@@ -157,13 +172,7 @@ export default function Settings() {
                   }}>
                   ✈️ Открыть бота в Telegram
                 </a>
-                <button onClick={loadSettings} style={{
-                  marginLeft: 12, background: 'transparent', border: '1.5px solid #E0E0D8',
-                  padding: '14px 20px', borderRadius: 12, fontSize: 14, fontWeight: 600,
-                  cursor: 'pointer'
-                }}>
-                  Проверить подключение
-                </button>
+
               </div>
             ) : (
               <button onClick={connectTelegram} disabled={loading} style={{
