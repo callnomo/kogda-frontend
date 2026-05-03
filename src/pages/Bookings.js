@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { User, Clock, BookOpen, Settings, Video, X, Check, RefreshCw } from 'lucide-react'
 
@@ -26,8 +27,8 @@ const statusConfig = (status) => {
   }
 }
 
-const NavItem = ({ icon: Icon, label, href, active }) => (
-  <a href={href} style={{
+const NavItem = ({ icon: Icon, label, to, active }) => (
+  <Link to={to} style={{
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '10px 14px', borderRadius: 10, textDecoration: 'none',
     background: active ? '#E8FF47' : 'transparent',
@@ -35,7 +36,7 @@ const NavItem = ({ icon: Icon, label, href, active }) => (
   }}>
     <Icon size={16} strokeWidth={active ? 2.5 : 2} />
     {label}
-  </a>
+  </Link>
 )
 
 export default function Bookings() {
@@ -142,10 +143,10 @@ export default function Bookings() {
       <div style={{ display: 'flex', maxWidth: 1100, margin: '0 auto', padding: '40px 24px', gap: 32 }}>
         <div style={{ width: 200, flexShrink: 0 }}>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <NavItem icon={User} label="Мой кабинет" href="/dashboard" active={false} />
-            <NavItem icon={Clock} label="Расписание" href="/schedule" active={false} />
-            <NavItem icon={BookOpen} label="Записи" href="/bookings" active={true} />
-            <NavItem icon={Settings} label="Настройки" href="/settings" active={false} />
+            <NavItem icon={User} label="Мой кабинет" to="/dashboard" active={false} />
+            <NavItem icon={Clock} label="Расписание" to="/schedule" active={false} />
+            <NavItem icon={BookOpen} label="Записи" to="/bookings" active={true} />
+            <NavItem icon={Settings} label="Настройки" to="/settings" active={false} />
           </nav>
         </div>
 
@@ -215,7 +216,6 @@ export default function Bookings() {
                     border: `1px solid ${b.status === 'pending' || b.status === 'reschedule_requested' ? '#FDE68A' : '#E8E7E0'}`,
                     overflow: 'hidden', opacity: b.status === 'cancelled' ? 0.6 : 1
                   }}>
-                    {/* Header */}
                     <div style={{
                       padding: '14px 24px', background: isPast && b.status === 'confirmed' ? '#F7F6F1' : '#fff',
                       borderBottom: '1px solid #F0EFE9', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
@@ -229,7 +229,6 @@ export default function Bookings() {
                       </div>
                     </div>
 
-                    {/* Body */}
                     <div style={{ padding: '20px 24px' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: b.notes ? 12 : 0 }}>
                         <div style={{ width: 44, height: 44, borderRadius: 12, background: '#E8FF47', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: '#111', flexShrink: 0 }}>
@@ -248,7 +247,6 @@ export default function Bookings() {
                         </div>
                       )}
 
-                      {/* Reschedule info */}
                       {b.status === 'reschedule_requested' && b.reschedule_time && (
                         <div style={{ background: '#EFF6FF', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#2563EB', marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                           <RefreshCw size={14} />
@@ -256,10 +254,7 @@ export default function Bookings() {
                         </div>
                       )}
 
-                      {/* Actions */}
                       <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #F0EFE9', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-
-                        {/* Pending — подтвердить или отклонить */}
                         {b.status === 'pending' && (
                           <>
                             <button onClick={() => confirmBooking(b.id)} style={{ background: '#22C55E', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -271,7 +266,6 @@ export default function Bookings() {
                           </>
                         )}
 
-                        {/* Reschedule requested */}
                         {b.status === 'reschedule_requested' && (
                           <>
                             <button onClick={() => confirmReschedule(b.id)} style={{ background: '#22C55E', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -283,7 +277,6 @@ export default function Bookings() {
                           </>
                         )}
 
-                        {/* Confirmed — войти и отменить */}
                         {b.status === 'confirmed' && !isPast && (
                           <>
                             <a href={b.video_link} target="_blank" rel="noreferrer" style={{ background: '#111', color: '#fff', padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -294,7 +287,6 @@ export default function Bookings() {
                             </button>
                           </>
                         )}
-
                       </div>
                     </div>
                   </div>
