@@ -100,7 +100,7 @@ export default function Settings() {
         <div style={{ width: 200, flexShrink: 0 }}>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {[
-              { icon: Calendar, label: 'Встречи', href: '/dashboard', active: false },
+              { icon: Calendar, label: 'Мой кабинет', href: '/dashboard', active: false },
               { icon: Clock, label: 'Расписание', href: '/schedule', active: false },
               { icon: BarChart2, label: 'Брони', href: '/bookings', active: false },
               { icon: SettingsIcon, label: 'Настройки', href: '/settings', active: true },

@@ -95,7 +95,7 @@ export default function Schedule() {
         </h1>
         <div style={{ display: 'flex', gap: 16 }}>
           <a href="/dashboard" style={{ color: '#888', textDecoration: 'none', fontSize: 14, lineHeight: '36px' }}>
-            Назад к дашборду
+            В личный кабинет
           </a>
         </div>
       </div>

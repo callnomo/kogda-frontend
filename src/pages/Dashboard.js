@@ -121,7 +121,7 @@ export default function Dashboard() {
         {/* Sidebar */}
         <div style={{ width: 200, flexShrink: 0 }}>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <NavItem icon={Calendar} label="Встречи" href="/dashboard" active={true} />
+            <NavItem icon={Calendar} label="Мой кабинет" href="/dashboard" active={true} />
             <NavItem icon={Clock} label="Расписание" href="/schedule" active={false} />
             <NavItem icon={BarChart2} label="Брони" href="/bookings" active={false} />
             <NavItem icon={Settings} label="Настройки" href="/settings" active={false} />
