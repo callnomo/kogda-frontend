@@ -15,12 +15,12 @@ const formatTime = (dateStr) => {
   return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
 }
 
-const statusLabel = (status) => {
+const statusConfig = (status) => {
   switch(status) {
-    case 'confirmed': return { text: 'Подтверждена', bg: '#DCFCE7', color: '#16A34A' }
-    case 'pending': return { text: 'На рассмотрении', bg: '#FEF9C3', color: '#CA8A04' }
-    case 'cancelled': return { text: 'Отменена', bg: '#FEE2E2', color: '#DC2626' }
-    default: return { text: status, bg: '#F3F4F6', color: '#6B7280' }
+    case 'confirmed': return { text: 'Подтверждена', bg: '#DCFCE7', color: '#16A34A', dot: '#22C55E' }
+    case 'pending': return { text: 'На рассмотрении', bg: '#FEF9C3', color: '#CA8A04', dot: '#EAB308' }
+    case 'cancelled': return { text: 'Отменена', bg: '#FEE2E2', color: '#DC2626', dot: '#EF4444' }
+    default: return { text: status, bg: '#F3F4F6', color: '#6B7280', dot: '#9CA3AF' }
   }
 }
 
@@ -74,18 +74,17 @@ export default function Bookings() {
   const cancelled = bookings.filter(b => b.status === 'cancelled').length
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F7F6F1', fontFamily: 'sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F7F6F1', fontFamily: 'Inter, sans-serif' }}>
       <div style={{
         background: '#fff', borderBottom: '1px solid #E8E7E0',
         padding: '16px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
       }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, fontFamily: 'Syne, sans-serif' }}>
           kog<span style={{ background: '#E8FF47', padding: '0 6px', borderRadius: 6 }}>DA</span>
         </h1>
       </div>
 
       <div style={{ display: 'flex', maxWidth: 1100, margin: '0 auto', padding: '40px 24px', gap: 32 }}>
-        {/* Sidebar */}
         <div style={{ width: 200, flexShrink: 0 }}>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {[
@@ -114,17 +113,18 @@ export default function Bookings() {
 
           {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
-            {[
-              { label: 'Предстоящих', value: upcoming, icon: '📅', color: '#16A34A' },
-              { label: 'Всего', value: total, icon: '📊', color: '#111' },
-              { label: 'Отменено', value: cancelled, icon: '❌', color: '#DC2626' },
-            ].map((s, i) => (
-              <div key={i} style={{ background: '#fff', borderRadius: 14, padding: '20px', border: '1px solid #E8E7E0' }}>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>{s.icon}</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
-                <div style={{ fontSize: 12, color: '#888', marginTop: 3 }}>{s.label}</div>
-              </div>
-            ))}
+            <div style={{ background: '#fff', borderRadius: 14, padding: '20px', border: '1px solid #E8E7E0' }}>
+              <div style={{ fontSize: 32, fontWeight: 800, color: '#16A34A', marginBottom: 4 }}>{upcoming}</div>
+              <div style={{ fontSize: 13, color: '#888' }}>Предстоящих</div>
+            </div>
+            <div style={{ background: '#fff', borderRadius: 14, padding: '20px', border: '1px solid #E8E7E0' }}>
+              <div style={{ fontSize: 32, fontWeight: 800, color: '#111', marginBottom: 4 }}>{total}</div>
+              <div style={{ fontSize: 13, color: '#888' }}>Всего</div>
+            </div>
+            <div style={{ background: '#fff', borderRadius: 14, padding: '20px', border: '1px solid #E8E7E0' }}>
+              <div style={{ fontSize: 32, fontWeight: 800, color: '#DC2626', marginBottom: 4 }}>{cancelled}</div>
+              <div style={{ fontSize: 13, color: '#888' }}>Отменено</div>
+            </div>
           </div>
 
           {/* Filters */}
@@ -136,10 +136,10 @@ export default function Bookings() {
               { key: 'cancelled', label: 'Отменённые' },
             ].map(f => (
               <button key={f.key} onClick={() => setFilter(f.key)} style={{
-                padding: '8px 18px', borderRadius: 100, border: 'none',
+                padding: '8px 18px', borderRadius: 100,
                 background: filter === f.key ? '#111' : '#fff',
                 color: filter === f.key ? '#fff' : '#888',
-                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                fontSize: 13, fontWeight: 500, cursor: 'pointer',
                 border: `1.5px solid ${filter === f.key ? '#111' : '#E0E0D8'}`,
                 transition: 'all 0.15s'
               }}>{f.label}</button>
@@ -156,65 +156,86 @@ export default function Bookings() {
               <p style={{ color: '#888', fontSize: 14 }}>Поделись ссылкой с клиентами чтобы они записались</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {filtered.map(b => {
-                const status = statusLabel(b.status)
+                const status = statusConfig(b.status)
                 const isPast = new Date(b.start_time) < new Date()
                 return (
                   <div key={b.id} style={{
-                    background: '#fff', borderRadius: 16, padding: '24px',
+                    background: '#fff', borderRadius: 16,
                     border: '1px solid #E8E7E0',
-                    opacity: isPast && b.status !== 'cancelled' ? 0.7 : 1
+                    overflow: 'hidden',
+                    opacity: b.status === 'cancelled' ? 0.6 : 1
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                    {/* Card header */}
+                    <div style={{
+                      padding: '16px 24px',
+                      background: isPast && b.status !== 'cancelled' ? '#F7F6F1' : '#fff',
+                      borderBottom: '1px solid #F0EFE9',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{
-                          width: 48, height: 48, borderRadius: 12, background: '#F0EFE9',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 22, flexShrink: 0
-                        }}>
-                          {b.status === 'cancelled' ? '❌' : isPast ? '✓' : '📅'}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{b.client_name}</div>
-                          <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>{b.client_email}</div>
-                          <div style={{ fontSize: 14, color: '#555', fontWeight: 500 }}>
-                            {b.meeting_title} · {formatDate(b.start_time)} в {formatTime(b.start_time)}
-                          </div>
-                          {b.notes && (
-                            <div style={{ fontSize: 13, color: '#888', marginTop: 8, background: '#F7F6F1', padding: '8px 12px', borderRadius: 8 }}>
-                              💬 {b.notes}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
-                        <div style={{
-                          background: status.bg, color: status.color,
-                          padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 600
-                        }}>
+                          width: 8, height: 8, borderRadius: 4,
+                          background: status.dot, flexShrink: 0
+                        }} />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: status.color }}>
                           {status.text}
-                        </div>
-
-                        {b.status !== 'cancelled' && !isPast && (
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <a href={b.video_link} target="_blank" rel="noreferrer" style={{
-                              background: '#E8FF47', color: '#111', padding: '7px 14px',
-                              borderRadius: 100, fontSize: 12, fontWeight: 600, textDecoration: 'none'
-                            }}>
-                              📹 Войти
-                            </a>
-                            <button onClick={() => cancelBooking(b.id)} style={{
-                              background: 'transparent', border: '1.5px solid #FFE0E0',
-                              color: '#DC2626', padding: '7px 14px', borderRadius: 100,
-                              fontSize: 12, fontWeight: 600, cursor: 'pointer'
-                            }}>
-                              Отменить
-                            </button>
-                          </div>
-                        )}
+                        </span>
                       </div>
+                      <div style={{ fontSize: 13, color: '#888' }}>
+                        {formatDate(b.start_time)} · {formatTime(b.start_time)}
+                      </div>
+                    </div>
+
+                    {/* Card body */}
+                    <div style={{ padding: '20px 24px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: b.notes ? 16 : 0 }}>
+                        <div style={{
+                          width: 44, height: 44, borderRadius: 12,
+                          background: '#E8FF47',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 18, fontWeight: 800, color: '#111', flexShrink: 0
+                        }}>
+                          {b.client_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 2 }}>{b.client_name}</div>
+                          <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>{b.client_email}</div>
+                          <div style={{ fontSize: 13, color: '#555', fontWeight: 500 }}>{b.meeting_title}</div>
+                        </div>
+                      </div>
+
+                      {b.notes && (
+                        <div style={{
+                          background: '#F7F6F1', borderRadius: 10,
+                          padding: '10px 14px', fontSize: 13, color: '#666',
+                          marginBottom: 16, marginTop: 4
+                        }}>
+                          💬 {b.notes}
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      {b.status !== 'cancelled' && !isPast && (
+                        <div style={{ display: 'flex', gap: 10, marginTop: 16, paddingTop: 16, borderTop: '1px solid #F0EFE9' }}>
+                          <a href={b.video_link} target="_blank" rel="noreferrer" style={{
+                            background: '#111', color: '#fff',
+                            padding: '10px 20px', borderRadius: 10,
+                            fontSize: 13, fontWeight: 600, textDecoration: 'none',
+                            display: 'flex', alignItems: 'center', gap: 6
+                          }}>
+                            📹 Войти на встречу
+                          </a>
+                          <button onClick={() => cancelBooking(b.id)} style={{
+                            background: 'transparent', border: '1.5px solid #FFE0E0',
+                            color: '#DC2626', padding: '10px 20px', borderRadius: 10,
+                            fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                          }}>
+                            Отменить
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
