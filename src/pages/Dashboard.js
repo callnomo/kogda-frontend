@@ -67,7 +67,7 @@ export default function Dashboard() {
           kog<span style={{ background: '#E8FF47', padding: '0 6px', borderRadius: 6 }}>DA</span>
         </h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <a href={`https://kogda.app/${user.slug}`} target="_blank" rel="noreferrer"
+          <a href={`https://app.kogda.app/${user.slug}`} target="_blank" rel="noreferrer"
             style={{ background: '#F0EFE9', padding: '8px 16px', borderRadius: 100, fontSize: 13, fontWeight: 600, textDecoration: 'none', color: '#111' }}>
             kogda.app/{user.slug}
           </a>
@@ -209,7 +209,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => navigator.clipboard.writeText(`https://kogda.app/${user.slug}`)}
+                    <button onClick={() => navigator.clipboard.writeText(`https://app.kogda.app/${user.slug}`)}
                       style={{ background: '#E8FF47', border: 'none', padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                       Скопировать ссылку
                     </button>
