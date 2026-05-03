@@ -6,6 +6,7 @@ import Schedule from './pages/Schedule'
 import BookingPage from './pages/BookingPage'
 import Settings from './pages/Settings'
 import Bookings from './pages/Bookings'
+import ClientBooking from './pages/ClientBooking'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/schedule" element={<Schedule />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/bookings" element={<Bookings />} />
+        <Route path="/booking/:token" element={<ClientBooking />} />
         <Route path="/:slug" element={<BookingPage />} />
       </Routes>
     </BrowserRouter>
