@@ -91,7 +91,7 @@ export default function Bookings() {
             {[
               { icon: Calendar, label: 'Мой кабинет', href: '/dashboard', active: false },
               { icon: Clock, label: 'Расписание', href: '/schedule', active: false },
-              { icon: BarChart2, label: 'Брони', href: '/bookings', active: true },
+              { icon: BarChart2, label: 'Записи', href: '/bookings', active: true },
               { icon: Settings, label: 'Настройки', href: '/settings', active: false },
             ].map(item => (
               <a key={item.href} href={item.href} style={{
@@ -108,7 +108,7 @@ export default function Bookings() {
 
         <div style={{ flex: 1 }}>
           <div style={{ marginBottom: 32 }}>
-            <h2 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Брони</h2>
+            <h2 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Записи</h2>
             <p style={{ color: '#888', marginTop: 6, fontSize: 15 }}>Все записи твоих клиентов</p>
           </div>
 
