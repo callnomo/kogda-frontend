@@ -29,6 +29,8 @@ export default function Dashboard() {
   const [form, setForm] = useState({ title: '', description: '', duration: 60, price: 0 })
   const [copiedId, setCopiedId] = useState(null)
   const [showQR, setShowQR] = useState(false)
+  const [editMeeting, setEditMeeting] = useState(null)
+  const [editForm, setEditForm] = useState({ title: '', description: '', duration: 60, price: 0 })
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDay, setSelectedDay] = useState(null)
@@ -72,6 +74,16 @@ export default function Dashboard() {
     const token = localStorage.getItem('token')
     try {
       await axios.delete(`${API}/meetings/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+      loadMeetings()
+    } catch (err) { console.error(err) }
+  }
+
+  const updateMeeting = async (e) => {
+    e.preventDefault()
+    const token = localStorage.getItem('token')
+    try {
+      await axios.patch(`${API}/meetings/${editMeeting.id}`, editForm, { headers: { Authorization: `Bearer ${token}` } })
+      setEditMeeting(null)
       loadMeetings()
     } catch (err) { console.error(err) }
   }
@@ -411,6 +423,37 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Edit form */}
+          {editMeeting && (
+            <div style={{ background: '#fff', borderRadius: 16, padding: 28, border: '1.5px solid #E8FF47', marginBottom: 20 }}>
+              <h4 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700 }}>Редактировать услугу</h4>
+              <form onSubmit={updateMeeting}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Название</label>
+                    <input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} required style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Длительность (мин)</label>
+                    <input type='number' value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })} style={inputStyle} />
+                  </div>
+                </div>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Описание</label>
+                  <textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} style={{ ...inputStyle, minHeight: 72, resize: 'vertical' }} />
+                </div>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Цена (₽)</label>
+                  <input type='number' value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })} style={inputStyle} />
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button type='submit' style={{ background: '#111', color: '#F7F6F1', border: 'none', padding: '11px 26px', borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Сохранить</button>
+                  <button type='button' onClick={() => setEditMeeting(null)} style={{ background: 'transparent', border: '1.5px solid #E0E0D8', padding: '11px 26px', borderRadius: 9, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Отмена</button>
+                </div>
+              </form>
+            </div>
+          )}
+
           {meetings.length === 0 ? (
             <div style={{ background: '#fff', borderRadius: 16, padding: '40px', border: '1px solid #E8E7E0', textAlign: 'center' }}>
               <Calendar size={36} color="#ccc" style={{ marginBottom: 12 }} />
@@ -455,6 +498,14 @@ export default function Dashboard() {
                     }}>
                       {copiedId === m.id ? <Check size={12} /> : <Copy size={12} />}
                       {copiedId === m.id ? 'Скопировано!' : 'Скопировать'}
+                    </button>
+                    <button onClick={() => { setEditMeeting(m); setEditForm({ title: m.title, description: m.description || '', duration: m.duration, price: m.price }) }} style={{
+                      background: 'transparent', border: '1.5px solid #E0E0D8',
+                      color: '#111', padding: '8px 14px', borderRadius: 100,
+                      fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 5
+                    }}>
+                      ✏️ Редактировать
                     </button>
                     <button onClick={() => deleteMeeting(m.id)} style={{
                       background: 'transparent', border: '1.5px solid #FFE0E0',
