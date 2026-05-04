@@ -208,7 +208,7 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F7F6F1', borderRadius: 10, padding: '12px 16px' }}>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>Подтверждать вручную</div>
-                    <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Каждая запись требует твоего подтверждения в Telegram</div>
+                    <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Каждая запись требует твоего подтверждения</div>
                   </div>
                   <div onClick={() => setFormData({...formData, require_confirm: !formData.require_confirm})} style={{
                     width: 44, height: 24, borderRadius: 12,
@@ -434,7 +434,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {meetings.map(m => (
+              {meetings.map(m => editMeeting?.id === m.id ? null : (
                 <div key={m.id} style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', border: '1px solid #E8E7E0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                     <div style={{ width: 44, height: 44, borderRadius: 12, background: '#F0EFE9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
