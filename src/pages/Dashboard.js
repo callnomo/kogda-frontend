@@ -23,6 +23,16 @@ const NavItem = ({ icon: Icon, label, href, active }) => (
 
 const emptyForm = { title: '', description: '', duration: 60, price: 0, buffer_before: 0, buffer_after: 0, min_notice: 0, max_days_ahead: 60, max_per_day: 0, require_confirm: false }
 
+const inputStyle = {
+  width: '100%', padding: '11px 14px', borderRadius: 9,
+  border: '1.5px solid #E0E0D8', fontSize: 14, outline: 'none',
+  boxSizing: 'border-box', fontFamily: 'Inter, sans-serif'
+}
+
+const selectStyle = { ...inputStyle, cursor: 'pointer', background: '#fff' }
+
+const ServiceForm = ({ formData, setFormData, onSubmit, onCancel, showAdv, setShowAdv, isEdit }) => (
+
 export default function Dashboard() {
   const [meetings, setMeetings] = useState([])
   const [bookings, setBookings] = useState([])
@@ -128,15 +138,7 @@ export default function Dashboard() {
 
   const selectedDayBookings = selectedDay ? getBookingsForDay(selectedDay) : []
 
-  const inputStyle = {
-    width: '100%', padding: '11px 14px', borderRadius: 9,
-    border: '1.5px solid #E0E0D8', fontSize: 14, outline: 'none',
-    boxSizing: 'border-box', fontFamily: 'Inter, sans-serif'
-  }
-
-  const selectStyle = { ...inputStyle, cursor: 'pointer', background: '#fff' }
-
-  const ServiceForm = ({ formData, setFormData, onSubmit, onCancel, showAdv, setShowAdv, isEdit }) => (
+  return (
     <div style={{ background: '#fff', borderRadius: 16, padding: 28, border: `1.5px solid ${isEdit ? '#E8FF47' : '#E8E7E0'}`, marginBottom: 20 }}>
       <h4 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700 }}>{isEdit ? 'Редактировать услугу' : 'Новая услуга'}</h4>
       <form onSubmit={onSubmit}>
