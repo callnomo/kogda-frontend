@@ -46,6 +46,7 @@ export default function Schedule() {
   const [selectedDate, setSelectedDate] = useState(null)
   const [newSlot, setNewSlot] = useState({ start_time: '09:00', end_time: '18:00' })
   const [showAddSlot, setShowAddSlot] = useState(false)
+  const [slotError, setSlotError] = useState('')
 
   useEffect(() => {
     const u = localStorage.getItem('user')
@@ -111,15 +112,31 @@ export default function Schedule() {
     if (!selectedDate) return
     const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`
     
-    // Проверка на дубликат
-    const isDuplicate = selectedSlots.some(s => s.start_time === newSlot.start_time && s.end_time === newSlot.end_time)
-    if (isDuplicate) return
-
-    // Проверка что end_time > start_time
     const [sh, sm] = newSlot.start_time.split(':').map(Number)
     const [eh, em] = newSlot.end_time.split(':').map(Number)
-    if (eh * 60 + em <= sh * 60 + sm) return
+    const newStart = sh * 60 + sm
+    const newEnd = eh * 60 + em
 
+    if (newEnd <= newStart) {
+      setSlotError('Время окончания должно быть позже начала')
+      return
+    }
+
+    // Проверка на пересечение с существующими слотами
+    const hasOverlap = selectedSlots.some(s => {
+      const [esh, esm] = s.start_time.split(':').map(Number)
+      const [eeh, eem] = s.end_time.split(':').map(Number)
+      const existStart = esh * 60 + esm
+      const existEnd = eeh * 60 + eem
+      return newStart < existEnd && newEnd > existStart
+    })
+
+    if (hasOverlap) {
+      setSlotError('Это время пересекается с уже добавленным')
+      return
+    }
+
+    setSlotError('')
     const token = localStorage.getItem('token')
     try {
       await axios.post(`${API}/schedule/flexible`, { date: dateStr, ...newSlot }, { headers: { Authorization: `Bearer ${token}` } })
@@ -365,20 +382,25 @@ export default function Schedule() {
                     {showAddSlot ? (
                       <div style={{ background: '#F7F6F1', borderRadius: 12, padding: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                          <select value={newSlot.start_time} onChange={e => setNewSlot({...newSlot, start_time: e.target.value})} style={selectStyle}>
+                          <select value={newSlot.start_time} onChange={e => { setNewSlot({...newSlot, start_time: e.target.value}); setSlotError('') }} style={selectStyle}>
                             {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                           <span style={{ color: '#888' }}>до</span>
-                          <select value={newSlot.end_time} onChange={e => setNewSlot({...newSlot, end_time: e.target.value})} style={selectStyle}>
+                          <select value={newSlot.end_time} onChange={e => { setNewSlot({...newSlot, end_time: e.target.value}); setSlotError('') }} style={selectStyle}>
                             {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
+                        {slotError && (
+                          <div style={{ background: '#FEE2E2', color: '#DC2626', fontSize: 12, padding: '8px 12px', borderRadius: 8, marginBottom: 10 }}>
+                            {slotError}
+                          </div>
+                        )}
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button onClick={addFlexSlot} style={{
                             background: '#111', color: '#fff', border: 'none',
                             padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer'
                           }}>Добавить</button>
-                          <button onClick={() => setShowAddSlot(false)} style={{
+                          <button onClick={() => { setShowAddSlot(false); setSlotError('') }} style={{
                             background: 'transparent', border: '1.5px solid #E0E0D8',
                             padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer'
                           }}>Отмена</button>
