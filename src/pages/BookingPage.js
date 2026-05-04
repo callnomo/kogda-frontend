@@ -392,7 +392,7 @@ export default function BookingPage() {
                     padding: '16px', borderRadius: 12, fontSize: 16, fontWeight: 800,
                     cursor: 'pointer', transition: 'all 0.2s'
                   }}>
-                    {bookingLoading ? 'Бронируем...' : 'Подтвердить встречу'}
+                    {bookingLoading ? 'Отправляем...' : selectedMeeting?.require_confirm ? 'Отправить запрос' : 'Подтвердить встречу'}
                   </button>
                 </form>
               </div>
@@ -401,55 +401,62 @@ export default function BookingPage() {
             {/* Шаг 4 — готово */}
             {step === 4 && (
               <div style={{
-                background: '#fff', borderRadius: 24, padding: '60px 40px',
-                border: '1px solid #E8E7E0', textAlign: 'center',
-                maxWidth: 520, margin: '0 auto'
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                minHeight: '60vh'
               }}>
                 <div style={{
-                  width: 88, height: 88, borderRadius: 44, background: '#E8FF47',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 40, margin: '0 auto 28px', fontWeight: 700
+                  background: '#fff', borderRadius: 24, padding: '60px 48px',
+                  border: '1px solid #E8E7E0', textAlign: 'center',
+                  maxWidth: 480, width: '100%'
                 }}>
-                  ✓
-                </div>
-                <h2 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 12px', color: '#111' }}>
-                  Встреча забронирована!
-                </h2>
-                <p style={{ fontSize: 16, color: '#888', margin: '0 0 6px', lineHeight: 1.5 }}>
-                  Подтверждение отправлено на
-                </p>
-                <p style={{ fontSize: 16, fontWeight: 700, color: '#111', margin: '0 0 28px' }}>
-                  {form.email}
-                </p>
+                  <div style={{
+                    width: 80, height: 80, borderRadius: 40, background: '#E8FF47',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 36, margin: '0 auto 24px'
+                  }}>✓</div>
+                  <h2 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 10px', color: '#111' }}>
+                    {selectedMeeting?.require_confirm ? 'Запрос отправлен!' : 'Встреча забронирована!'}
+                  </h2>
+                  <p style={{ fontSize: 15, color: '#888', margin: '0 0 4px', lineHeight: 1.5 }}>
+                    {selectedMeeting?.require_confirm
+                      ? 'Коуч получил твой запрос и скоро подтвердит встречу.'
+                      : 'Подтверждение отправлено на'}
+                  </p>
+                  {!selectedMeeting?.require_confirm && (
+                    <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 24px' }}>{form.email}</p>
+                  )}
+                  {selectedMeeting?.require_confirm && (
+                    <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 24px' }}>{form.email}</p>
+                  )}
 
-                <div style={{
-                  background: '#F7F6F1', borderRadius: 16, padding: '20px 24px',
-                  marginBottom: 28, textAlign: 'left'
-                }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 18 }}>📅</span>
-                      <span style={{ fontSize: 15, fontWeight: 600 }}>{selectedMeeting?.title}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 18 }}>🗓</span>
-                      <span style={{ fontSize: 15, color: '#555' }}>
-                        {selectedDate && `${selectedDate.getDate()} ${MONTHS[selectedDate.getMonth()].toLowerCase()}`} · {selectedSlot}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 18 }}>📹</span>
-                      <span style={{ fontSize: 15, color: '#555' }}>Ссылка на видеозвонок придёт на email</span>
+                  <div style={{ background: '#F7F6F1', borderRadius: 14, padding: '18px 20px', marginBottom: 24, textAlign: 'left' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 16 }}>📅</span>
+                        <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedMeeting?.title}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 16 }}>🗓</span>
+                        <span style={{ fontSize: 14, color: '#555' }}>
+                          {selectedDate && `${selectedDate.getDate()} ${MONTHS[selectedDate.getMonth()].toLowerCase()}`} · {selectedSlot}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 16 }}>📹</span>
+                        <span style={{ fontSize: 14, color: '#555' }}>
+                          {selectedMeeting?.require_confirm ? 'Ссылка придёт после подтверждения' : 'Ссылка на видеозвонок придёт на email'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>
-                  Работает на{' '}
-                  <a href="https://kogda.app" style={{ color: '#111', fontWeight: 700, textDecoration: 'none' }}>
-                    kog<span style={{ background: '#E8FF47', padding: '0 3px', borderRadius: 3 }}>DA</span>
-                  </a>
-                </p>
+                  <p style={{ fontSize: 12, color: '#aaa', margin: 0 }}>
+                    Работает на{' '}
+                    <a href="https://kogda.app" style={{ color: '#111', fontWeight: 700, textDecoration: 'none' }}>
+                      kog<span style={{ background: '#E8FF47', padding: '0 3px', borderRadius: 3 }}>DA</span>
+                    </a>
+                  </p>
+                </div>
               </div>
             )}
           </div>
