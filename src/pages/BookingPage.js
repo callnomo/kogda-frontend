@@ -248,7 +248,14 @@ export default function BookingPage() {
             {/* Шаг 2 — календарь */}
             {step === 2 && (
               <div style={{ background: '#fff', borderRadius: 20, padding: '32px', border: '1px solid #E8E7E0' }}>
-                <h3 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 24px' }}>Выберите дату и время</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 0 24px' }}>
+                <button onClick={() => { setStep(1); setSelectedDate(null); setSelectedSlot(null); setSlots([]) }} style={{
+                  background: 'transparent', border: '1.5px solid #E0E0D8', padding: '8px 16px',
+                  borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#888'
+                }}>← Назад</button>
+                <h3 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Выберите дату и время</h3>
+                <div style={{ width: 80 }} />
+              </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px', gap: 24 }}>
                   {/* Calendar */}
