@@ -206,9 +206,16 @@ export default function Dashboard() {
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F7F6F1', borderRadius: 10, padding: '12px 16px' }}>
-                  <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>Подтверждать вручную</div>
-                    <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Каждая запись требует твоего подтверждения</div>
+                    <div style={{ position: 'relative', display: 'inline-block' }}
+                      onMouseEnter={e => e.currentTarget.querySelector('.tooltip').style.display = 'block'}
+                      onMouseLeave={e => e.currentTarget.querySelector('.tooltip').style.display = 'none'}>
+                      <div style={{ width: 16, height: 16, borderRadius: 8, background: '#E0E0D8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#888', cursor: 'default' }}>?</div>
+                      <div className="tooltip" style={{ display: 'none', position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', background: '#111', color: '#fff', fontSize: 12, padding: '8px 12px', borderRadius: 8, whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
+                        Каждая запись требует твоего подтверждения
+                      </div>
+                    </div>
                   </div>
                   <div onClick={() => setFormData({...formData, require_confirm: !formData.require_confirm})} style={{
                     width: 44, height: 24, borderRadius: 12,
