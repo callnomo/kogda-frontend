@@ -39,9 +39,7 @@ export default function BookingPage() {
   const loadSlots = async (date) => {
     try {
       const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
-      const meetingId = selectedMeeting?.id || ''
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-      const res = await axios.get(`${API}/schedule/slots/${slug}?date=${dateStr}&meeting_type_id=${meetingId}&timezone=${encodeURIComponent(timezone)}`)
+      const res = await axios.get(`${API}/schedule/slots/${slug}?date=${dateStr}`)
       setSlots(res.data.slots || [])
     } catch (err) {
       setSlots([])
@@ -67,13 +65,15 @@ export default function BookingPage() {
     setBookingLoading(true)
     try {
       const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       await axios.post(`${API}/bookings`, {
         meeting_type_id: selectedMeeting.id,
         client_name: form.name,
         client_email: form.email,
         notes: form.notes,
         date: dateStr,
-        time: selectedSlot
+        time: selectedSlot,
+        timezone
       })
       setStep(4)
     } catch (err) {
