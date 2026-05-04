@@ -1,17 +1,18 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
-import { User, Clock, BookOpen, Settings, Plus, Trash2 } from 'lucide-react'
+import { User, Clock, BookOpen, Settings, Plus, Trash2, Check } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const API = 'https://kogda-backend-production.up.railway.app'
 
 const DAYS = [
-  { id: 1, name: 'Понедельник' },
-  { id: 2, name: 'Вторник' },
-  { id: 3, name: 'Среда' },
-  { id: 4, name: 'Четверг' },
-  { id: 5, name: 'Пятница' },
-  { id: 6, name: 'Суббота' },
-  { id: 0, name: 'Воскресенье' },
+  { id: 1, name: 'Пн', full: 'Понедельник' },
+  { id: 2, name: 'Вт', full: 'Вторник' },
+  { id: 3, name: 'Ср', full: 'Среда' },
+  { id: 4, name: 'Чт', full: 'Четверг' },
+  { id: 5, name: 'Пт', full: 'Пятница' },
+  { id: 6, name: 'Сб', full: 'Суббота' },
+  { id: 0, name: 'Вс', full: 'Воскресенье' },
 ]
 
 const TIMES = []
@@ -21,10 +22,11 @@ for (let h = 6; h <= 22; h++) {
 }
 
 const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
+const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
 const DAYS_SHORT = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 
-const NavItem = ({ icon: Icon, label, href, active }) => (
-  <a href={href} style={{
+const NavItem = ({ icon: Icon, label, to, active }) => (
+  <Link to={to} style={{
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '10px 14px', borderRadius: 10, textDecoration: 'none',
     background: active ? '#E8FF47' : 'transparent',
@@ -32,7 +34,7 @@ const NavItem = ({ icon: Icon, label, href, active }) => (
   }}>
     <Icon size={16} strokeWidth={active ? 2.5 : 2} />
     {label}
-  </a>
+  </Link>
 )
 
 export default function Schedule() {
@@ -41,7 +43,7 @@ export default function Schedule() {
     DAYS.map(d => ({ day_of_week: d.id, start_time: '09:00', end_time: '18:00', is_active: false }))
   )
   const [flexSlots, setFlexSlots] = useState([])
-  const [saved, setSaved] = useState(false)
+  const [saveStatus, setSaveStatus] = useState('idle') // idle | saving | saved
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(null)
   const [newSlot, setNewSlot] = useState({ start_time: '09:00', end_time: '18:00' })
@@ -96,22 +98,35 @@ export default function Schedule() {
     } catch (err) { console.error(err) }
   }
 
-  const toggle = (dayId) => setSchedule(schedule.map(s => s.day_of_week === dayId ? { ...s, is_active: !s.is_active } : s))
-  const update = (dayId, field, value) => setSchedule(schedule.map(s => s.day_of_week === dayId ? { ...s, [field]: value } : s))
-
-  const saveStandard = async () => {
-    const token = localStorage.getItem('token')
-    try {
-      await axios.post(`${API}/schedule`, { schedule }, { headers: { Authorization: `Bearer ${token}` } })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-    } catch (err) { console.error(err) }
+  const toggle = (dayId) => {
+    const updated = schedule.map(s => s.day_of_week === dayId ? { ...s, is_active: !s.is_active } : s)
+    setSchedule(updated)
+    autoSave(updated)
   }
+
+  const update = (dayId, field, value) => {
+    const updated = schedule.map(s => s.day_of_week === dayId ? { ...s, [field]: value } : s)
+    setSchedule(updated)
+    autoSave(updated)
+  }
+
+  const autoSave = useCallback(async (data) => {
+    const token = localStorage.getItem('token')
+    setSaveStatus('saving')
+    try {
+      await axios.post(`${API}/schedule`, { schedule: data }, { headers: { Authorization: `Bearer ${token}` } })
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000)
+    } catch (err) {
+      console.error(err)
+      setSaveStatus('idle')
+    }
+  }, [])
 
   const addFlexSlot = async () => {
     if (!selectedDate) return
     const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`
-    
+
     const [sh, sm] = newSlot.start_time.split(':').map(Number)
     const [eh, em] = newSlot.end_time.split(':').map(Number)
     const newStart = sh * 60 + sm
@@ -122,13 +137,10 @@ export default function Schedule() {
       return
     }
 
-    // Проверка на пересечение с существующими слотами
     const hasOverlap = selectedSlots.some(s => {
       const [esh, esm] = s.start_time.split(':').map(Number)
       const [eeh, eem] = s.end_time.split(':').map(Number)
-      const existStart = esh * 60 + esm
-      const existEnd = eeh * 60 + eem
-      return newStart < existEnd && newEnd > existStart
+      return newStart < (eeh * 60 + eem) && newEnd > (esh * 60 + esm)
     })
 
     if (hasOverlap) {
@@ -142,6 +154,7 @@ export default function Schedule() {
       await axios.post(`${API}/schedule/flexible`, { date: dateStr, ...newSlot }, { headers: { Authorization: `Bearer ${token}` } })
       loadFlexSlots()
       setShowAddSlot(false)
+      setNewSlot({ start_time: '09:00', end_time: '18:00' })
     } catch (err) { console.error(err) }
   }
 
@@ -153,7 +166,6 @@ export default function Schedule() {
     } catch (err) { console.error(err) }
   }
 
-  // Calendar helpers
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
@@ -171,19 +183,22 @@ export default function Schedule() {
 
   const selectedSlots = flexSlots.filter(s => selectedDate && s.date.startsWith(selectedDateStr))
 
-  const selectStyle = {
-    padding: '8px 12px', borderRadius: 8,
-    border: '1.5px solid #E0E0D8', fontSize: 14,
-    outline: 'none', background: '#fff', cursor: 'pointer',
-    fontFamily: 'Inter, sans-serif'
+  const getDuration = (start, end) => {
+    const [sh, sm] = start.split(':').map(Number)
+    const [eh, em] = end.split(':').map(Number)
+    const diff = (eh * 60 + em) - (sh * 60 + sm)
+    if (diff <= 0) return ''
+    const h = Math.floor(diff / 60)
+    const m = diff % 60
+    return h > 0 && m > 0 ? `${h}ч ${m}м` : h > 0 ? `${h}ч` : `${m}м`
   }
+
+  const sel = { padding: '8px 12px', borderRadius: 8, border: '1.5px solid #E8E7E0', fontSize: 14, outline: 'none', background: '#F7F6F1', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 500 }
 
   return (
     <div style={{ minHeight: '100vh', background: '#F7F6F1', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{
-        background: '#fff', borderBottom: '1px solid #E8E7E0',
-        padding: '16px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-      }}>
+      {/* Header */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #E8E7E0', padding: '16px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, fontFamily: 'Syne, sans-serif' }}>
           kog<span style={{ background: '#E8FF47', padding: '0 6px', borderRadius: 6 }}>DA</span>
         </h1>
@@ -194,126 +209,126 @@ export default function Schedule() {
       </div>
 
       <div style={{ display: 'flex', maxWidth: 1100, margin: '0 auto', padding: '40px 24px', gap: 32 }}>
+        {/* Sidebar */}
         <div style={{ width: 200, flexShrink: 0 }}>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <NavItem icon={User} label="Мой кабинет" href="/dashboard" active={false} />
-            <NavItem icon={Clock} label="Расписание" href="/schedule" active={true} />
-            <NavItem icon={BookOpen} label="Записи" href="/bookings" active={false} />
-            <NavItem icon={Settings} label="Настройки" href="/settings" active={false} />
+            <NavItem icon={User} label="Мой кабинет" to="/dashboard" active={false} />
+            <NavItem icon={Clock} label="Расписание" to="/schedule" active={true} />
+            <NavItem icon={BookOpen} label="Записи" to="/bookings" active={false} />
+            <NavItem icon={Settings} label="Настройки" to="/settings" active={false} />
           </nav>
         </div>
 
         <div style={{ flex: 1 }}>
-          <div style={{ marginBottom: 28 }}>
-            <h2 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Расписание</h2>
-            <p style={{ color: '#888', marginTop: 6, fontSize: 15 }}>Укажи когда ты доступен для встреч</p>
+          {/* Title row */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
+            <div>
+              <h2 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Расписание</h2>
+              <p style={{ color: '#888', marginTop: 6, fontSize: 15 }}>Укажи когда ты доступен для встреч</p>
+            </div>
+            {/* Autosave indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 100, background: saveStatus === 'saved' ? '#DCFCE7' : '#F7F6F1', transition: 'all 0.3s' }}>
+              {saveStatus === 'saving' && <div style={{ width: 8, height: 8, borderRadius: 4, background: '#E8FF47', animation: 'pulse 1s infinite' }} />}
+              {saveStatus === 'saved' && <Check size={13} color="#16A34A" />}
+              {saveStatus === 'idle' && <div style={{ width: 8, height: 8, borderRadius: 4, background: '#22C55E' }} />}
+              <span style={{ fontSize: 12, fontWeight: 600, color: saveStatus === 'saved' ? '#16A34A' : '#888' }}>
+                {saveStatus === 'saving' ? 'Сохраняем...' : saveStatus === 'saved' ? 'Сохранено' : 'Авто-сохранение'}
+              </span>
+            </div>
           </div>
 
           {/* Type switcher */}
-          <div style={{ background: '#fff', borderRadius: 16, padding: '6px', border: '1px solid #E8E7E0', marginBottom: 24, display: 'inline-flex', gap: 4 }}>
+          <div style={{ background: '#fff', borderRadius: 14, padding: '5px', border: '1px solid #E8E7E0', marginBottom: 28, display: 'inline-flex', gap: 4 }}>
             {[
-              { key: 'standard', label: 'Стандартное', desc: 'Каждую неделю одинаково' },
-              { key: 'flexible', label: 'Гибкое', desc: 'Выбираю конкретные даты' }
+              { key: 'standard', label: '📅 Стандартное' },
+              { key: 'flexible', label: '✨ Гибкое' }
             ].map(t => (
               <button key={t.key} onClick={() => switchType(t.key)} style={{
-                padding: '10px 20px', borderRadius: 12, border: 'none',
+                padding: '9px 20px', borderRadius: 10, border: 'none',
                 background: scheduleType === t.key ? '#111' : 'transparent',
                 color: scheduleType === t.key ? '#fff' : '#888',
-                fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                transition: 'all 0.2s'
+                fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
               }}>
                 {t.label}
               </button>
             ))}
           </div>
 
-          {/* Active status */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-            <div style={{ width: 8, height: 8, borderRadius: 4, background: '#22C55E' }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#22C55E' }}>
-              {scheduleType === 'standard' ? 'Стандартное расписание активно' : 'Гибкое расписание активно'}
-            </span>
-          </div>
-
           {/* Standard schedule */}
           {scheduleType === 'standard' && (
-            <div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
-                {DAYS.map(day => {
-                  const slot = schedule.find(s => s.day_of_week === day.id)
-                  return (
-                    <div key={day.id} style={{
-                      background: '#fff', borderRadius: 16, padding: '18px 24px',
-                      border: `1.5px solid ${slot.is_active ? '#E8FF47' : '#E8E7E0'}`,
-                      display: 'flex', alignItems: 'center', gap: 16,
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {DAYS.map(day => {
+                const slot = schedule.find(s => s.day_of_week === day.id)
+                return (
+                  <div key={day.id} style={{
+                    background: '#fff', borderRadius: 14, padding: '16px 20px',
+                    border: '1px solid #E8E7E0',
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    opacity: slot.is_active ? 1 : 0.5,
+                    transition: 'opacity 0.2s'
+                  }}>
+                    {/* Toggle */}
+                    <div onClick={() => toggle(day.id)} style={{
+                      width: 40, height: 22, borderRadius: 11,
+                      background: slot.is_active ? '#111' : '#E0E0D8',
+                      cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background 0.2s'
                     }}>
-                      <div onClick={() => toggle(day.id)} style={{
-                        width: 44, height: 24, borderRadius: 12,
-                        background: slot.is_active ? '#111' : '#E0E0D8',
-                        cursor: 'pointer', position: 'relative', flexShrink: 0,
-                        transition: 'background 0.2s'
-                      }}>
-                        <div style={{
-                          width: 18, height: 18, borderRadius: 9, background: '#fff',
-                          position: 'absolute', top: 3,
-                          left: slot.is_active ? 23 : 3,
-                          transition: 'left 0.2s'
-                        }} />
-                      </div>
-                      <div style={{ width: 110, fontSize: 15, fontWeight: 600, color: slot.is_active ? '#111' : '#aaa' }}>
-                        {day.name}
-                      </div>
-                      {slot.is_active ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-                          <select value={slot.start_time} onChange={e => update(day.id, 'start_time', e.target.value)} style={selectStyle}>
-                            {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-                          </select>
-                          <span style={{ color: '#888', fontSize: 14 }}>до</span>
-                          <select value={slot.end_time} onChange={e => update(day.id, 'end_time', e.target.value)} style={selectStyle}>
-                            {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-                          </select>
-                          <span style={{ color: '#888', fontSize: 13 }}>
-                            {(() => {
-                              const [sh, sm] = slot.start_time.split(':').map(Number)
-                              const [eh, em] = slot.end_time.split(':').map(Number)
-                              const diff = (eh*60+em) - (sh*60+sm)
-                              return diff > 0 ? `${Math.floor(diff/60)}ч ${diff%60 > 0 ? diff%60+'м' : ''}` : ''
-                            })()}
-                          </span>
-                        </div>
-                      ) : (
-                        <div style={{ color: '#aaa', fontSize: 14 }}>Недоступен</div>
-                      )}
+                      <div style={{
+                        width: 16, height: 16, borderRadius: 8, background: '#fff',
+                        position: 'absolute', top: 3,
+                        left: slot.is_active ? 21 : 3, transition: 'left 0.2s'
+                      }} />
                     </div>
-                  )
-                })}
-              </div>
-              <button onClick={saveStandard} style={{
-                background: saved ? '#22C55E' : '#111', color: '#fff',
-                border: 'none', padding: '14px 32px', borderRadius: 12,
-                fontSize: 15, fontWeight: 700, cursor: 'pointer', transition: 'background 0.3s'
-              }}>
-                {saved ? '✓ Сохранено!' : 'Сохранить расписание'}
-              </button>
+
+                    {/* Day name */}
+                    <div style={{ width: 32, fontSize: 13, fontWeight: 700, color: '#888' }}>
+                      {day.name}
+                    </div>
+                    <div style={{ width: 110, fontSize: 14, fontWeight: 600, color: slot.is_active ? '#111' : '#aaa' }}>
+                      {day.full}
+                    </div>
+
+                    {slot.is_active ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                        <select value={slot.start_time} onChange={e => update(day.id, 'start_time', e.target.value)} style={sel}>
+                          {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <span style={{ color: '#ccc', fontSize: 14 }}>—</span>
+                        <select value={slot.end_time} onChange={e => update(day.id, 'end_time', e.target.value)} style={sel}>
+                          {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <span style={{
+                          fontSize: 12, fontWeight: 600, color: '#888',
+                          background: '#F7F6F1', padding: '4px 10px', borderRadius: 6
+                        }}>
+                          {getDuration(slot.start_time, slot.end_time)}
+                        </span>
+                      </div>
+                    ) : (
+                      <div style={{ color: '#ccc', fontSize: 13 }}>Выходной</div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 
           {/* Flexible schedule */}
           {scheduleType === 'flexible' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20 }}>
               {/* Calendar */}
               <div style={{ background: '#fff', borderRadius: 20, padding: '24px', border: '1px solid #E8E7E0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                   <button onClick={() => setCurrentDate(new Date(year, month-1, 1))}
-                    style={{ background: 'none', border: '1.5px solid #E0E0D8', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 16 }}>‹</button>
-                  <span style={{ fontSize: 16, fontWeight: 700 }}>{MONTHS[month]} {year}</span>
+                    style={{ background: 'none', border: '1.5px solid #E8E7E0', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 16, color: '#888' }}>‹</button>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>{MONTHS[month]} {year}</span>
                   <button onClick={() => setCurrentDate(new Date(year, month+1, 1))}
-                    style={{ background: 'none', border: '1.5px solid #E0E0D8', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 16 }}>›</button>
+                    style={{ background: 'none', border: '1.5px solid #E8E7E0', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 16, color: '#888' }}>›</button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 8 }}>
                   {DAYS_SHORT.map(d => (
-                    <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#888', padding: '4px 0' }}>{d}</div>
+                    <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#ccc', padding: '4px 0', textTransform: 'uppercase', letterSpacing: 0.5 }}>{d}</div>
                   ))}
                 </div>
 
@@ -334,15 +349,15 @@ export default function Schedule() {
                           textAlign: 'center', padding: '8px 4px', borderRadius: 8,
                           cursor: isPast ? 'default' : 'pointer',
                           background: isSelected ? '#111' : isToday ? '#E8FF47' : 'transparent',
-                          color: isSelected ? '#fff' : isPast ? '#ccc' : '#111',
+                          color: isSelected ? '#fff' : isPast ? '#ddd' : '#111',
                           fontWeight: isSelected || isToday ? 700 : 400,
-                          fontSize: 14, position: 'relative'
+                          fontSize: 14, position: 'relative', transition: 'all 0.15s'
                         }}>
                         {day}
                         {hasSlots && (
                           <div style={{
-                            width: 5, height: 5, borderRadius: '50%',
-                            background: isSelected ? '#E8FF47' : '#22C55E',
+                            width: 4, height: 4, borderRadius: '50%',
+                            background: isSelected ? '#E8FF47' : '#111',
                             margin: '2px auto 0'
                           }} />
                         )}
@@ -352,26 +367,41 @@ export default function Schedule() {
                 </div>
               </div>
 
-              {/* Day slots */}
+              {/* Day panel */}
               <div style={{ background: '#fff', borderRadius: 20, padding: '24px', border: '1px solid #E8E7E0' }}>
                 {selectedDate ? (
                   <>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}><div style={{ fontSize: 15, fontWeight: 700 }}>
-                      {selectedDate.getDate()} {MONTHS[selectedDate.getMonth()].toLowerCase()}</div><div style={{ fontSize: 11, color: '#22C55E', fontWeight: 600 }}>● Авто-сохранение</div></div>
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 16, fontWeight: 800 }}>
+                        {selectedDate.getDate()} {MONTHS_GEN[selectedDate.getMonth()]}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+                        {DAYS.find(d => d.id === selectedDate.getDay())?.full || 'Воскресенье'}
+                      </div>
+                    </div>
 
+                    {/* Existing slots */}
                     {selectedSlots.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
                         {selectedSlots.map(slot => (
                           <div key={slot.id} style={{
                             background: '#F7F6F1', borderRadius: 10, padding: '10px 14px',
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                           }}>
-                            <span style={{ fontSize: 14, fontWeight: 600 }}>
-                              {slot.start_time} — {slot.end_time}
-                            </span>
+                            <div>
+                              <span style={{ fontSize: 14, fontWeight: 700 }}>{slot.start_time} — {slot.end_time}</span>
+                              <span style={{ fontSize: 11, color: '#888', marginLeft: 8 }}>
+                                {getDuration(slot.start_time, slot.end_time)}
+                              </span>
+                            </div>
                             <button onClick={() => deleteFlexSlot(slot.id)} style={{
-                              background: 'transparent', border: 'none', cursor: 'pointer', color: '#DC2626'
-                            }}>
+                              background: 'transparent', border: 'none', cursor: 'pointer',
+                              color: '#ccc', padding: 4, borderRadius: 6,
+                              display: 'flex', alignItems: 'center',
+                              transition: 'color 0.2s'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.color = '#DC2626'}
+                            onMouseLeave={e => e.currentTarget.style.color = '#ccc'}>
                               <Trash2 size={14} />
                             </button>
                           </div>
@@ -379,47 +409,51 @@ export default function Schedule() {
                       </div>
                     )}
 
+                    {/* Add slot form */}
                     {showAddSlot ? (
-                      <div style={{ background: '#F7F6F1', borderRadius: 12, padding: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                          <select value={newSlot.start_time} onChange={e => { setNewSlot({...newSlot, start_time: e.target.value}); setSlotError('') }} style={selectStyle}>
+                      <div style={{ background: '#F7F6F1', borderRadius: 12, padding: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: slotError ? 8 : 12 }}>
+                          <select value={newSlot.start_time} onChange={e => { setNewSlot({...newSlot, start_time: e.target.value}); setSlotError('') }} style={{ ...sel, flex: 1 }}>
                             {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
-                          <span style={{ color: '#888' }}>до</span>
-                          <select value={newSlot.end_time} onChange={e => { setNewSlot({...newSlot, end_time: e.target.value}); setSlotError('') }} style={selectStyle}>
+                          <span style={{ color: '#ccc', fontSize: 14, flexShrink: 0 }}>—</span>
+                          <select value={newSlot.end_time} onChange={e => { setNewSlot({...newSlot, end_time: e.target.value}); setSlotError('') }} style={{ ...sel, flex: 1 }}>
                             {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
                         {slotError && (
-                          <div style={{ background: '#FEE2E2', color: '#DC2626', fontSize: 12, padding: '8px 12px', borderRadius: 8, marginBottom: 10 }}>
+                          <div style={{ fontSize: 12, color: '#DC2626', marginBottom: 10, padding: '6px 10px', background: '#FEF2F2', borderRadius: 7 }}>
                             {slotError}
                           </div>
                         )}
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button onClick={addFlexSlot} style={{
                             background: '#111', color: '#fff', border: 'none',
-                            padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                            padding: '9px 18px', borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: 'pointer', flex: 1
                           }}>Добавить</button>
-                          <button onClick={() => { setShowAddSlot(false); setSlotError('') }} style={{
+                          <button onClick={() => { setShowAddSlot(false); setSlotError(''); setNewSlot({ start_time: '09:00', end_time: '18:00' }) }} style={{
                             background: 'transparent', border: '1.5px solid #E0E0D8',
-                            padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer'
-                          }}>Отмена</button>
+                            padding: '9px 14px', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                          }}>✕</button>
                         </div>
                       </div>
                     ) : (
                       <button onClick={() => setShowAddSlot(true)} style={{
                         background: '#E8FF47', color: '#111', border: 'none',
-                        padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center'
+                        padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 700,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                        width: '100%', justifyContent: 'center', transition: 'opacity 0.2s'
                       }}>
-                        <Plus size={14} />
+                        <Plus size={14} strokeWidth={2.5} />
                         Добавить время
                       </button>
                     )}
                   </>
                 ) : (
-                  <div style={{ textAlign: 'center', color: '#888', fontSize: 14, padding: '40px 0' }}>
-                    Выбери день в календаре чтобы добавить доступное время
+                  <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                    <div style={{ fontSize: 32, marginBottom: 12 }}>📅</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#888' }}>Выбери день</div>
+                    <div style={{ fontSize: 13, color: '#ccc', marginTop: 4 }}>в календаре слева</div>
                   </div>
                 )}
               </div>
