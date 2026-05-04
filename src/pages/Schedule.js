@@ -116,7 +116,7 @@ export default function Schedule() {
     try {
       await axios.post(`${API}/schedule`, { schedule: data }, { headers: { Authorization: `Bearer ${token}` } })
       setSaveStatus('saved')
-      setTimeout(() => setSaveStatus('idle'), 2000)
+      setTimeout(() => setSaveStatus('idle'), 2500)
     } catch (err) {
       console.error(err)
       setSaveStatus('idle')
@@ -226,12 +226,15 @@ export default function Schedule() {
               <h2 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Расписание</h2>
               <p style={{ color: '#888', marginTop: 6, fontSize: 15 }}>Укажи когда ты доступен для встреч</p>
             </div>
-            {/* Autosave indicator */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 100, background: saveStatus === 'saved' ? '#DCFCE7' : '#F7F6F1', transition: 'all 0.3s' }}>
-              {saveStatus === 'saving' && <div style={{ width: 8, height: 8, borderRadius: 4, background: '#E8FF47', animation: 'pulse 1s infinite' }} />}
-              {saveStatus === 'saved' && <Check size={13} color="#16A34A" />}
-              {saveStatus === 'idle' && <div style={{ width: 8, height: 8, borderRadius: 4, background: '#22C55E' }} />}
-              <span style={{ fontSize: 12, fontWeight: 600, color: saveStatus === 'saved' ? '#16A34A' : '#888' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
+              borderRadius: 100, transition: 'all 0.3s',
+              background: saveStatus === 'saved' ? '#DCFCE7' : '#F7F6F1',
+            }}>
+              {saveStatus === 'saving' && <div style={{ width: 7, height: 7, borderRadius: 4, background: '#E8FF47' }} />}
+              {saveStatus === 'saved' && <Check size={12} color="#16A34A" />}
+              {saveStatus === 'idle' && <div style={{ width: 7, height: 7, borderRadius: 4, background: '#ccc' }} />}
+              <span style={{ fontSize: 12, fontWeight: 600, color: saveStatus === 'saved' ? '#16A34A' : '#aaa' }}>
                 {saveStatus === 'saving' ? 'Сохраняем...' : saveStatus === 'saved' ? 'Сохранено' : 'Авто-сохранение'}
               </span>
             </div>
@@ -240,8 +243,8 @@ export default function Schedule() {
           {/* Type switcher */}
           <div style={{ background: '#fff', borderRadius: 14, padding: '5px', border: '1px solid #E8E7E0', marginBottom: 28, display: 'inline-flex', gap: 4 }}>
             {[
-              { key: 'standard', label: '📅 Стандартное' },
-              { key: 'flexible', label: '✨ Гибкое' }
+              { key: 'standard', label: 'Стандартное' },
+              { key: 'flexible', label: 'Гибкое' }
             ].map(t => (
               <button key={t.key} onClick={() => switchType(t.key)} style={{
                 padding: '9px 20px', borderRadius: 10, border: 'none',
@@ -256,7 +259,8 @@ export default function Schedule() {
 
           {/* Standard schedule */}
           {scheduleType === 'standard' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 24 }}>
               {DAYS.map(day => {
                 const slot = schedule.find(s => s.day_of_week === day.id)
                 return (
@@ -281,10 +285,7 @@ export default function Schedule() {
                     </div>
 
                     {/* Day name */}
-                    <div style={{ width: 32, fontSize: 13, fontWeight: 700, color: '#888' }}>
-                      {day.name}
-                    </div>
-                    <div style={{ width: 110, fontSize: 14, fontWeight: 600, color: slot.is_active ? '#111' : '#aaa' }}>
+                    <div style={{ width: 130, fontSize: 14, fontWeight: 600, color: slot.is_active ? '#111' : '#aaa' }}>
                       {day.full}
                     </div>
 
@@ -310,6 +311,7 @@ export default function Schedule() {
                   </div>
                 )
               })}
+              </div>
             </div>
           )}
 
