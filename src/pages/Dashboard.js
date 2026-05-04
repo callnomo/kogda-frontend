@@ -5,6 +5,14 @@ import { User, Clock, BookOpen, Settings, Copy, Trash2, Plus, Check, ExternalLin
 
 const API = 'https://kogda-backend-production.up.railway.app'
 
+const hideArrows = `
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+`
+
 const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
 const MONTHS_SHORT = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек']
 const DAYS_SHORT = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
@@ -57,7 +65,7 @@ const ServiceForm = ({ formData, setFormData, onSubmit, onCancel, showAdv, setSh
       <div style={{ marginBottom: 20 }}>
         <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Цена (₽)</label>
         <input type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})}
-          placeholder="0 - бесплатно" style={inputStyle} />
+          placeholder="0 - бесплатно" min="0" style={{ ...inputStyle, MozAppearance: 'textfield' }} />
       </div>
       <div style={{ borderTop: '1px solid #F0EFE9', paddingTop: 16, marginBottom: 20 }}>
         <button type="button" onClick={() => setShowAdv(!showAdv)} style={{
@@ -243,6 +251,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F7F6F1', fontFamily: 'Inter, sans-serif' }}>
+      <style>{hideArrows}</style>
       <div style={{ background: '#fff', borderBottom: '1px solid #E8E7E0', padding: '16px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, fontFamily: 'Syne, sans-serif' }}>
           kog<span style={{ background: '#E8FF47', padding: '0 6px', borderRadius: 6 }}>DA</span>
