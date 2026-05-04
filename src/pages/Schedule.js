@@ -80,7 +80,7 @@ export default function Schedule() {
 
   const toggleOverride = async (date) => {
     const token = localStorage.getItem('token')
-    const existing = overrides.find(o => o.date.startsWith(date))
+    const existing = overrides.find(o => o.date.slice(0, 10) === date)
     try {
       if (existing) {
         await axios.delete(`${API}/schedule/overrides/${existing.id}`, { headers: { Authorization: `Bearer ${token}` } })
@@ -351,7 +351,7 @@ export default function Schedule() {
                     const isPast = dateObj < new Date().setHours(0,0,0,0)
                     const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year
                     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
-                    const isClosed = overrides.some(o => o.date.startsWith(dateStr))
+                    const isClosed = overrides.some(o => o.date.slice(0, 10) === dateStr)
                     return (
                       <div key={day} onClick={() => !isPast && toggleOverride(dateStr)}
                         title={isClosed ? 'Нажми чтобы открыть день' : 'Нажми чтобы закрыть день'}
@@ -375,8 +375,8 @@ export default function Schedule() {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {overrides.map(o => (
                         <div key={o.id} style={{ background: '#FEE2E2', color: '#DC2626', fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          {new Date(o.date + 'T12:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-                          <span onClick={() => toggleOverride(o.date.split('T')[0])} style={{ cursor: 'pointer', opacity: 0.6 }}>✕</span>
+                          {new Date(o.date.slice(0, 10) + 'T12:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                          <span onClick={() => toggleOverride(o.date.slice(0, 10))} style={{ cursor: 'pointer', opacity: 0.6 }}>✕</span>
                         </div>
                       ))}
                     </div>
