@@ -109,8 +109,18 @@ export default function Schedule() {
 
   const addFlexSlot = async () => {
     if (!selectedDate) return
-    const token = localStorage.getItem('token')
     const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`
+    
+    // Проверка на дубликат
+    const isDuplicate = selectedSlots.some(s => s.start_time === newSlot.start_time && s.end_time === newSlot.end_time)
+    if (isDuplicate) return
+
+    // Проверка что end_time > start_time
+    const [sh, sm] = newSlot.start_time.split(':').map(Number)
+    const [eh, em] = newSlot.end_time.split(':').map(Number)
+    if (eh * 60 + em <= sh * 60 + sm) return
+
+    const token = localStorage.getItem('token')
     try {
       await axios.post(`${API}/schedule/flexible`, { date: dateStr, ...newSlot }, { headers: { Authorization: `Bearer ${token}` } })
       loadFlexSlots()
