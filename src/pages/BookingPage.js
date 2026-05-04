@@ -39,7 +39,8 @@ export default function BookingPage() {
   const loadSlots = async (date) => {
     try {
       const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
-      const res = await axios.get(`${API}/schedule/slots/${slug}?date=${dateStr}`)
+      const meetingId = selectedMeeting?.id || ''
+      const res = await axios.get(`${API}/schedule/slots/${slug}?date=${dateStr}&meeting_type_id=${meetingId}`)
       setSlots(res.data.slots || [])
     } catch (err) {
       setSlots([])
