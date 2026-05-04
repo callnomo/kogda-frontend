@@ -59,6 +59,7 @@ export default function Schedule() {
   const [newSlot, setNewSlot] = useState({ start_time: '09:00', end_time: '18:00' })
   const [showAddSlot, setShowAddSlot] = useState(false)
   const [slotError, setSlotError] = useState('')
+  const [overrides, setOverrides] = useState([]) // закрытые даты
 
   useEffect(() => {
     const u = localStorage.getItem('user')
@@ -66,7 +67,31 @@ export default function Schedule() {
     loadScheduleType()
     loadSchedule()
     loadFlexSlots()
+    loadOverrides()
   }, [])
+
+  const loadOverrides = async () => {
+    const token = localStorage.getItem('token')
+    try {
+      const res = await axios.get(`${API}/schedule/overrides`, { headers: { Authorization: `Bearer ${token}` } })
+      setOverrides(res.data)
+    } catch (err) { console.error(err) }
+  }
+
+  const toggleOverride = async (date) => {
+    const token = localStorage.getItem('token')
+    const existing = overrides.find(o => o.date.startsWith(date))
+    try {
+      if (existing) {
+        await axios.delete(`${API}/schedule/overrides/${existing.id}`, { headers: { Authorization: `Bearer ${token}` } })
+      } else {
+        await axios.post(`${API}/schedule/overrides`, { date, is_available: false }, { headers: { Authorization: `Bearer ${token}` } })
+      }
+      loadOverrides()
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2500)
+    } catch (err) { console.error(err) }
+  }
 
   const loadScheduleType = async () => {
     const token = localStorage.getItem('token')
@@ -253,7 +278,8 @@ export default function Schedule() {
 
           {/* STANDARD */}
           {scheduleType === 'standard' && (
-            <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #E8E7E0', overflow: 'hidden', maxWidth: 620 }}>
+            <div>
+              <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #E8E7E0', overflow: 'hidden', maxWidth: 620 }}>
               {DAYS.map((day, idx) => {
                 const slot = schedule.find(s => s.day_of_week === day.id)
                 return (
@@ -299,6 +325,64 @@ export default function Schedule() {
                   </div>
                 )
               })}
+              </div>
+
+              {/* Исключения — закрытые даты */}
+              <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #E8E7E0', padding: '22px', marginTop: 16, maxWidth: 620 }}>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700 }}>Выходные дни</div>
+                  <div style={{ fontSize: 13, color: '#aaa', marginTop: 4 }}>Закрой конкретные даты — например праздники или отпуск</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <button onClick={() => setCurrentDate(new Date(year, month-1, 1))} style={{ background: 'none', border: '1.5px solid #E8E7E0', width: 30, height: 30, borderRadius: 8, cursor: 'pointer', fontSize: 15, color: '#888' }}>‹</button>
+                  <span style={{ fontSize: 14, fontWeight: 700 }}>{MONTHS[month]} {year}</span>
+                  <button onClick={() => setCurrentDate(new Date(year, month+1, 1))} style={{ background: 'none', border: '1.5px solid #E8E7E0', width: 30, height: 30, borderRadius: 8, cursor: 'pointer', fontSize: 15, color: '#888' }}>›</button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 6 }}>
+                  {DAYS_SHORT.map(d => (
+                    <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#ccc', padding: '3px 0', textTransform: 'uppercase', letterSpacing: 0.5 }}>{d}</div>
+                  ))}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
+                  {Array(firstDay).fill(null).map((_,i) => <div key={i} />)}
+                  {Array(daysInMonth).fill(null).map((_,i) => {
+                    const day = i + 1
+                    const dateObj = new Date(year, month, day)
+                    const isPast = dateObj < new Date().setHours(0,0,0,0)
+                    const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year
+                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+                    const isClosed = overrides.some(o => o.date.startsWith(dateStr))
+                    return (
+                      <div key={day} onClick={() => !isPast && toggleOverride(dateStr)}
+                        title={isClosed ? 'Нажми чтобы открыть день' : 'Нажми чтобы закрыть день'}
+                        style={{
+                          textAlign: 'center', padding: '7px 2px', borderRadius: 8,
+                          cursor: isPast ? 'default' : 'pointer',
+                          background: isClosed ? '#FEE2E2' : isToday ? '#E8FF47' : 'transparent',
+                          color: isClosed ? '#DC2626' : isPast ? '#ddd' : '#111',
+                          fontWeight: isClosed || isToday ? 700 : 400,
+                          fontSize: 13, transition: 'all 0.15s',
+                          textDecoration: isClosed ? 'line-through' : 'none'
+                        }}>
+                        {day}
+                      </div>
+                    )
+                  })}
+                </div>
+                {overrides.length > 0 && (
+                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #F5F4F0' }}>
+                    <div style={{ fontSize: 12, color: '#aaa', marginBottom: 8, fontWeight: 600 }}>Закрытые дни:</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {overrides.map(o => (
+                        <div key={o.id} style={{ background: '#FEE2E2', color: '#DC2626', fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {new Date(o.date + 'T12:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                          <span onClick={() => toggleOverride(o.date.split('T')[0])} style={{ cursor: 'pointer', opacity: 0.6 }}>✕</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
