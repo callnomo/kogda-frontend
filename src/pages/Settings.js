@@ -258,11 +258,16 @@ export default function Settings() {
 
   const NotificationsSection = () => {
     const NotifIcon = ({ name }) => {
-      const s = { width: 24, height: 24, flexShrink: 0 }
-      if (name === 'telegram') return <svg {...s} viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.7 8.02c-.12.58-.46.72-.93.45l-2.57-1.89-1.24 1.19c-.14.14-.26.26-.53.26l.19-2.64 4.83-4.37c.21-.19-.05-.29-.32-.1l-5.97 3.76-2.57-.8c-.56-.18-.57-.56.12-.83l10.01-3.86c.47-.17.88.11.68.81z" fill="#229ED9"/></svg>
-      if (name === 'email') return <svg {...s} viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="#888"/></svg>
-      if (name === 'whatsapp') return <svg {...s} viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="#25D366"/><path d="M12.001 2.002c-5.522 0-9.999 4.477-9.999 9.999 0 1.869.518 3.614 1.415 5.115L2 22l5.015-1.386A9.948 9.948 0 0012 22c5.522 0 10-4.477 10-9.999s-4.478-9.999-10-9.999z" fill="none" stroke="#25D366" strokeWidth="1.5"/></svg>
-      return <svg {...s} viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#888" strokeWidth="1.5"/><path d="M8 12h8M12 8v8" stroke="#888" strokeWidth="1.5"/></svg>
+      const s = { width: 24, height: 24, flexShrink: 0, objectFit: 'contain' }
+      const urls = {
+        telegram: 'https://cdn.simpleicons.org/telegram/229ED9',
+        email: null,
+        whatsapp: 'https://cdn.simpleicons.org/whatsapp/25D366',
+        max: null,
+      }
+      if (urls[name]) return <img src={urls[name]} alt={name} style={s} />
+      if (name === 'email') return <svg width="24" height="24" viewBox="0 0 24 24" style={{ flexShrink: 0 }}><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="#888"/></svg>
+      return <svg width="24" height="24" viewBox="0 0 24 24" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10" fill="none" stroke="#ccc" strokeWidth="1.5"/><path d="M8 12h8M12 8v8" stroke="#ccc" strokeWidth="1.5"/></svg>
     }
 
     return (
@@ -378,17 +383,19 @@ export default function Settings() {
   const IntegrationsSection = () => {
     // Чистые SVG иконки без кружков — единый размер 24x24
     const Icon = ({ name }) => {
-      const s = { width: 24, height: 24, flexShrink: 0 }
-      if (name === 'telegram') return <svg {...s} viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.7 8.02c-.12.58-.46.72-.93.45l-2.57-1.89-1.24 1.19c-.14.14-.26.26-.53.26l.19-2.64 4.83-4.37c.21-.19-.05-.29-.32-.1l-5.97 3.76-2.57-.8c-.56-.18-.57-.56.12-.83l10.01-3.86c.47-.17.88.11.68.81z" fill="#229ED9"/></svg>
-      if (name === 'google') return <svg {...s} viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-      if (name === 'apple') return <svg {...s} viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-      if (name === 'yandex') return <svg {...s} viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#FC3F1D"/><path d="M13.4 6H12C10.3 6 9.2 6.9 9.2 8.5c0 1.4.6 2.2 1.9 3L12.3 12.5 9.2 18h1.9l2.8-5.3-1-.7c-.9-.7-1.3-1.2-1.3-2.4 0-.9.5-1.6 1.6-1.6H14V18h1.6V6h-2.2z" fill="white"/></svg>
-      if (name === 'zoom') return <svg {...s} viewBox="0 0 24 24"><path d="M24 12c0 6.627-5.373 12-12 12S0 18.627 0 12 5.373 0 12 0s12 5.373 12 12z" fill="#2D8CFF"/><path d="M5 9.5C5 8.67 5.67 8 6.5 8h7c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5h-7C5.67 16 5 15.33 5 14.5v-5zm10 1.25l3.5-2.25v5L15 11.25v-0.5z" fill="white"/></svg>
-      if (name === 'meet') return <svg {...s} viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="#00BFA5"/><path d="M15 10l5-3v10l-5-3v-4z" fill="#00897B"/></svg>
-      if (name === 'telemost') return <svg {...s} viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#FC3F1D"/><rect x="5" y="8" width="9" height="8" rx="1" fill="white"/><path d="M14 10l5-3v10l-5-3v-4z" fill="white"/></svg>
-      if (name === 'jitsi') return <svg {...s} viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#97D700"/><text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="900" fill="#fff">Jitsi</text></svg>
-      if (name === 'kogda') return <svg {...s} viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#E8FF47"/><text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="900" fill="#111">kD</text></svg>
-      return null
+      const s = { width: 24, height: 24, flexShrink: 0, objectFit: 'contain' }
+      const urls = {
+        telegram: 'https://cdn.simpleicons.org/telegram/229ED9',
+        google: 'https://cdn.simpleicons.org/googlecalendar',
+        apple: 'https://cdn.simpleicons.org/apple/000000',
+        yandex: 'https://cdn.simpleicons.org/yandex/FC3F1D',
+        zoom: 'https://cdn.simpleicons.org/zoom/2D8CFF',
+        meet: 'https://cdn.simpleicons.org/googlemeet',
+        telemost: 'https://cdn.simpleicons.org/yandex/FC3F1D',
+        jitsi: 'https://cdn.simpleicons.org/jitsi/1AA0E8',
+      }
+      if (urls[name]) return <img src={urls[name]} alt={name} style={s} />
+      return <svg width="24" height="24" viewBox="0 0 24 24" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="11" fill="#E8FF47"/><text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="900" fill="#111">kD</text></svg>
     }
 
     const rows = [
