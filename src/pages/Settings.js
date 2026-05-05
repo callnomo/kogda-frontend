@@ -43,7 +43,12 @@ export default function Settings() {
     whatsapp_phone: '',
     max_phone: ''
   })
-  const [saved, setSaved] = useState(false)
+  const [payments, setPayments] = useState({
+    payment_sbp: false, payment_tinkoff: false, payment_sber: false,
+    payment_kaspi: false, payment_paypal: false, payment_wise: false,
+    payment_usdt: false, payment_bank: false, payment_other: ''
+  })
+  const [paymentSaved, setPaymentSaved] = useState(false)
   const [notifSaved, setNotifSaved] = useState(false)
   const [telegramLink, setTelegramLink] = useState(null)
   const [telegramConnected, setTelegramConnected] = useState(false)
@@ -70,6 +75,17 @@ export default function Settings() {
         whatsapp_phone: res.data.whatsapp_phone || '',
         max_phone: res.data.max_phone || ''
       })
+      setPayments({
+        payment_sbp: res.data.payment_sbp ?? false,
+        payment_tinkoff: res.data.payment_tinkoff ?? false,
+        payment_sber: res.data.payment_sber ?? false,
+        payment_kaspi: res.data.payment_kaspi ?? false,
+        payment_paypal: res.data.payment_paypal ?? false,
+        payment_wise: res.data.payment_wise ?? false,
+        payment_usdt: res.data.payment_usdt ?? false,
+        payment_bank: res.data.payment_bank ?? false,
+        payment_other: res.data.payment_other || ''
+      })
     } catch (err) { console.error(err) }
   }
 
@@ -84,6 +100,15 @@ export default function Settings() {
     } catch (err) {
       alert(err.response?.data?.error || 'Ошибка сохранения')
     }
+  }
+
+  const savePayments = async () => {
+    const token = localStorage.getItem('token')
+    try {
+      await axios.patch(`${API}/settings/payments`, payments, { headers: { Authorization: `Bearer ${token}` } })
+      setPaymentSaved(true)
+      setTimeout(() => setPaymentSaved(false), 3000)
+    } catch (err) { console.error(err) }
   }
 
   const saveNotifications = async () => {
@@ -271,6 +296,57 @@ export default function Settings() {
               fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'background 0.3s'
             }}>
               {notifSaved ? '✓ Сохранено!' : 'Сохранить'}
+            </button>
+          </div>
+
+          {/* Способы оплаты */}
+          <div style={{ background: '#fff', borderRadius: 20, padding: '28px', border: '1px solid #E8E7E0', marginBottom: 20 }}>
+            <div style={{ marginBottom: 20 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>Способы оплаты</h3>
+              <p style={{ color: '#888', fontSize: 13, margin: 0 }}>Отметь как клиенты могут оплатить сессию. Реквизиты отправляй сам в Telegram после бронирования.</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+              {[
+                { key: 'payment_sbp', label: 'СБП' },
+                { key: 'payment_tinkoff', label: 'Тинькофф' },
+                { key: 'payment_sber', label: 'Сбербанк' },
+                { key: 'payment_kaspi', label: 'Kaspi' },
+                { key: 'payment_paypal', label: 'PayPal' },
+                { key: 'payment_wise', label: 'Wise' },
+                { key: 'payment_usdt', label: 'USDT (крипто)' },
+                { key: 'payment_bank', label: 'Банковский перевод' },
+              ].map(p => (
+                <div key={p.key} onClick={() => setPayments({...payments, [p.key]: !payments[p.key]})}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '11px 14px', borderRadius: 10, cursor: 'pointer',
+                    border: `1.5px solid ${payments[p.key] ? '#111' : '#E8E7E0'}`,
+                    background: payments[p.key] ? '#F7F6F1' : '#fff',
+                    transition: 'all 0.15s'
+                  }}>
+                  <div style={{
+                    width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                    background: payments[p.key] ? '#111' : '#fff',
+                    border: `2px solid ${payments[p.key] ? '#111' : '#E0E0D8'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    {payments[p.key] && <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>✓</span>}
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 500 }}>{p.label}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Другое</label>
+              <input value={payments.payment_other} onChange={e => setPayments({...payments, payment_other: e.target.value})}
+                placeholder="Revolut, Stripe, наличные..." style={inputStyle} />
+            </div>
+            <button onClick={savePayments} style={{
+              background: paymentSaved ? '#22C55E' : '#111', color: '#fff',
+              border: 'none', padding: '12px 28px', borderRadius: 10,
+              fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'background 0.3s'
+            }}>
+              {paymentSaved ? '✓ Сохранено!' : 'Сохранить'}
             </button>
           </div>
 
