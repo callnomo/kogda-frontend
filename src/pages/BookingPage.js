@@ -350,6 +350,7 @@ export default function BookingPage() {
                               Далее →
                             </button>
                           </div>
+                        )}
                       </>
                     ) : (
                       <div style={{ fontSize: 13, color: '#888', textAlign: 'center', padding: '20px 0' }}>
