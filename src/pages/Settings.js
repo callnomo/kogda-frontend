@@ -193,11 +193,7 @@ export default function Settings() {
               )}
             </div>
 
-            {telegramConnected ? (
-              <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 10, padding: '12px 16px', fontSize: 14, color: '#16A34A' }}>
-                Telegram подключён! Уведомления приходят в бот.
-              </div>
-            ) : telegramLink ? (
+            {telegramConnected ? null : telegramLink ? (
               <div>
                 <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 10, padding: '12px 16px', marginBottom: 12, fontSize: 14, color: '#92400E' }}>
                   Нажми кнопку ниже и нажми START в Telegram
@@ -228,30 +224,6 @@ export default function Settings() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-              {/* Telegram */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 20 }}>✈️</span>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>Telegram</div>
-                    <div style={{ fontSize: 12, color: '#888' }}>Мгновенные уведомления в бот</div>
-                  </div>
-                </div>
-                <Toggle value={notifications.notify_telegram} onChange={v => setNotifications({...notifications, notify_telegram: v})} />
-              </div>
-
-              {/* Email */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Mail size={20} color="#888" />
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>Email</div>
-                    <div style={{ fontSize: 12, color: '#888' }}>Уведомления на почту</div>
-                  </div>
-                </div>
-                <Toggle value={notifications.notify_email} onChange={v => setNotifications({...notifications, notify_email: v})} />
-              </div>
 
               {/* WhatsApp */}
               <div>
@@ -302,45 +274,58 @@ export default function Settings() {
 
           {/* Способы оплаты */}
           <div style={{ background: '#fff', borderRadius: 20, padding: '28px', border: '1px solid #E8E7E0', marginBottom: 20 }}>
-            <div style={{ marginBottom: 20 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>Способы оплаты</h3>
-              <p style={{ color: '#888', fontSize: 13, margin: 0 }}>Отметь как клиенты могут оплатить сессию. Реквизиты отправляй сам в Telegram после бронирования.</p>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-              {[
-                { key: 'payment_sbp', label: 'СБП' },
-                { key: 'payment_tinkoff', label: 'Тинькофф' },
-                { key: 'payment_sber', label: 'Сбербанк' },
-                { key: 'payment_kaspi', label: 'Kaspi' },
-                { key: 'payment_paypal', label: 'PayPal' },
-                { key: 'payment_wise', label: 'Wise' },
-                { key: 'payment_usdt', label: 'USDT (крипто)' },
-                { key: 'payment_bank', label: 'Банковский перевод' },
-              ].map(p => (
-                <div key={p.key} onClick={() => setPayments({...payments, [p.key]: !payments[p.key]})}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '11px 14px', borderRadius: 10, cursor: 'pointer',
-                    border: `1.5px solid ${payments[p.key] ? '#111' : '#E8E7E0'}`,
-                    background: payments[p.key] ? '#F7F6F1' : '#fff',
-                    transition: 'all 0.15s'
-                  }}>
-                  <div style={{
-                    width: 18, height: 18, borderRadius: 4, flexShrink: 0,
-                    background: payments[p.key] ? '#111' : '#fff',
-                    border: `2px solid ${payments[p.key] ? '#111' : '#E0E0D8'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
-                    {payments[p.key] && <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>✓</span>}
-                  </div>
-                  <span style={{ fontSize: 14, fontWeight: 500 }}>{p.label}</span>
-                </div>
-              ))}
-            </div>
             <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Другое</label>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>Способы оплаты</h3>
+              <p style={{ fontSize: 13, color: '#888', margin: 0 }}>Укажите доступные способы оплаты — клиент увидит их перед записью.</p>
+            </div>
+            <div style={{ background: '#F7F6F1', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#888', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+              🔒 Мы не храним платёжные реквизиты. Клиент увидит только доступные способы оплаты.
+            </div>
+            {[
+              { group: 'Популярные', items: [
+                { key: 'payment_bank', label: 'Банковская карта', icon: '💳' },
+                { key: 'payment_paypal', label: 'PayPal', icon: '🅿️' },
+                { key: 'payment_wise', label: 'Wise', icon: '🌍' },
+                { key: 'payment_usdt', label: 'USDT', icon: '🔶' },
+              ]},
+              { group: 'Россия', items: [
+                { key: 'payment_sbp', label: 'СБП', icon: '⚡' },
+                { key: 'payment_sber', label: 'Сбербанк', icon: '🟢' },
+                { key: 'payment_tinkoff', label: 'Т-Банк', icon: '🟡' },
+              ]},
+              { group: 'Казахстан', items: [
+                { key: 'payment_kaspi', label: 'Kaspi', icon: '🔴' },
+              ]},
+            ].map(group => (
+              <div key={group.group} style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{group.group}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {group.items.map(p => {
+                    const sel = payments[p.key]
+                    return (
+                      <div key={p.key} onClick={() => setPayments({...payments, [p.key]: !payments[p.key]})}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
+                          border: `1.5px solid ${sel ? '#111' : '#E8E7E0'}`,
+                          background: sel ? '#F7F6F1' : '#fff',
+                          transition: 'all 0.15s'
+                        }}>
+                        <span style={{ fontSize: 18 }}>{p.icon}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{p.label}</span>
+                        {sel && <div style={{ width: 18, height: 18, borderRadius: 9, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ color: '#fff', fontSize: 10, fontWeight: 700 }}>✓</span>
+                        </div>}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Другое</div>
               <input value={payments.payment_other} onChange={e => setPayments({...payments, payment_other: e.target.value})}
-                placeholder="Revolut, Stripe, наличные..." style={inputStyle} />
+                placeholder="Revolut, Stripe, наличные, свой способ..." style={inputStyle} />
             </div>
             <button onClick={savePayments} style={{
               background: paymentSaved ? '#22C55E' : '#111', color: '#fff',
