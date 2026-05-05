@@ -49,6 +49,7 @@ export default function Settings() {
     payment_usdt: false, payment_bank: false, payment_other: ''
   })
   const [paymentSaved, setPaymentSaved] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [notifSaved, setNotifSaved] = useState(false)
   const [telegramLink, setTelegramLink] = useState(null)
   const [telegramConnected, setTelegramConnected] = useState(false)
