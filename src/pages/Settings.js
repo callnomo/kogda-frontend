@@ -383,19 +383,19 @@ export default function Settings() {
   const IntegrationsSection = () => {
     // Чистые SVG иконки без кружков — единый размер 24x24
     const Icon = ({ name }) => {
-      const s = { width: 24, height: 24, flexShrink: 0, objectFit: 'contain' }
+      const s = { width: 28, height: 28, flexShrink: 0, objectFit: 'contain', borderRadius: 6 }
       const urls = {
         telegram: 'https://cdn.simpleicons.org/telegram/229ED9',
-        google: 'https://cdn.simpleicons.org/googlecalendar',
+        google: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg',
         apple: 'https://cdn.simpleicons.org/apple/000000',
-        yandex: 'https://cdn.simpleicons.org/yandex/FC3F1D',
-        zoom: 'https://cdn.simpleicons.org/zoom/2D8CFF',
-        meet: 'https://cdn.simpleicons.org/googlemeet',
-        telemost: 'https://cdn.simpleicons.org/yandex/FC3F1D',
-        jitsi: 'https://cdn.simpleicons.org/jitsi/1AA0E8',
+        yandex: 'https://upload.wikimedia.org/wikipedia/commons/9/91/Yandex_Calendar_icon.svg',
+        zoom: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Zoom_Logo_2022.svg/1200px-Zoom_Logo_2022.svg.png',
+        meet: 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg',
+        telemost: 'https://yastatic.net/s3/home-static/_/37/37a921a64ba327a62f35d50f270fd2a3.png',
+        jitsi: 'https://desktop.jitsi.org/assets/img/jitsi-icon-blue.png',
       }
       if (urls[name]) return <img src={urls[name]} alt={name} style={s} />
-      return <svg width="24" height="24" viewBox="0 0 24 24" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="11" fill="#E8FF47"/><text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="900" fill="#111">kD</text></svg>
+      return <svg width="28" height="28" viewBox="0 0 24 24" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="11" fill="#E8FF47"/><text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="900" fill="#111">kD</text></svg>
     }
 
     const rows = [
