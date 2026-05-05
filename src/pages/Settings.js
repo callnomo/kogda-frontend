@@ -208,71 +208,123 @@ export default function Settings() {
     </div>
   )
 
-  const PaymentsSection = () => (
-    <div>
-      <p style={{ fontSize: 13, color: '#888', margin: '0 0 16px' }}>Выберите способы, которыми вы принимаете оплату напрямую. Клиент увидит их при бронировании.</p>
-      <div style={{ background: '#F7F6F1', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#888', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
-        🔒 kogDA не принимает платежи и не хранит реквизиты. Детали оплаты вы согласуете с клиентом напрямую.
-      </div>
+  const PaymentsSection = () => {
+    const [showBankDetails, setShowBankDetails] = useState(payments.payment_tinkoff)
 
-      {[
-        { group: 'Россия', items: [
-          { key: 'payment_sbp', label: 'СБП', desc: 'Быстрые платежи', icon: <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1DB954"/><text x="12" y="16" textAnchor="middle" fontSize="9" fontWeight="800" fill="white">СБП</text></svg> },
-          { key: 'payment_tinkoff', label: 'Российский банк', desc: 'Сбер, Т-Банк, Альфа, ВТБ...', icon: <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#111"/><text x="12" y="16" textAnchor="middle" fontSize="9" fontWeight="800" fill="white">RU</text></svg> },
-        ]},
-        { group: 'Международные', items: [
-          { key: 'payment_paypal', label: 'PayPal', desc: '', icon: <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="12" fill="#003087"/><path d="M8 7h5c2.5 0 4 1.2 3.5 3.5-.5 2-2.5 3-4.5 3H10l-1 4H6.5L8 7z" fill="#009cde"/><path d="M9.5 10h3.5c1.5 0 2 .8 1.7 2-.3 1.2-1.5 1.8-2.7 1.8H9.5l.7-3.8H9.5z" fill="white"/></svg> },
-          { key: 'payment_wise', label: 'Wise', desc: '', icon: <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#9FE870"/><text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="900" fill="#111">WISE</text></svg> },
-          { key: 'payment_bank', label: 'Банковский перевод', desc: 'IBAN / SWIFT', icon: <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#6366F1"/><text x="12" y="16" textAnchor="middle" fontSize="9" fontWeight="800" fill="white">$</text></svg> },
-          { key: 'payment_usdt', label: 'USDT', desc: 'Крипто', icon: <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#26A17B"/><text x="12" y="16" textAnchor="middle" fontSize="9" fontWeight="800" fill="white">₮</text></svg> },
-        ]},
-      ].map(group => (
-        <div key={group.group} style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{group.group}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {group.items.map(p => {
-              const sel = payments[p.key]
-              return (
-                <div key={p.key} onClick={() => setPayments({...payments, [p.key]: !payments[p.key]})}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
-                    border: `1.5px solid ${sel ? '#111' : '#E8E7E0'}`,
-                    background: sel ? '#F7F6F1' : '#fff',
-                    transition: 'all 0.15s'
-                  }}>
-                  {p.icon}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{p.label}</div>
-                    {p.desc && <div style={{ fontSize: 12, color: '#aaa' }}>{p.desc}</div>}
-                  </div>
-                  {sel && <div style={{ width: 20, height: 20, borderRadius: 10, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>✓</span>
-                  </div>}
-                </div>
-              )
-            })}
-          </div>
+    const togglePayment = (key) => {
+      const newVal = !payments[key]
+      setPayments({...payments, [key]: newVal})
+      if (key === 'payment_tinkoff') setShowBankDetails(newVal)
+    }
+
+    const PAYMENT_GROUPS = [
+      { group: 'Россия', items: [
+        { key: 'payment_sbp', label: 'СБП', desc: 'Быстрые переводы по номеру телефона' },
+        { key: 'payment_tinkoff', label: 'Российская карта / банк', desc: 'Сбер, Т-Банк, Альфа, ВТБ и др.' },
+      ]},
+      { group: 'Международные', items: [
+        { key: 'payment_paypal', label: 'PayPal', desc: '' },
+        { key: 'payment_wise', label: 'Wise', desc: '' },
+        { key: 'payment_sber', label: 'Revolut', desc: '' },
+        { key: 'payment_bank', label: 'Банковский перевод', desc: 'IBAN / SWIFT' },
+      ]},
+      { group: 'Крипто', items: [
+        { key: 'payment_usdt', label: 'USDT', desc: 'Крипто' },
+      ]},
+    ]
+
+    const BANKS = ['Сбербанк', 'Т-Банк', 'Альфа-Банк', 'ВТБ', 'Райффайзен', 'Газпромбанк']
+
+    return (
+      <div>
+        <p style={{ fontSize: 13, color: '#888', margin: '0 0 16px' }}>Выберите способы, которыми вы принимаете оплату напрямую. Клиент увидит их при бронировании.</p>
+        <div style={{ background: '#F7F6F1', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#888', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+          🔒 kogDA не принимает платежи и не хранит реквизиты. Детали оплаты вы согласуете с клиентом напрямую.
         </div>
-      ))}
 
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Не нашли нужный способ?</div>
-        <p style={{ fontSize: 12, color: '#aaa', margin: '0 0 8px' }}>Добавьте свой способ оплаты вручную.</p>
-        <input value={payments.payment_other} onChange={e => setPayments({...payments, payment_other: e.target.value})}
-          placeholder="Например: Kaspi, Zelle, Venmo, Pix, UPI, PromptPay, наличные..."
-          style={inp} />
+        {PAYMENT_GROUPS.map(group => (
+          <div key={group.group} style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{group.group}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 8 }}>
+              {group.items.map(p => {
+                const sel = payments[p.key]
+                return (
+                  <div key={p.key}>
+                    <div onClick={() => togglePayment(p.key)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 14,
+                        padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
+                        border: `1.5px solid ${sel ? '#111' : '#E8E7E0'}`,
+                        background: sel ? '#F7F6F1' : '#fff',
+                        transition: 'all 0.15s'
+                      }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600 }}>{p.label}</div>
+                        {p.desc && <div style={{ fontSize: 12, color: '#aaa', marginTop: 2 }}>{p.desc}</div>}
+                      </div>
+                      <div style={{
+                        width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+                        background: sel ? '#111' : '#fff',
+                        border: `2px solid ${sel ? '#111' : '#E0E0D8'}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}>
+                        {sel && <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>✓</span>}
+                      </div>
+                    </div>
+
+                    {/* Раскрывающийся блок банков */}
+                    {p.key === 'payment_tinkoff' && sel && (
+                      <div style={{ margin: '8px 0 4px', padding: '14px 16px', background: '#F7F6F1', borderRadius: 12, border: '1px solid #E8E7E0' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Уточните банк, если хотите</div>
+                        <div style={{ fontSize: 12, color: '#aaa', marginBottom: 12 }}>Это поможет клиенту понять, удобно ли ему оплатить.</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {BANKS.map(bank => {
+                            const bankKey = `bank_${bank}`
+                            const bankSel = payments.payment_other?.includes(bank)
+                            return (
+                              <div key={bank} onClick={() => {
+                                const current = payments.payment_other || ''
+                                const newVal = bankSel
+                                  ? current.replace(bank, '').replace(/,\s*,/g, ',').replace(/^,|,$/g, '').trim()
+                                  : current ? `${current}, ${bank}` : bank
+                                setPayments({...payments, payment_other: newVal})
+                              }} style={{
+                                padding: '6px 12px', borderRadius: 100, cursor: 'pointer', fontSize: 13,
+                                border: `1.5px solid ${bankSel ? '#111' : '#E0E0D8'}`,
+                                background: bankSel ? '#111' : '#fff',
+                                color: bankSel ? '#fff' : '#111',
+                                fontWeight: bankSel ? 600 : 400, transition: 'all 0.15s'
+                              }}>{bank}</div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Не нашли нужный способ?</div>
+          <div style={{ fontSize: 12, color: '#aaa', marginBottom: 8 }}>Добавьте свой способ оплаты вручную.</div>
+          <input value={payments.payment_kaspi} onChange={e => setPayments({...payments, payment_kaspi: e.target.value})}
+            placeholder="Например: Kaspi, Zelle, Venmo, Pix, UPI, PromptPay, Stripe, наличные..."
+            style={inp} />
+        </div>
+
+        <button onClick={savePayments} style={{
+          background: paymentSaved ? '#22C55E' : '#111', color: '#fff',
+          border: 'none', padding: '13px 28px', borderRadius: 10,
+          fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'background 0.3s'
+        }}>
+          {paymentSaved ? '✓ Сохранено!' : 'Сохранить способы оплаты'}
+        </button>
       </div>
-
-      <button onClick={savePayments} style={{
-        background: paymentSaved ? '#22C55E' : '#111', color: '#fff',
-        border: 'none', padding: '13px 28px', borderRadius: 10,
-        fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'background 0.3s'
-      }}>
-        {paymentSaved ? '✓ Сохранено!' : 'Сохранить способы оплаты'}
-      </button>
-    </div>
-  )
+    )
+  }
 
   const IntegrationsSection = () => {
     const ServiceIcon = ({ name }) => {
