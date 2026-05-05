@@ -297,6 +297,13 @@ export default function BookingPage() {
                         )
                       })}
                     </div>
+                    <div style={{ marginTop: 16 }}>
+                      <button onClick={() => { setStep(1); setSelectedDate(null); setSelectedSlot(null); setSlots([]) }} style={{
+                        padding: '10px', borderRadius: 10, textAlign: 'center', width: '100%',
+                        background: '#fff', border: '1.5px solid #E0E0D8',
+                        fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#888'
+                      }}>← Назад</button>
+                    </div>
                   </div>
 
                   {/* Time slots */}
@@ -327,6 +334,21 @@ export default function BookingPage() {
                                 {slot}
                               </div>
                             ))}
+                            <button
+                              onClick={() => setStep(3)}
+                              disabled={!selectedSlot}
+                              style={{
+                                padding: '10px', borderRadius: 10, textAlign: 'center',
+                                background: selectedSlot ? '#111' : '#E8E7E0',
+                                color: selectedSlot ? '#fff' : '#aaa',
+                                border: `1.5px solid ${selectedSlot ? '#111' : '#E0E0D8'}`,
+                                fontSize: 14, fontWeight: 600,
+                                cursor: selectedSlot ? 'pointer' : 'default',
+                                transition: 'all 0.15s'
+                              }}
+                            >
+                              Далее →
+                            </button>
                           </div>
                       </>
                     ) : (
@@ -337,28 +359,7 @@ export default function BookingPage() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <button onClick={() => { setStep(1); setSelectedDate(null); setSelectedSlot(null); setSlots([]) }} style={{
-                    padding: '10px 24px', borderRadius: 10, textAlign: 'center',
-                    background: '#fff', border: '1.5px solid #E0E0D8',
-                    fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#888'
-                  }}>← Назад</button>
-                  <button
-                    onClick={() => setStep(3)}
-                    disabled={!selectedDate || !selectedSlot}
-                    style={{
-                      width: 180, padding: '10px', borderRadius: 10, textAlign: 'center',
-                      background: selectedDate && selectedSlot ? '#111' : '#E8E7E0',
-                      color: selectedDate && selectedSlot ? '#fff' : '#aaa',
-                      border: `1.5px solid ${selectedDate && selectedSlot ? '#111' : '#E0E0D8'}`,
-                      fontSize: 14, fontWeight: 600,
-                      cursor: selectedDate && selectedSlot ? 'pointer' : 'default',
-                      transition: 'all 0.15s'
-                    }}
-                  >
-                    Далее →
-                  </button>
-                </div>
+
               </div>
             )}
 
