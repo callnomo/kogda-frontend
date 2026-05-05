@@ -300,17 +300,18 @@ export default function Settings() {
           <div style={{ background: '#fff', borderRadius: 20, padding: '28px', border: '1px solid #E8E7E0', marginBottom: 20 }}>
             <div style={{ marginBottom: 16 }}>
               <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>Способы оплаты</h3>
-              <p style={{ fontSize: 13, color: '#888', margin: 0 }}>Укажите доступные способы оплаты — клиент увидит их перед записью.</p>
+              <p style={{ fontSize: 13, color: '#888', margin: 0 }}>Выберите способы, которыми вы принимаете оплату напрямую. Клиент увидит их при бронировании.</p>
             </div>
             <div style={{ background: '#F7F6F1', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#888', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-              🔒 Мы не храним платёжные реквизиты. Клиент увидит только доступные способы оплаты.
+              🔒 kogDA не принимает платежи и не хранит реквизиты. Детали оплаты вы согласуете с клиентом напрямую.
             </div>
+
             {[
               { group: 'Популярные', items: [
-                { key: 'payment_bank', label: 'Банковская карта', icon: '💳' },
+                { key: 'payment_bank', label: 'Перевод на карту', icon: '💳' },
                 { key: 'payment_paypal', label: 'PayPal', icon: '🅿️' },
                 { key: 'payment_wise', label: 'Wise', icon: '🌍' },
-                { key: 'payment_usdt', label: 'USDT', icon: '🔶' },
+                { key: 'payment_bank_transfer', label: 'Банковский перевод', icon: '🏦' },
               ]},
               { group: 'Россия', items: [
                 { key: 'payment_sbp', label: 'СБП', icon: '⚡' },
@@ -319,6 +320,9 @@ export default function Settings() {
               ]},
               { group: 'Казахстан', items: [
                 { key: 'payment_kaspi', label: 'Kaspi', icon: '🔴' },
+              ]},
+              { group: 'Крипто', items: [
+                { key: 'payment_usdt', label: 'USDT', icon: '🔶' },
               ]},
             ].map(group => (
               <div key={group.group} style={{ marginBottom: 18 }}>
@@ -346,20 +350,21 @@ export default function Settings() {
                 </div>
               </div>
             ))}
-            <div style={{ marginBottom: 16 }}>
+
+            <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Другое</div>
               <input value={payments.payment_other} onChange={e => setPayments({...payments, payment_other: e.target.value})}
-                placeholder="Revolut, Stripe, наличные, свой способ..." style={inputStyle} />
+                placeholder="Revolut, Stripe, наличные, другой способ..." style={inputStyle} />
             </div>
+
             <button onClick={savePayments} style={{
               background: paymentSaved ? '#22C55E' : '#111', color: '#fff',
               border: 'none', padding: '12px 28px', borderRadius: 10,
               fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'background 0.3s'
             }}>
-              {paymentSaved ? '✓ Сохранено!' : 'Сохранить'}
+              {paymentSaved ? '✓ Сохранено!' : 'Сохранить способы оплаты'}
             </button>
           </div>
-
           {/* Profile */}
           <div style={{ background: '#fff', borderRadius: 20, padding: '28px', border: '1px solid #E8E7E0' }}>
             <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Профиль</div>
