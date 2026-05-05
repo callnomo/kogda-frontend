@@ -338,10 +338,11 @@ export default function BookingPage() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+                <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                   <button onClick={() => { setStep(1); setSelectedDate(null); setSelectedSlot(null); setSlots([]) }} style={{
-                    background: 'transparent', border: '1.5px solid #E0E0D8', padding: '14px 24px',
-                    borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer', color: '#888', flexShrink: 0
+                    background: 'transparent', border: '1.5px solid #E0E0D8', padding: '14px 0',
+                    borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer', color: '#888',
+                    width: '48%'
                   }}>← Назад</button>
                   <button
                     onClick={() => setStep(3)}
@@ -349,9 +350,9 @@ export default function BookingPage() {
                     style={{
                       background: selectedDate && selectedSlot ? '#E8FF47' : '#E8E7E0',
                       color: selectedDate && selectedSlot ? '#111' : '#aaa',
-                      border: 'none', padding: '14px 48px', borderRadius: 12,
+                      border: 'none', padding: '14px 0', borderRadius: 12,
                       fontSize: 15, fontWeight: 700, cursor: selectedDate && selectedSlot ? 'pointer' : 'default',
-                      transition: 'all 0.2s'
+                      transition: 'all 0.2s', width: '48%'
                     }}
                   >
                     Далее →
