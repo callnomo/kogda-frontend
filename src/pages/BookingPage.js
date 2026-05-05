@@ -341,15 +341,15 @@ export default function BookingPage() {
                 <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
                   <button onClick={() => { setStep(1); setSelectedDate(null); setSelectedSlot(null); setSlots([]) }} style={{
                     background: 'transparent', border: '1.5px solid #E0E0D8', padding: '14px 24px',
-                    borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer', color: '#888'
+                    borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer', color: '#888', flexShrink: 0
                   }}>← Назад</button>
                   <button
                     onClick={() => setStep(3)}
                     disabled={!selectedDate || !selectedSlot}
                     style={{
-                      flex: 1, background: selectedDate && selectedSlot ? '#E8FF47' : '#E8E7E0',
+                      background: selectedDate && selectedSlot ? '#E8FF47' : '#E8E7E0',
                       color: selectedDate && selectedSlot ? '#111' : '#aaa',
-                      border: 'none', padding: '14px 32px', borderRadius: 12,
+                      border: 'none', padding: '14px 48px', borderRadius: 12,
                       fontSize: 15, fontWeight: 700, cursor: selectedDate && selectedSlot ? 'pointer' : 'default',
                       transition: 'all 0.2s'
                     }}
