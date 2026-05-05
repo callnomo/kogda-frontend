@@ -328,7 +328,6 @@ export default function BookingPage() {
                               </div>
                             ))}
                           </div>
-                        )}
                       </>
                     ) : (
                       <div style={{ fontSize: 13, color: '#888', textAlign: 'center', padding: '20px 0' }}>
@@ -338,11 +337,11 @@ export default function BookingPage() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>
+                <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <button onClick={() => { setStep(1); setSelectedDate(null); setSelectedSlot(null); setSlots([]) }} style={{
-                    width: 180, background: '#fff', border: '1.5px solid #E0E0D8', padding: '10px',
-                    borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#888',
-                    textAlign: 'center'
+                    padding: '10px 24px', borderRadius: 10, textAlign: 'center',
+                    background: '#fff', border: '1.5px solid #E0E0D8',
+                    fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#888'
                   }}>← Назад</button>
                   <button
                     onClick={() => setStep(3)}
@@ -352,8 +351,9 @@ export default function BookingPage() {
                       background: selectedDate && selectedSlot ? '#111' : '#E8E7E0',
                       color: selectedDate && selectedSlot ? '#fff' : '#aaa',
                       border: `1.5px solid ${selectedDate && selectedSlot ? '#111' : '#E0E0D8'}`,
-                      fontSize: 14, fontWeight: 600, cursor: selectedDate && selectedSlot ? 'pointer' : 'default',
-                      transition: 'all 0.2s'
+                      fontSize: 14, fontWeight: 600,
+                      cursor: selectedDate && selectedSlot ? 'pointer' : 'default',
+                      transition: 'all 0.15s'
                     }}
                   >
                     Далее →
