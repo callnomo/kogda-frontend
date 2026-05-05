@@ -251,44 +251,20 @@ export default function Settings() {
           style={{ ...inp, minHeight: 100, resize: 'vertical' }} />
       </div>
       <button type="submit" style={primaryBtn(profileSaved)}>
-        {profileSaved ? '✓ Сохранено!' : 'Сохранить профиль'}
+        {profileSaved ? '✓ Сохранено' : 'Сохранить'}
       </button>
     </form>
   )
 
   const NotificationsSection = () => (
     <div>
-      {/* Telegram connect */}
-      <div style={{ background: '#F7F6F1', borderRadius: 12, padding: '14px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: '#229ED9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>✈️</div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>Telegram бот</div>
-            <div style={{ fontSize: 12, color: '#888' }}>Уведомления о новых записях</div>
-          </div>
-        </div>
-        {telegramConnected
-          ? <div style={{ background: '#DCFCE7', color: '#16A34A', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700 }}>✓ Подключён</div>
-          : <button onClick={connectTelegram} disabled={telegramLoading} style={{ background: '#229ED9', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-              {telegramLoading ? '...' : 'Подключить'}
-            </button>
-        }
-      </div>
-      {telegramLink && !telegramConnected && (
-        <div style={{ padding: '10px 14px', background: '#FFF7ED', borderRadius: 8, fontSize: 13, color: '#92400E', marginBottom: 16 }}>
-          Нажми START в Telegram →{' '}
-          <a href={telegramLink} target="_blank" rel="noreferrer" style={{ color: '#229ED9', fontWeight: 700 }}>Открыть бота</a>
-        </div>
-      )}
-
-      {/* Toggles */}
       <div style={{ marginBottom: 24 }}>
         {[
           { key: 'notify_telegram', icon: '✈️', label: 'Telegram', subtitle: 'Уведомления о новых записях' },
           { key: 'notify_email', icon: '✉️', label: 'Email', subtitle: 'Уведомления на почту' },
           { key: 'notify_whatsapp', icon: '💬', label: 'WhatsApp', subtitle: 'Скоро', disabled: true },
           { key: 'notify_max', icon: '💬', label: 'Макс', subtitle: 'Скоро', disabled: true },
-        ].map((item, i, arr) => (
+        ].map((item) => (
           <Row key={item.key}
             icon={item.icon}
             label={item.label}
@@ -298,9 +274,8 @@ export default function Settings() {
           />
         ))}
       </div>
-
       <button onClick={saveNotifications} style={primaryBtn(notifSaved)}>
-        {notifSaved ? '✓ Сохранено!' : 'Сохранить уведомления'}
+        {notifSaved ? '✓ Сохранено' : 'Сохранить'}
       </button>
     </div>
   )
@@ -377,7 +352,7 @@ export default function Settings() {
       </div>
 
       <button onClick={savePayments} style={primaryBtn(paymentSaved)}>
-        {paymentSaved ? '✓ Сохранено!' : 'Сохранить способы оплаты'}
+        {paymentSaved ? '✓ Сохранено' : 'Сохранить'}
       </button>
     </div>
   )
