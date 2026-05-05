@@ -210,46 +210,44 @@ export default function Settings() {
 
   const PaymentsSection = () => (
     <div>
-      <div style={{ background: '#F7F6F1', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#888', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <p style={{ fontSize: 13, color: '#888', margin: '0 0 16px' }}>Выберите способы, которыми вы принимаете оплату напрямую. Клиент увидит их при бронировании.</p>
+      <div style={{ background: '#F7F6F1', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#888', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
         🔒 kogDA не принимает платежи и не хранит реквизиты. Детали оплаты вы согласуете с клиентом напрямую.
       </div>
 
       {[
-        { group: 'Популярные', items: [
-          { key: 'payment_bank', label: 'Перевод на карту', icon: '💳' },
-          { key: 'payment_paypal', label: 'PayPal', icon: '🅿️' },
-          { key: 'payment_wise', label: 'Wise', icon: '🌍' },
-        ]},
         { group: 'Россия', items: [
-          { key: 'payment_sbp', label: 'СБП', icon: '⚡' },
-          { key: 'payment_sber', label: 'Сбербанк', icon: '🟢' },
-          { key: 'payment_tinkoff', label: 'Т-Банк', icon: '🟡' },
+          { key: 'payment_sbp', label: 'СБП', desc: 'Быстрые платежи', icon: <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1DB954"/><text x="12" y="16" textAnchor="middle" fontSize="9" fontWeight="800" fill="white">СБП</text></svg> },
+          { key: 'payment_tinkoff', label: 'Российский банк', desc: 'Сбер, Т-Банк, Альфа, ВТБ...', icon: <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#111"/><text x="12" y="16" textAnchor="middle" fontSize="9" fontWeight="800" fill="white">RU</text></svg> },
         ]},
-        { group: 'Казахстан', items: [
-          { key: 'payment_kaspi', label: 'Kaspi', icon: '🔴' },
-        ]},
-        { group: 'Крипто', items: [
-          { key: 'payment_usdt', label: 'USDT', icon: '🔶' },
+        { group: 'Международные', items: [
+          { key: 'payment_paypal', label: 'PayPal', desc: '', icon: <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="12" fill="#003087"/><path d="M8 7h5c2.5 0 4 1.2 3.5 3.5-.5 2-2.5 3-4.5 3H10l-1 4H6.5L8 7z" fill="#009cde"/><path d="M9.5 10h3.5c1.5 0 2 .8 1.7 2-.3 1.2-1.5 1.8-2.7 1.8H9.5l.7-3.8H9.5z" fill="white"/></svg> },
+          { key: 'payment_wise', label: 'Wise', desc: '', icon: <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#9FE870"/><text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="900" fill="#111">WISE</text></svg> },
+          { key: 'payment_bank', label: 'Банковский перевод', desc: 'IBAN / SWIFT', icon: <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#6366F1"/><text x="12" y="16" textAnchor="middle" fontSize="9" fontWeight="800" fill="white">$</text></svg> },
+          { key: 'payment_usdt', label: 'USDT', desc: 'Крипто', icon: <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#26A17B"/><text x="12" y="16" textAnchor="middle" fontSize="9" fontWeight="800" fill="white">₮</text></svg> },
         ]},
       ].map(group => (
-        <div key={group.group} style={{ marginBottom: 18 }}>
+        <div key={group.group} style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{group.group}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {group.items.map(p => {
               const sel = payments[p.key]
               return (
                 <div key={p.key} onClick={() => setPayments({...payments, [p.key]: !payments[p.key]})}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
                     border: `1.5px solid ${sel ? '#111' : '#E8E7E0'}`,
                     background: sel ? '#F7F6F1' : '#fff',
                     transition: 'all 0.15s'
                   }}>
-                  <span style={{ fontSize: 18 }}>{p.icon}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{p.label}</span>
-                  {sel && <div style={{ width: 18, height: 18, borderRadius: 9, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <span style={{ color: '#fff', fontSize: 10, fontWeight: 700 }}>✓</span>
+                  {p.icon}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>{p.label}</div>
+                    {p.desc && <div style={{ fontSize: 12, color: '#aaa' }}>{p.desc}</div>}
+                  </div>
+                  {sel && <div style={{ width: 20, height: 20, borderRadius: 10, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>✓</span>
                   </div>}
                 </div>
               )
@@ -259,9 +257,11 @@ export default function Settings() {
       ))}
 
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Другое</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Не нашли нужный способ?</div>
+        <p style={{ fontSize: 12, color: '#aaa', margin: '0 0 8px' }}>Добавьте свой способ оплаты вручную.</p>
         <input value={payments.payment_other} onChange={e => setPayments({...payments, payment_other: e.target.value})}
-          placeholder="Revolut, Stripe, наличные, другой способ..." style={inp} />
+          placeholder="Например: Kaspi, Zelle, Venmo, Pix, UPI, PromptPay, наличные..."
+          style={inp} />
       </div>
 
       <button onClick={savePayments} style={{
