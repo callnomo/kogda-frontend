@@ -338,21 +338,21 @@ export default function BookingPage() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
                   <button onClick={() => { setStep(1); setSelectedDate(null); setSelectedSlot(null); setSlots([]) }} style={{
-                    background: 'transparent', border: '1.5px solid #E0E0D8', padding: '14px 0',
-                    borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer', color: '#888',
-                    width: '48%'
+                    flex: 1, background: '#fff', border: '1.5px solid #E0E0D8', padding: '14px 0',
+                    borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#888'
                   }}>← Назад</button>
                   <button
                     onClick={() => setStep(3)}
                     disabled={!selectedDate || !selectedSlot}
                     style={{
-                      background: selectedDate && selectedSlot ? '#E8FF47' : '#E8E7E0',
-                      color: selectedDate && selectedSlot ? '#111' : '#aaa',
-                      border: 'none', padding: '14px 0', borderRadius: 12,
-                      fontSize: 15, fontWeight: 700, cursor: selectedDate && selectedSlot ? 'pointer' : 'default',
-                      transition: 'all 0.2s', width: '48%'
+                      flex: 1, background: selectedDate && selectedSlot ? '#111' : '#E8E7E0',
+                      color: selectedDate && selectedSlot ? '#fff' : '#aaa',
+                      border: `1.5px solid ${selectedDate && selectedSlot ? '#111' : '#E0E0D8'}`,
+                      padding: '14px 0', borderRadius: 10,
+                      fontSize: 14, fontWeight: 600, cursor: selectedDate && selectedSlot ? 'pointer' : 'default',
+                      transition: 'all 0.2s'
                     }}
                   >
                     Далее →
