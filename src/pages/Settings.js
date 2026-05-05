@@ -421,17 +421,12 @@ export default function Settings() {
                 </div>
               </div>
               {isTelegram && (
-                telegramConnected
-                  ? <div style={{ background: '#DCFCE7', color: '#16A34A', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>✓ Подключён</div>
-                  : <button onClick={connectTelegram} disabled={telegramLoading} style={{ background: '#229ED9', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
-                      {telegramLoading ? '...' : 'Подключить'}
-                    </button>
+                <Toggle value={telegramConnected} onChange={() => {
+                  if (!telegramConnected) connectTelegram()
+                }} disabled={false} />
               )}
-              {!isTelegram && item.premium && (
-                <div style={{ background: '#E8FF47', color: '#111', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>⭐ Премиум</div>
-              )}
-              {!isTelegram && !item.premium && (
-                <div style={{ background: '#F0EFE9', color: '#aaa', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 600, flexShrink: 0 }}>Скоро</div>
+              {!isTelegram && (
+                <Toggle value={false} onChange={() => {}} disabled={true} />
               )}
             </div>
           )
