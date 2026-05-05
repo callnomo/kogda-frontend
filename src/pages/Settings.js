@@ -225,6 +225,30 @@ export default function Settings() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
+              {/* Telegram */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 20 }}>✈️</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>Telegram</div>
+                    <div style={{ fontSize: 12, color: '#888' }}>Мгновенные уведомления в бот</div>
+                  </div>
+                </div>
+                <Toggle value={notifications.notify_telegram} onChange={v => setNotifications({...notifications, notify_telegram: v})} />
+              </div>
+
+              {/* Email */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Mail size={20} color="#888" />
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>Email</div>
+                    <div style={{ fontSize: 12, color: '#888' }}>Уведомления на почту</div>
+                  </div>
+                </div>
+                <Toggle value={notifications.notify_email} onChange={v => setNotifications({...notifications, notify_email: v})} />
+              </div>
+
               {/* WhatsApp */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: notifications.notify_whatsapp ? 10 : 0 }}>
