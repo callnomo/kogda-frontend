@@ -181,50 +181,17 @@ export default function Settings() {
 
   const NotificationsSection = () => (
     <div>
-      {/* Telegram connect */}
-      <div style={{ background: '#F7F6F1', borderRadius: 14, padding: '18px 20px', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: '#229ED9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>✈️</div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>Telegram бот</div>
-              <div style={{ fontSize: 12, color: '#888' }}>Уведомления о новых записях</div>
-            </div>
-          </div>
-          {telegramConnected ? (
-            <div style={{ background: '#DCFCE7', color: '#16A34A', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700 }}>✓ Подключён</div>
-          ) : (
-            <button onClick={connectTelegram} disabled={loading} style={{
-              background: '#229ED9', color: '#fff', border: 'none',
-              padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer'
-            }}>
-              {loading ? '...' : 'Подключить'}
-            </button>
-          )}
-        </div>
-        {telegramLink && !telegramConnected && (
-          <div style={{ marginTop: 12, padding: '10px 14px', background: '#FFF7ED', borderRadius: 8, fontSize: 13, color: '#92400E' }}>
-            Нажми кнопку и нажми START в Telegram →{' '}
-            <a href={telegramLink} target="_blank" rel="noreferrer" style={{ color: '#229ED9', fontWeight: 700 }}>Открыть бота</a>
-          </div>
-        )}
-      </div>
-
-      {/* Toggles */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
         {[
-          { key: 'notify_telegram', icon: '✈️', label: 'Telegram', desc: 'Мгновенные уведомления в бот', disabled: false },
-          { key: 'notify_email', icon: '✉️', label: 'Email', desc: 'Уведомления на почту', disabled: false },
-          { key: 'notify_whatsapp', icon: '💬', label: 'WhatsApp', desc: 'Скоро', disabled: true },
-          { key: 'notify_max', icon: '💬', label: 'Макс', desc: 'Скоро', disabled: true },
+          { key: 'notify_telegram', icon: '✈️', label: 'Telegram', disabled: false },
+          { key: 'notify_email', icon: '✉️', label: 'Email', disabled: false },
+          { key: 'notify_whatsapp', icon: '💬', label: 'WhatsApp', disabled: true },
+          { key: 'notify_max', icon: '💬', label: 'Макс', disabled: true },
         ].map(item => (
           <div key={item.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 18 }}>{item.icon}</span>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: item.disabled ? '#aaa' : '#111' }}>{item.label}</div>
-                <div style={{ fontSize: 12, color: '#aaa' }}>{item.desc}</div>
-              </div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: item.disabled ? '#aaa' : '#111' }}>{item.label}</div>
             </div>
             <Toggle value={notifications[item.key]} onChange={v => setNotifications({...notifications, [item.key]: v})} disabled={item.disabled} />
           </div>
@@ -309,11 +276,42 @@ export default function Settings() {
 
   const IntegrationsSection = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Telegram бот — активная интеграция */}
+      <div style={{ background: '#F7F6F1', borderRadius: 14, padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#229ED9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>✈️</div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>Telegram бот</div>
+            <div style={{ fontSize: 12, color: '#888' }}>Уведомления о новых записях</div>
+          </div>
+        </div>
+        {telegramConnected ? (
+          <div style={{ background: '#DCFCE7', color: '#16A34A', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700 }}>✓ Подключён</div>
+        ) : (
+          <button onClick={connectTelegram} disabled={loading} style={{
+            background: '#229ED9', color: '#fff', border: 'none',
+            padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer'
+          }}>
+            {loading ? '...' : 'Подключить'}
+          </button>
+        )}
+      </div>
+      {telegramLink && !telegramConnected && (
+        <div style={{ padding: '10px 14px', background: '#FFF7ED', borderRadius: 8, fontSize: 13, color: '#92400E' }}>
+          Нажми кнопку и нажми START в Telegram →{' '}
+          <a href={telegramLink} target="_blank" rel="noreferrer" style={{ color: '#229ED9', fontWeight: 700 }}>Открыть бота</a>
+        </div>
+      )}
+
+      {/* Скоро */}
       {[
         { icon: '📅', label: 'Google Calendar', desc: 'Синхронизация встреч', soon: true },
         { icon: '🍎', label: 'Apple Calendar', desc: 'Синхронизация встреч', soon: true },
+        { icon: '📅', label: 'Яндекс Календарь', desc: 'Синхронизация встреч', soon: true },
         { icon: '📹', label: 'Zoom', desc: 'Автоматические ссылки на встречи', soon: true },
         { icon: '🟢', label: 'Google Meet', desc: 'Автоматические ссылки на встречи', soon: true },
+        { icon: '📹', label: 'Яндекс Телемост', desc: 'Автоматические ссылки на встречи', soon: true },
+        { icon: '⭐', label: 'kogDA Video', desc: 'Встроенная видеосвязь без сторонних сервисов', soon: true, vip: true },
       ].map(item => (
         <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: '#F7F6F1', borderRadius: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -323,7 +321,7 @@ export default function Settings() {
               <div style={{ fontSize: 12, color: '#aaa' }}>{item.desc}</div>
             </div>
           </div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#aaa', background: '#E8E7E0', padding: '4px 10px', borderRadius: 100 }}>Скоро</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: item.vip ? '#111' : '#aaa', background: item.vip ? '#E8FF47' : '#E8E7E0', padding: '4px 10px', borderRadius: 100 }}>{item.vip ? '⭐ Премиум' : 'Скоро'}</div>
         </div>
       ))}
     </div>
