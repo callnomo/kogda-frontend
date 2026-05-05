@@ -386,6 +386,7 @@ export default function Settings() {
       if (name === 'zoom') return <svg {...s} viewBox="0 0 24 24"><path d="M24 12c0 6.627-5.373 12-12 12S0 18.627 0 12 5.373 0 12 0s12 5.373 12 12z" fill="#2D8CFF"/><path d="M5 9.5C5 8.67 5.67 8 6.5 8h7c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5h-7C5.67 16 5 15.33 5 14.5v-5zm10 1.25l3.5-2.25v5L15 11.25v-0.5z" fill="white"/></svg>
       if (name === 'meet') return <svg {...s} viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="#00BFA5"/><path d="M15 10l5-3v10l-5-3v-4z" fill="#00897B"/></svg>
       if (name === 'telemost') return <svg {...s} viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#FC3F1D"/><rect x="5" y="8" width="9" height="8" rx="1" fill="white"/><path d="M14 10l5-3v10l-5-3v-4z" fill="white"/></svg>
+      if (name === 'jitsi') return <svg {...s} viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#97D700"/><text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="900" fill="#fff">Jitsi</text></svg>
       if (name === 'kogda') return <svg {...s} viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#E8FF47"/><text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="900" fill="#111">kD</text></svg>
       return null
     }
@@ -395,17 +396,19 @@ export default function Settings() {
       { key: 'google', label: 'Google Calendar', desc: 'Синхронизация встреч' },
       { key: 'apple', label: 'Apple Calendar', desc: 'Синхронизация встреч' },
       { key: 'yandex', label: 'Яндекс Календарь', desc: 'Синхронизация встреч' },
+      { key: 'jitsi', label: 'Jitsi', desc: 'Автоматические ссылки на видеовстречи — уже используется' },
       { key: 'zoom', label: 'Zoom', desc: 'Автоматические ссылки на встречи' },
       { key: 'meet', label: 'Google Meet', desc: 'Автоматические ссылки на встречи' },
       { key: 'telemost', label: 'Яндекс Телемост', desc: 'Автоматические ссылки на встречи' },
-      { key: 'kogda', label: 'kogDA Video', desc: 'Встроенная видеосвязь', premium: true },
+      { key: 'kogda', label: 'kogDA Video', desc: 'Собственная видеосвязь Kogda', premium: true },
     ]
 
     return (
       <div>
         {rows.map((item, i) => {
           const isTelegram = item.key === 'telegram'
-          const muted = !isTelegram && !item.premium
+          const isJitsi = item.key === 'jitsi'
+          const muted = !isTelegram && !isJitsi && !item.premium
           return (
             <div key={item.key} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -425,7 +428,10 @@ export default function Settings() {
                   if (!telegramConnected) connectTelegram()
                 }} disabled={false} />
               )}
-              {!isTelegram && (
+              {isJitsi && (
+                <Toggle value={true} onChange={() => {}} disabled={false} />
+              )}
+              {!isTelegram && !isJitsi && (
                 <Toggle value={false} onChange={() => {}} disabled={true} />
               )}
             </div>
