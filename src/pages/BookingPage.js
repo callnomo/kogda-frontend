@@ -248,14 +248,7 @@ export default function BookingPage() {
             {/* Шаг 2 — календарь */}
             {step === 2 && (
               <div style={{ background: '#fff', borderRadius: 20, padding: '32px', border: '1px solid #E8E7E0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 0 24px' }}>
-                <button onClick={() => { setStep(1); setSelectedDate(null); setSelectedSlot(null); setSlots([]) }} style={{
-                  background: 'transparent', border: '1.5px solid #E0E0D8', padding: '8px 16px',
-                  borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#888'
-                }}>← Назад</button>
-                <h3 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Выберите дату и время</h3>
-                <div style={{ width: 80 }} />
-              </div>
+                <h3 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 24px' }}>Выберите дату и время</h3>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px', gap: 24 }}>
                   {/* Calendar */}
@@ -345,19 +338,25 @@ export default function BookingPage() {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => setStep(3)}
-                  disabled={!selectedDate || !selectedSlot}
-                  style={{
-                    marginTop: 24, background: selectedDate && selectedSlot ? '#E8FF47' : '#E8E7E0',
-                    color: selectedDate && selectedSlot ? '#111' : '#aaa',
-                    border: 'none', padding: '14px 32px', borderRadius: 12,
-                    fontSize: 15, fontWeight: 700, cursor: selectedDate && selectedSlot ? 'pointer' : 'default',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  Далее →
-                </button>
+                <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+                  <button onClick={() => { setStep(1); setSelectedDate(null); setSelectedSlot(null); setSlots([]) }} style={{
+                    background: 'transparent', border: '1.5px solid #E0E0D8', padding: '14px 24px',
+                    borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer', color: '#888'
+                  }}>← Назад</button>
+                  <button
+                    onClick={() => setStep(3)}
+                    disabled={!selectedDate || !selectedSlot}
+                    style={{
+                      flex: 1, background: selectedDate && selectedSlot ? '#E8FF47' : '#E8E7E0',
+                      color: selectedDate && selectedSlot ? '#111' : '#aaa',
+                      border: 'none', padding: '14px 32px', borderRadius: 12,
+                      fontSize: 15, fontWeight: 700, cursor: selectedDate && selectedSlot ? 'pointer' : 'default',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Далее →
+                  </button>
+                </div>
               </div>
             )}
 
