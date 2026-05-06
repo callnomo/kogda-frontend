@@ -35,7 +35,7 @@ export default function Login() {
 
   const inputStyle = {
     width: '100%', padding: '12px 16px', borderRadius: 10,
-    border: '1.5px solid #E0E0D8', fontSize: 15, outline: 'none',
+    border: '1.5px solid #E1DED6', fontSize: 15, outline: 'none',
     boxSizing: 'border-box', background: '#fff',
     fontFamily: 'inherit', transition: 'border-color 0.15s'
   }
@@ -57,7 +57,8 @@ export default function Login() {
           transition: background-color 5000s ease-in-out 0s;
         }
         input:focus {
-          border-color: #111 !important;
+          border-color: #111111 !important;
+          box-shadow: none !important;
         }
       `}</style>
 
@@ -65,7 +66,7 @@ export default function Login() {
         background: '#fff', borderRadius: 24, padding: '48px 40px',
         width: '100%', maxWidth: 400, boxShadow: '0 8px 40px rgba(0,0,0,0.08)'
       }}>
-        <div style={{ marginBottom: 32 }}>
+        <div style={{ marginBottom: 40 }}>
           <img src="https://kogda.app/kogda-logo.png" alt="kogDA" style={{ height: 36, width: 'auto', display: 'block', marginBottom: 12 }} />
           <p style={{ color: '#888', margin: 0, fontSize: 15 }}>Войди в свой аккаунт</p>
         </div>

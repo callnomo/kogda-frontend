@@ -39,7 +39,8 @@ export default function ForgotPassword() {
           transition: background-color 5000s ease-in-out 0s;
         }
         input:focus {
-          border-color: #111 !important;
+          border-color: #111111 !important;
+          box-shadow: none !important;
         }
       `}</style>
 
@@ -47,7 +48,7 @@ export default function ForgotPassword() {
         background: '#fff', borderRadius: 24, padding: '48px 40px',
         width: '100%', maxWidth: 400, boxShadow: '0 8px 40px rgba(0,0,0,0.08)'
       }}>
-        <div style={{ marginBottom: 32 }}>
+        <div style={{ marginBottom: 40 }}>
           <img src="https://kogda.app/kogda-logo.png" alt="kogDA" style={{ height: 36, width: 'auto', display: 'block', marginBottom: 12 }} />
           <p style={{ color: '#888', margin: 0, fontSize: 15 }}>
             {sent ? 'Письмо отправлено' : 'Восстановление пароля'}
@@ -62,14 +63,14 @@ export default function ForgotPassword() {
               color: '#444',
               padding: '16px',
               borderRadius: 12,
-              marginBottom: 20,
+              marginBottom: 16,
               fontSize: 14,
               lineHeight: 1.6
             }}>
               Если такой email зарегистрирован, мы отправили на него ссылку для сброса пароля. Ссылка действительна 1 час.
             </div>
-            <p style={{ color: '#888', fontSize: 13, marginBottom: 24, lineHeight: 1.6 }}>
-              Не получил письмо? Проверь папку «Спам». Если ничего нет — попробуй ещё раз через минуту.
+            <p style={{ color: '#aaa', fontSize: 12, margin: '0 0 24px', lineHeight: 1.5 }}>
+              Не получил письмо? Проверь папку «Спам».
             </p>
             <a href="/login" style={{
               display: 'block', textAlign: 'center', textDecoration: 'none',
@@ -81,7 +82,7 @@ export default function ForgotPassword() {
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
-            <p style={{ color: '#666', fontSize: 14, marginBottom: 20, lineHeight: 1.6 }}>
+            <p style={{ color: '#666', fontSize: 14, marginBottom: 24, lineHeight: 1.6 }}>
               Введи email, на который зарегистрирован аккаунт. Мы отправим ссылку для создания нового пароля.
             </p>
 
@@ -100,7 +101,7 @@ export default function ForgotPassword() {
                 autoFocus
                 style={{
                   width: '100%', padding: '12px 16px', borderRadius: 10,
-                  border: '1.5px solid #E0E0D8', fontSize: 15, outline: 'none',
+                  border: '1.5px solid #E1DED6', fontSize: 15, outline: 'none',
                   boxSizing: 'border-box', background: '#fff',
                   fontFamily: 'inherit', textTransform: 'lowercase'
                 }}
