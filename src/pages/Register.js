@@ -5,18 +5,14 @@ import { Eye, EyeOff } from 'lucide-react'
 const API = 'https://kogda-backend-production.up.railway.app'
 
 export default function Register() {
-  // 'email' | 'code' | 'profile'
-  const [step, setStep] = useState('email')
+  const [step, setStep] = useState('email') // 'email' | 'code' | 'profile'
 
-  // Шаг 1: email
   const [email, setEmail] = useState('')
 
-  // Шаг 2: code
   const [code, setCode] = useState(['', '', '', '', '', ''])
   const codeRefs = useRef([])
   const [resendCooldown, setResendCooldown] = useState(0)
 
-  // Шаг 3: profile
   const [tempToken, setTempToken] = useState('')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
@@ -25,14 +21,12 @@ export default function Register() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Cooldown для повторной отправки кода
   useEffect(() => {
     if (resendCooldown <= 0) return
     const t = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000)
     return () => clearTimeout(t)
   }, [resendCooldown])
 
-  // ===== Шаг 1: запросить код =====
   const requestCode = async (e) => {
     e?.preventDefault()
     setError('')
@@ -43,7 +37,6 @@ export default function Register() {
       })
       setStep('code')
       setResendCooldown(30)
-      // фокус на первое поле кода после рендера
       setTimeout(() => codeRefs.current[0]?.focus(), 50)
     } catch (err) {
       setError(err.response?.data?.error || 'Ошибка. Попробуй ещё раз.')
@@ -51,25 +44,21 @@ export default function Register() {
     setLoading(false)
   }
 
-  // ===== Шаг 2: ввод кода =====
   const handleCodeChange = (index, value) => {
     const cleaned = value.replace(/\D/g, '').slice(0, 1)
     const newCode = [...code]
     newCode[index] = cleaned
     setCode(newCode)
     setError('')
-    // переход к следующему полю
     if (cleaned && index < 5) {
       codeRefs.current[index + 1]?.focus()
     }
-    // автоотправка когда все 6 заполнены
     if (newCode.every(c => c) && newCode.join('').length === 6) {
       verifyCode(newCode.join(''))
     }
   }
 
   const handleCodeKeyDown = (index, e) => {
-    // Backspace на пустом поле — переходим назад
     if (e.key === 'Backspace' && !code[index] && index > 0) {
       codeRefs.current[index - 1]?.focus()
     }
@@ -99,7 +88,6 @@ export default function Register() {
       const data = err.response?.data
       if (data?.expired) {
         setError(data.error || 'Запроси код заново')
-        // сбрасываем код, оставляем шаг
         setCode(['', '', '', '', '', ''])
         setTimeout(() => codeRefs.current[0]?.focus(), 50)
       } else {
@@ -128,7 +116,6 @@ export default function Register() {
     setLoading(false)
   }
 
-  // ===== Шаг 3: завершить регистрацию =====
   const completeRegistration = async (e) => {
     e.preventDefault()
     setError('')
@@ -139,9 +126,7 @@ export default function Register() {
     setLoading(true)
     try {
       const res = await axios.post(`${API}/auth/complete-registration`, {
-        tempToken,
-        name,
-        password
+        tempToken, name, password
       })
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user', JSON.stringify(res.data.user))
@@ -182,6 +167,15 @@ export default function Register() {
     transition: 'border-color 0.15s'
   })
 
+  const titleStyle = {
+    fontSize: 26, fontWeight: 800, color: '#111',
+    margin: '0 0 8px', lineHeight: 1.2
+  }
+
+  const subtitleStyle = {
+    color: '#888', fontSize: 14, margin: 0, lineHeight: 1.5
+  }
+
   return (
     <div style={{
       minHeight: '100vh', background: '#F7F6F1',
@@ -208,13 +202,29 @@ export default function Register() {
         background: '#fff', borderRadius: 24, padding: '48px 40px',
         width: '100%', maxWidth: 400, boxShadow: '0 8px 40px rgba(0,0,0,0.08)'
       }}>
-        <div style={{ marginBottom: 40 }}>
-          <img src="https://kogda.app/kogda-logo.png" alt="kogDA" style={{ height: 36, width: 'auto', display: 'block', marginBottom: 12 }} />
-          <p style={{ color: '#888', margin: 0, fontSize: 15 }}>
-            {step === 'email' && 'Создай аккаунт бесплатно'}
-            {step === 'code' && 'Подтверди email'}
-            {step === 'profile' && 'Последний шаг'}
-          </p>
+        <div style={{ marginBottom: 32 }}>
+          <img src="https://kogda.app/kogda-logo.png" alt="kogDA" style={{ height: 32, width: 'auto', display: 'block', marginBottom: 28 }} />
+
+          {step === 'email' && (
+            <>
+              <h1 style={titleStyle}>Регистрация</h1>
+              <p style={subtitleStyle}>Введи email — отправим код подтверждения</p>
+            </>
+          )}
+          {step === 'code' && (
+            <>
+              <h1 style={titleStyle}>Подтверди email</h1>
+              <p style={subtitleStyle}>
+                Код отправлен на <b style={{ color: '#111' }}>{email}</b>
+              </p>
+            </>
+          )}
+          {step === 'profile' && (
+            <>
+              <h1 style={titleStyle}>Почти готово</h1>
+              <p style={subtitleStyle}>Email подтверждён. Заполни последние пара полей.</p>
+            </>
+          )}
         </div>
 
         {error && (
@@ -227,7 +237,7 @@ export default function Register() {
         {/* ============ ШАГ 1: Email ============ */}
         {step === 'email' && (
           <form onSubmit={requestCode}>
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 8 }}>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Email</label>
               <input
                 type="email" value={email} required
@@ -242,13 +252,17 @@ export default function Register() {
               />
             </div>
 
+            <p style={{ fontSize: 12, color: '#aaa', marginTop: 8, marginBottom: 24, lineHeight: 1.5 }}>
+              На него придёт 6-значный код для подтверждения
+            </p>
+
             <button type="submit" disabled={loading} style={{
               width: '100%', background: '#111', color: '#F7F6F1',
               padding: '14px', borderRadius: 10, border: 'none',
               fontSize: 15, fontWeight: 700, cursor: loading ? 'wait' : 'pointer',
               opacity: loading ? 0.6 : 1
             }}>
-              {loading ? 'Отправляем...' : 'Получить код'}
+              {loading ? 'Отправляем...' : 'Зарегистрироваться'}
             </button>
 
             <p style={{ textAlign: 'center', marginTop: 24, fontSize: 14, color: '#888' }}>
@@ -261,10 +275,6 @@ export default function Register() {
         {/* ============ ШАГ 2: Code ============ */}
         {step === 'code' && (
           <div>
-            <p style={{ color: '#666', fontSize: 14, marginBottom: 24, lineHeight: 1.6 }}>
-              Мы отправили 6-значный код на <b style={{ color: '#111' }}>{email}</b>. Введи его ниже.
-            </p>
-
             <div style={{
               display: 'flex', gap: 8, justifyContent: 'space-between',
               marginBottom: 20
@@ -290,7 +300,7 @@ export default function Register() {
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               {resendCooldown > 0 ? (
                 <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>
-                  Запросить новый код через {resendCooldown}с
+                  Отправить новый код через {resendCooldown}с
                 </p>
               ) : (
                 <button
@@ -327,10 +337,6 @@ export default function Register() {
         {/* ============ ШАГ 3: Profile ============ */}
         {step === 'profile' && (
           <form onSubmit={completeRegistration}>
-            <p style={{ color: '#666', fontSize: 14, marginBottom: 24, lineHeight: 1.6 }}>
-              Email подтверждён. Заполни последние пара полей и готово!
-            </p>
-
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Имя</label>
               <input
