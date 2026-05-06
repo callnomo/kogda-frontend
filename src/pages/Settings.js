@@ -388,11 +388,11 @@ export default function Settings() {
         telegram: 'https://cdn.simpleicons.org/telegram/229ED9',
         google: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg',
         apple: 'https://cdn.simpleicons.org/apple/000000',
-        yandex: 'https://upload.wikimedia.org/wikipedia/commons/9/91/Yandex_Calendar_icon.svg',
-        zoom: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Zoom_Logo_2022.svg/1200px-Zoom_Logo_2022.svg.png',
+        yandex: '/icons/yandex-calendar.png',
+        zoom: '/icons/zoom.png',
         meet: 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg',
-        telemost: 'https://yastatic.net/s3/home-static/_/37/37a921a64ba327a62f35d50f270fd2a3.png',
-        jitsi: 'https://desktop.jitsi.org/assets/img/jitsi-icon-blue.png',
+        telemost: '/icons/yandex-telemost.png',
+        jitsi: '/icons/jitsi.png',
       }
       if (urls[name]) return <img src={urls[name]} alt={name} style={s} />
       return <svg width="28" height="28" viewBox="0 0 24 24" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="11" fill="#E8FF47"/><text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="900" fill="#111">kD</text></svg>
