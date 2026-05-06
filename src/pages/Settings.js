@@ -389,10 +389,10 @@ export default function Settings() {
         google: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg',
         apple: 'https://cdn.simpleicons.org/apple/000000',
         yandex: '/icons/yandex-calendar.png',
-        zoom: '/icons/zoom.png',
+        zoom: 'https://cdn.simpleicons.org/zoom/2D8CFF',
         meet: 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg',
         telemost: '/icons/yandex-telemost.png',
-        jitsi: '/icons/jitsi.png',
+        jitsi: 'https://cdn.simpleicons.org/jitsi/1d76ba',
       }
       if (urls[name]) return <img src={urls[name]} alt={name} style={s} />
       return <svg width="28" height="28" viewBox="0 0 24 24" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="11" fill="#E8FF47"/><text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="900" fill="#111">kD</text></svg>
