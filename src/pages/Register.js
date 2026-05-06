@@ -12,7 +12,10 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const res = await axios.post(`${API}/auth/register`, form)
+      const res = await axios.post(`${API}/auth/register`, {
+        ...form,
+        email: form.email.trim().toLowerCase()
+      })
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user', JSON.stringify(res.data.user))
       window.location.href = '/dashboard'
@@ -24,24 +27,38 @@ export default function Register() {
   const inputStyle = {
     width: '100%', padding: '12px 16px', borderRadius: 10,
     border: '1.5px solid #E0E0D8', fontSize: 15, outline: 'none',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box', background: '#fff',
+    fontFamily: 'inherit'
   }
 
   return (
     <div style={{
       minHeight: '100vh', background: '#F7F6F1',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'sans-serif', padding: '20px'
+      fontFamily: 'Inter, sans-serif', padding: '20px'
     }}>
+      <style>{`
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 30px #fff inset !important;
+          -webkit-text-fill-color: #111 !important;
+          caret-color: #111;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+        input:focus {
+          border-color: #111 !important;
+        }
+      `}</style>
+
       <div style={{
         background: '#fff', borderRadius: 24, padding: '48px 40px',
         width: '100%', maxWidth: 400, boxShadow: '0 8px 40px rgba(0,0,0,0.08)'
       }}>
         <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>
-            kog<span style={{ background: '#E8FF47', padding: '0 6px', borderRadius: 6 }}>DA</span>
-          </h1>
-          <p style={{ color: '#888', marginTop: 8, fontSize: 15 }}>Создай аккаунт бесплатно</p>
+          <img src="https://kogda.app/kogda-logo.png" alt="kogDA" style={{ height: 36, width: 'auto', display: 'block', marginBottom: 12 }} />
+          <p style={{ color: '#888', margin: 0, fontSize: 15 }}>Создай аккаунт бесплатно</p>
         </div>
 
         {error && (
@@ -69,7 +86,10 @@ export default function Register() {
               onChange={e => setForm({ ...form, email: e.target.value })}
               placeholder="твой@email.com"
               autoComplete="email"
-              style={inputStyle}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck="false"
+              style={{ ...inputStyle, textTransform: 'lowercase' }}
             />
           </div>
           <div style={{ marginBottom: 16 }}>
@@ -106,11 +126,12 @@ export default function Register() {
               onChange={e => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s/g, '-') })}
               placeholder="anna-sokolova"
               autoComplete="username"
+              autoCapitalize="off"
               style={inputStyle}
             />
             {form.slug && (
               <p style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
-                Твоя ссылка: kogda.app/{form.slug}
+                Твоя ссылка: app.kogda.app/{form.slug}
               </p>
             )}
           </div>

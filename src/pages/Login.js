@@ -16,11 +16,14 @@ export default function Login() {
     setError('')
     setInfo('')
     try {
-      const res = await axios.post(`${API}/auth/login`, { email, password })
+      const res = await axios.post(`${API}/auth/login`, {
+        email: email.trim().toLowerCase(),
+        password
+      })
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user', JSON.stringify(res.data.user))
       if (res.data.restored) {
-        setInfo('Аккаунт восстановлен! Перенаправляем...')
+        setInfo('Аккаунт восстановлен. Перенаправляем...')
         setTimeout(() => { window.location.href = '/dashboard' }, 1500)
       } else {
         window.location.href = '/dashboard'
@@ -33,24 +36,38 @@ export default function Login() {
   const inputStyle = {
     width: '100%', padding: '12px 16px', borderRadius: 10,
     border: '1.5px solid #E0E0D8', fontSize: 15, outline: 'none',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box', background: '#fff',
+    fontFamily: 'inherit', transition: 'border-color 0.15s'
   }
 
   return (
     <div style={{
       minHeight: '100vh', background: '#F7F6F1',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'sans-serif', padding: '20px'
+      fontFamily: 'Inter, sans-serif', padding: '20px'
     }}>
+      <style>{`
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 30px #fff inset !important;
+          -webkit-text-fill-color: #111 !important;
+          caret-color: #111;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+        input:focus {
+          border-color: #111 !important;
+        }
+      `}</style>
+
       <div style={{
         background: '#fff', borderRadius: 24, padding: '48px 40px',
         width: '100%', maxWidth: 400, boxShadow: '0 8px 40px rgba(0,0,0,0.08)'
       }}>
         <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>
-            kog<span style={{ background: '#E8FF47', padding: '0 6px', borderRadius: 6 }}>DA</span>
-          </h1>
-          <p style={{ color: '#888', marginTop: 8, fontSize: 15 }}>Войди в свой аккаунт</p>
+          <img src="https://kogda.app/kogda-logo.png" alt="kogDA" style={{ height: 36, width: 'auto', display: 'block', marginBottom: 12 }} />
+          <p style={{ color: '#888', margin: 0, fontSize: 15 }}>Войди в свой аккаунт</p>
         </div>
 
         {error && (
@@ -62,7 +79,7 @@ export default function Login() {
 
         {info && (
           <div style={{
-            background: '#DCFCE7', color: '#16A34A', padding: '12px 16px',
+            background: '#F0F4F0', color: '#16A34A', padding: '12px 16px',
             borderRadius: 10, marginBottom: 20, fontSize: 14
           }}>{info}</div>
         )}
@@ -77,8 +94,11 @@ export default function Login() {
               placeholder="твой@email.com"
               required
               autoComplete="email"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck="false"
               autoFocus
-              style={inputStyle}
+              style={{ ...inputStyle, textTransform: 'lowercase' }}
             />
           </div>
 
@@ -120,7 +140,7 @@ export default function Login() {
             padding: '14px', borderRadius: 10, border: 'none',
             fontSize: 15, fontWeight: 700, cursor: 'pointer'
           }}>
-            Войти →
+            Войти
           </button>
         </form>
 

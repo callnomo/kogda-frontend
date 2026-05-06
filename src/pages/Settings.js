@@ -490,109 +490,115 @@ export default function Settings() {
     )
   }
 
+  // Безопасность — два отдельных блока
   const SecuritySection = () => (
-    <div>
-      {/* Смена пароля */}
-      <form onSubmit={changePassword}>
-        <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Сменить пароль</h4>
-        <p style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>Введи текущий и новый пароль.</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {pwdError && (
-          <div style={{
-            background: '#FEE2E2', color: '#DC2626', padding: '10px 14px',
-            borderRadius: 8, marginBottom: 12, fontSize: 13
-          }}>{pwdError}</div>
-        )}
+      {/* БЛОК 1: Смена пароля */}
+      <div>
+        <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>Сменить пароль</h3>
+        <p style={{ color: '#888', fontSize: 13, margin: '0 0 20px' }}>Введи текущий и новый пароль.</p>
 
-        {pwdSaved && (
-          <div style={{
-            background: '#DCFCE7', color: '#16A34A', padding: '10px 14px',
-            borderRadius: 8, marginBottom: 12, fontSize: 13
-          }}>✓ Пароль изменён</div>
-        )}
+        <form onSubmit={changePassword}>
+          {pwdError && (
+            <div style={{
+              background: '#FEE2E2', color: '#DC2626', padding: '10px 14px',
+              borderRadius: 8, marginBottom: 12, fontSize: 13
+            }}>{pwdError}</div>
+          )}
 
-        <div style={{ marginBottom: 12 }}>
-          <label style={label}>Текущий пароль</label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type={showCurrentPwd ? 'text' : 'password'}
-              value={passwordForm.current}
-              onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })}
-              required
-              autoComplete="current-password"
-              style={{ ...inp, paddingRight: 44 }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrentPwd(s => !s)}
-              aria-label={showCurrentPwd ? 'Скрыть' : 'Показать'}
-              style={{
-                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                background: 'transparent', border: 'none', cursor: 'pointer',
-                padding: 8, display: 'flex', alignItems: 'center', color: '#888'
-              }}
-            >
-              {showCurrentPwd ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
+          {pwdSaved && (
+            <div style={{
+              background: '#DCFCE7', color: '#16A34A', padding: '10px 14px',
+              borderRadius: 8, marginBottom: 12, fontSize: 13
+            }}>✓ Пароль изменён</div>
+          )}
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={label}>Текущий пароль</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showCurrentPwd ? 'text' : 'password'}
+                value={passwordForm.current}
+                onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                required
+                autoComplete="current-password"
+                style={{ ...inp, paddingRight: 44 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPwd(s => !s)}
+                aria-label={showCurrentPwd ? 'Скрыть' : 'Показать'}
+                style={{
+                  position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  padding: 8, display: 'flex', alignItems: 'center', color: '#888'
+                }}
+              >
+                {showCurrentPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div style={{ marginBottom: 20 }}>
-          <label style={label}>Новый пароль</label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type={showNextPwd ? 'text' : 'password'}
-              value={passwordForm.next}
-              onChange={e => setPasswordForm({ ...passwordForm, next: e.target.value })}
-              required
-              minLength={6}
-              autoComplete="new-password"
-              style={{ ...inp, paddingRight: 44 }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowNextPwd(s => !s)}
-              aria-label={showNextPwd ? 'Скрыть' : 'Показать'}
-              style={{
-                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                background: 'transparent', border: 'none', cursor: 'pointer',
-                padding: 8, display: 'flex', alignItems: 'center', color: '#888'
-              }}
-            >
-              {showNextPwd ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
+          <div style={{ marginBottom: 20 }}>
+            <label style={label}>Новый пароль</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showNextPwd ? 'text' : 'password'}
+                value={passwordForm.next}
+                onChange={e => setPasswordForm({ ...passwordForm, next: e.target.value })}
+                required
+                minLength={6}
+                autoComplete="new-password"
+                style={{ ...inp, paddingRight: 44 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowNextPwd(s => !s)}
+                aria-label={showNextPwd ? 'Скрыть' : 'Показать'}
+                style={{
+                  position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  padding: 8, display: 'flex', alignItems: 'center', color: '#888'
+                }}
+              >
+                {showNextPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
-        </div>
 
-        <button type="submit" disabled={pwdLoading} style={{
-          ...primaryBtn(false),
-          opacity: pwdLoading ? 0.6 : 1,
-          cursor: pwdLoading ? 'wait' : 'pointer'
-        }}>
-          {pwdLoading ? 'Сохраняем...' : 'Сменить пароль'}
-        </button>
-      </form>
-
-      {/* Опасная зона */}
-      <div style={{ marginTop: 40, paddingTop: 28, borderTop: '1px solid #F0EFE9' }}>
-        <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, color: '#DC2626' }}>Опасная зона</h4>
-        <p style={{ color: '#888', fontSize: 13, marginBottom: 16, lineHeight: 1.6 }}>
-          Удаление аккаунта отложенное: у тебя будет 30 дней чтобы передумать.
-          Просто войди снова в течение этого срока, и аккаунт восстановится.
-          Через 30 дней все данные удалятся навсегда.
-        </p>
-        <button
-          onClick={() => setShowDeleteModal(true)}
-          style={{
-            background: 'transparent', color: '#DC2626', border: '1.5px solid #FECACA',
-            padding: '11px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
-          }}
-        >
-          <Trash2 size={14} />
-          Удалить аккаунт
-        </button>
+          <button type="submit" disabled={pwdLoading} style={{
+            ...primaryBtn(false),
+            opacity: pwdLoading ? 0.6 : 1,
+            cursor: pwdLoading ? 'wait' : 'pointer'
+          }}>
+            {pwdLoading ? 'Сохраняем...' : 'Сменить пароль'}
+          </button>
+        </form>
       </div>
+    </div>
+  )
+
+  // Опасная зона — отдельная карточка снизу
+  const DangerSection = () => (
+    <div>
+      <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px', color: '#DC2626' }}>Опасная зона</h3>
+      <p style={{ color: '#888', fontSize: 13, margin: '0 0 20px', lineHeight: 1.6 }}>
+        Удаление аккаунта отложенное: у тебя будет 30 дней чтобы передумать.
+        Просто войди снова в течение этого срока, и аккаунт восстановится.
+        Через 30 дней все данные удалятся навсегда.
+      </p>
+      <button
+        onClick={() => setShowDeleteModal(true)}
+        style={{
+          background: 'transparent', color: '#DC2626', border: '1.5px solid #FECACA',
+          padding: '11px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
+        }}
+      >
+        <Trash2 size={14} />
+        Удалить аккаунт
+      </button>
     </div>
   )
 
@@ -608,9 +614,7 @@ export default function Settings() {
     <div style={{ minHeight: '100vh', background: '#F7F6F1', fontFamily: 'Inter, sans-serif' }}>
       {/* Header */}
       <div style={{ background: '#fff', borderBottom: '1px solid #E8E7E0', padding: '16px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, fontFamily: 'Syne, sans-serif' }}>
-          kog<span style={{ background: '#E8FF47', padding: '0 6px', borderRadius: 6 }}>DA</span>
-        </h1>
+        <img src="https://kogda.app/kogda-logo.png" alt="kogDA" style={{ height: 28, width: 'auto', display: 'block' }} />
         <button onClick={() => { localStorage.clear(); window.location.href = '/login' }}
           style={{ background: 'transparent', border: '1.5px solid #E0E0D8', padding: '8px 16px', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
           Выйти
@@ -644,6 +648,12 @@ export default function Settings() {
                   <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 24px' }}>{SECTION_TITLES[mobileSection]}</h3>
                   {sectionContent[mobileSection]}
                 </div>
+                {/* Опасная зона показывается только на табе security */}
+                {mobileSection === 'security' && (
+                  <div style={{ ...card, marginTop: 16 }}>
+                    <DangerSection />
+                  </div>
+                )}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -683,6 +693,13 @@ export default function Settings() {
                 <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 24px' }}>{SECTION_TITLES[activeTab]}</h3>
                 {sectionContent[activeTab]}
               </div>
+
+              {/* Опасная зона — отдельная карточка снизу, только на табе security */}
+              {activeTab === 'security' && (
+                <div style={{ ...card, marginTop: 16, borderColor: '#FECACA' }}>
+                  <DangerSection />
+                </div>
+              )}
             </div>
           )}
         </div>
