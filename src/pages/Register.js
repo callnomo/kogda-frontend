@@ -167,15 +167,6 @@ export default function Register() {
     transition: 'border-color 0.15s'
   })
 
-  const titleStyle = {
-    fontSize: 26, fontWeight: 800, color: '#111',
-    margin: '0 0 8px', lineHeight: 1.2
-  }
-
-  const subtitleStyle = {
-    color: '#888', fontSize: 14, margin: 0, lineHeight: 1.5
-  }
-
   return (
     <div style={{
       minHeight: '100vh', background: '#F7F6F1',
@@ -202,29 +193,18 @@ export default function Register() {
         background: '#fff', borderRadius: 24, padding: '48px 40px',
         width: '100%', maxWidth: 400, boxShadow: '0 8px 40px rgba(0,0,0,0.08)'
       }}>
-        <div style={{ marginBottom: 32 }}>
-          <img src="https://kogda.app/kogda-logo.png" alt="kogDA" style={{ height: 32, width: 'auto', display: 'block', marginBottom: 28 }} />
+        <div style={{ marginBottom: 40 }}>
+          <img src="https://kogda.app/kogda-logo.png" alt="kogDA" style={{ height: 36, width: 'auto', display: 'block', marginBottom: 12 }} />
 
           {step === 'email' && (
-            <>
-              <h1 style={titleStyle}>Регистрация</h1>
-              <p style={subtitleStyle}>Введи email — отправим код подтверждения</p>
-            </>
+            <p style={{ color: '#888', margin: 0, fontSize: 15 }}>Создай аккаунт бесплатно</p>
           )}
           {step === 'code' && (
-            <>
-              <h1 style={titleStyle}>Подтверди email</h1>
-              <p style={subtitleStyle}>
-                Код отправлен на <b style={{ color: '#111' }}>{email}</b>
-              </p>
-            </>
+            <p style={{ color: '#888', margin: 0, fontSize: 15, lineHeight: 1.5 }}>
+              Код отправлен на <b style={{ color: '#111' }}>{email}</b>
+            </p>
           )}
-          {step === 'profile' && (
-            <>
-              <h1 style={titleStyle}>Почти готово</h1>
-              <p style={subtitleStyle}>Email подтверждён. Заполни последние пара полей.</p>
-            </>
-          )}
+          {/* На шаге 3 — без subtitle, только лого */}
         </div>
 
         {error && (
@@ -237,7 +217,7 @@ export default function Register() {
         {/* ============ ШАГ 1: Email ============ */}
         {step === 'email' && (
           <form onSubmit={requestCode}>
-            <div style={{ marginBottom: 8 }}>
+            <div style={{ marginBottom: 24 }}>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Email</label>
               <input
                 type="email" value={email} required
@@ -252,17 +232,13 @@ export default function Register() {
               />
             </div>
 
-            <p style={{ fontSize: 12, color: '#aaa', marginTop: 8, marginBottom: 24, lineHeight: 1.5 }}>
-              На него придёт 6-значный код для подтверждения
-            </p>
-
             <button type="submit" disabled={loading} style={{
-              width: '100%', background: '#111', color: '#F7F6F1',
+              width: '100%', background: '#E8FF47', color: '#111',
               padding: '14px', borderRadius: 10, border: 'none',
               fontSize: 15, fontWeight: 700, cursor: loading ? 'wait' : 'pointer',
               opacity: loading ? 0.6 : 1
             }}>
-              {loading ? 'Отправляем...' : 'Зарегистрироваться'}
+              {loading ? 'Отправляем...' : 'Продолжить'}
             </button>
 
             <p style={{ textAlign: 'center', marginTop: 24, fontSize: 14, color: '#888' }}>
