@@ -354,7 +354,7 @@ export default function Register() {
                   style={{
                     background: 'transparent', border: 'none', cursor: 'pointer',
                     fontSize: 14, color: '#111', fontWeight: 600,
-                    textDecoration: 'underline'
+                    textDecoration: 'none'
                   }}
                 >
                   Отправить код заново
