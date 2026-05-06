@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
-import { User, Bell, CreditCard, Plug, ChevronRight, Settings as SettingsIcon, Clock, BookOpen } from 'lucide-react'
+import { User, Bell, CreditCard, Plug, ChevronRight, Settings as SettingsIcon, Clock, BookOpen, Lock, Eye, EyeOff, Trash2 } from 'lucide-react'
 
 const API = 'https://kogda-backend-production.up.railway.app'
 
@@ -54,29 +54,12 @@ const Toggle = ({ value, onChange, disabled }) => (
   </div>
 )
 
-const Row = ({ icon, label: text, subtitle, right, muted }) => (
-  <div style={{
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '14px 0', borderBottom: '1px solid #F0EFE9'
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <div style={{ width: 36, height: 36, borderRadius: 10, background: '#F7F6F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0, opacity: muted ? 0.5 : 1 }}>
-        {icon}
-      </div>
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 600, color: muted ? '#aaa' : '#111' }}>{text}</div>
-        {subtitle && <div style={{ fontSize: 12, color: '#aaa', marginTop: 1 }}>{subtitle}</div>}
-      </div>
-    </div>
-    {right}
-  </div>
-)
-
 const TABS = [
   { id: 'profile', label: 'Профиль', icon: User },
   { id: 'notifications', label: 'Уведомления', icon: Bell },
   { id: 'payments', label: 'Оплата', icon: CreditCard },
   { id: 'integrations', label: 'Интеграции', icon: Plug },
+  { id: 'security', label: 'Безопасность', icon: Lock },
 ]
 
 const SECTION_TITLES = {
@@ -84,6 +67,7 @@ const SECTION_TITLES = {
   notifications: 'Уведомления',
   payments: 'Способы оплаты',
   integrations: 'Интеграции',
+  security: 'Безопасность',
 }
 
 const BANKS = ['Сбербанк', 'Т-Банк', 'Альфа-Банк', 'ВТБ', 'Райффайзен', 'Газпромбанк']
@@ -110,9 +94,9 @@ export default function Settings() {
   // Payments
   const [payments, setPayments] = useState({
     payment_sbp: false,
-    payment_tinkoff: false,  // = Российская карта / банк
-    payment_sber: false,     // = Revolut
-    payment_kaspi: false,    // не используем в UI
+    payment_tinkoff: false,
+    payment_sber: false,
+    payment_kaspi: false,
     payment_paypal: false,
     payment_wise: false,
     payment_usdt: false,
@@ -121,6 +105,18 @@ export default function Settings() {
   })
   const [selectedBanks, setSelectedBanks] = useState([])
   const [paymentSaved, setPaymentSaved] = useState(false)
+
+  // Security
+  const [passwordForm, setPasswordForm] = useState({ current: '', next: '' })
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false)
+  const [showNextPwd, setShowNextPwd] = useState(false)
+  const [pwdSaved, setPwdSaved] = useState(false)
+  const [pwdError, setPwdError] = useState('')
+  const [pwdLoading, setPwdLoading] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteError, setDeleteError] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   useEffect(() => {
     loadSettings()
@@ -199,6 +195,48 @@ export default function Settings() {
     setSelectedBanks(prev =>
       prev.includes(bank) ? prev.filter(b => b !== bank) : [...prev, bank]
     )
+  }
+
+  // Security actions
+  const changePassword = async (e) => {
+    e.preventDefault()
+    setPwdError('')
+    if (passwordForm.next.length < 6) {
+      setPwdError('Новый пароль должен быть минимум 6 символов')
+      return
+    }
+    setPwdLoading(true)
+    const token = localStorage.getItem('token')
+    try {
+      await axios.patch(`${API}/auth/change-password`, {
+        currentPassword: passwordForm.current,
+        newPassword: passwordForm.next
+      }, { headers: { Authorization: `Bearer ${token}` } })
+      setPwdSaved(true)
+      setPasswordForm({ current: '', next: '' })
+      setTimeout(() => setPwdSaved(false), 3000)
+    } catch (err) {
+      setPwdError(err.response?.data?.error || 'Ошибка смены пароля')
+    }
+    setPwdLoading(false)
+  }
+
+  const deleteAccount = async () => {
+    setDeleteError('')
+    setDeleteLoading(true)
+    const token = localStorage.getItem('token')
+    try {
+      await axios.delete(`${API}/auth/delete-account`, {
+        headers: { Authorization: `Bearer ${token}` },
+        data: { password: deletePassword }
+      })
+      localStorage.clear()
+      alert('Аккаунт помечен на удаление. У тебя 30 дней чтобы передумать — просто войди снова.')
+      window.location.href = '/login'
+    } catch (err) {
+      setDeleteError(err.response?.data?.error || 'Ошибка удаления')
+    }
+    setDeleteLoading(false)
   }
 
   const PaymentCard = ({ p }) => {
@@ -339,7 +377,6 @@ export default function Settings() {
             {group.items.map(p => <PaymentCard key={p.key} p={p} />)}
           </div>
 
-          {/* Bank chips — раскрывается если выбрана Российская карта */}
           {group.group === 'РОССИЯ' && payments.payment_tinkoff && (
             <div style={{ marginTop: 8, padding: '14px 16px', background: '#F7F6F1', borderRadius: 12, border: '1px solid #E8E7E0' }}>
               <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>Уточните банк, если хотите</div>
@@ -381,7 +418,6 @@ export default function Settings() {
   )
 
   const IntegrationsSection = () => {
-    // Чистые SVG иконки без кружков — единый размер 24x24
     const Icon = ({ name }) => {
       const s = { width: 28, height: 28, flexShrink: 0, objectFit: 'contain', borderRadius: 6 }
       const urls = {
@@ -453,11 +489,119 @@ export default function Settings() {
       </div>
     )
   }
+
+  const SecuritySection = () => (
+    <div>
+      {/* Смена пароля */}
+      <form onSubmit={changePassword}>
+        <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Сменить пароль</h4>
+        <p style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>Введи текущий и новый пароль.</p>
+
+        {pwdError && (
+          <div style={{
+            background: '#FEE2E2', color: '#DC2626', padding: '10px 14px',
+            borderRadius: 8, marginBottom: 12, fontSize: 13
+          }}>{pwdError}</div>
+        )}
+
+        {pwdSaved && (
+          <div style={{
+            background: '#DCFCE7', color: '#16A34A', padding: '10px 14px',
+            borderRadius: 8, marginBottom: 12, fontSize: 13
+          }}>✓ Пароль изменён</div>
+        )}
+
+        <div style={{ marginBottom: 12 }}>
+          <label style={label}>Текущий пароль</label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showCurrentPwd ? 'text' : 'password'}
+              value={passwordForm.current}
+              onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })}
+              required
+              autoComplete="current-password"
+              style={{ ...inp, paddingRight: 44 }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrentPwd(s => !s)}
+              aria-label={showCurrentPwd ? 'Скрыть' : 'Показать'}
+              style={{
+                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                padding: 8, display: 'flex', alignItems: 'center', color: '#888'
+              }}
+            >
+              {showCurrentPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={label}>Новый пароль</label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showNextPwd ? 'text' : 'password'}
+              value={passwordForm.next}
+              onChange={e => setPasswordForm({ ...passwordForm, next: e.target.value })}
+              required
+              minLength={6}
+              autoComplete="new-password"
+              style={{ ...inp, paddingRight: 44 }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowNextPwd(s => !s)}
+              aria-label={showNextPwd ? 'Скрыть' : 'Показать'}
+              style={{
+                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                padding: 8, display: 'flex', alignItems: 'center', color: '#888'
+              }}
+            >
+              {showNextPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" disabled={pwdLoading} style={{
+          ...primaryBtn(false),
+          opacity: pwdLoading ? 0.6 : 1,
+          cursor: pwdLoading ? 'wait' : 'pointer'
+        }}>
+          {pwdLoading ? 'Сохраняем...' : 'Сменить пароль'}
+        </button>
+      </form>
+
+      {/* Опасная зона */}
+      <div style={{ marginTop: 40, paddingTop: 28, borderTop: '1px solid #F0EFE9' }}>
+        <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, color: '#DC2626' }}>Опасная зона</h4>
+        <p style={{ color: '#888', fontSize: 13, marginBottom: 16, lineHeight: 1.6 }}>
+          Удаление аккаунта отложенное: у тебя будет 30 дней чтобы передумать.
+          Просто войди снова в течение этого срока, и аккаунт восстановится.
+          Через 30 дней все данные удалятся навсегда.
+        </p>
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          style={{
+            background: 'transparent', color: '#DC2626', border: '1.5px solid #FECACA',
+            padding: '11px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
+          }}
+        >
+          <Trash2 size={14} />
+          Удалить аккаунт
+        </button>
+      </div>
+    </div>
+  )
+
   const sectionContent = {
     profile: <ProfileSection />,
     notifications: <NotificationsSection />,
     payments: <PaymentsSection />,
     integrations: <IntegrationsSection />,
+    security: <SecuritySection />,
   }
 
   return (
@@ -520,7 +664,7 @@ export default function Settings() {
           ) : (
             /* DESKTOP TABS */
             <div>
-              <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#fff', borderRadius: 14, padding: 6, border: '1px solid #E8E7E0', width: 'fit-content' }}>
+              <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#fff', borderRadius: 14, padding: 6, border: '1px solid #E8E7E0', width: 'fit-content', flexWrap: 'wrap' }}>
                 {TABS.map(tab => (
                   <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
                     padding: '8px 20px', borderRadius: 10, border: 'none', cursor: 'pointer',
@@ -543,6 +687,70 @@ export default function Settings() {
           )}
         </div>
       </div>
+
+      {/* Модалка удаления аккаунта */}
+      {showDeleteModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 100, padding: 20
+        }} onClick={() => setShowDeleteModal(false)}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#fff', borderRadius: 16, padding: 32,
+              maxWidth: 420, width: '100%'
+            }}
+          >
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Удалить аккаунт?</h3>
+            <p style={{ color: '#666', fontSize: 14, marginBottom: 20, lineHeight: 1.6 }}>
+              Аккаунт будет помечен на удаление. У тебя <b style={{ color: '#111' }}>30 дней</b> чтобы передумать —
+              просто войди снова, и он восстановится. Через 30 дней все данные сотрутся навсегда.
+            </p>
+
+            {deleteError && (
+              <div style={{
+                background: '#FEE2E2', color: '#DC2626', padding: '10px 14px',
+                borderRadius: 8, marginBottom: 12, fontSize: 13
+              }}>{deleteError}</div>
+            )}
+
+            <label style={{ ...label, marginBottom: 6 }}>Введи пароль для подтверждения</label>
+            <input
+              type="password"
+              value={deletePassword}
+              onChange={e => setDeletePassword(e.target.value)}
+              autoComplete="current-password"
+              autoFocus
+              style={inp}
+            />
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+              <button
+                onClick={() => { setShowDeleteModal(false); setDeletePassword(''); setDeleteError('') }}
+                style={{
+                  flex: 1, background: 'transparent', border: '1.5px solid #E0E0D8',
+                  padding: '11px', borderRadius: 9, fontSize: 14, fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={deleteAccount}
+                disabled={!deletePassword || deleteLoading}
+                style={{
+                  flex: 1, background: '#DC2626', color: '#fff', border: 'none',
+                  padding: '11px', borderRadius: 9, fontSize: 14, fontWeight: 700,
+                  cursor: (deletePassword && !deleteLoading) ? 'pointer' : 'not-allowed',
+                  opacity: (deletePassword && !deleteLoading) ? 1 : 0.5
+                }}
+              >
+                {deleteLoading ? 'Удаляем...' : 'Удалить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
