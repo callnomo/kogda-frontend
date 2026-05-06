@@ -4,8 +4,27 @@ import { Eye, EyeOff } from 'lucide-react'
 
 const API = 'https://kogda-backend-production.up.railway.app'
 
+// Проверка пароля
+const checkPassword = (pwd) => {
+  if (!pwd) return { strength: null, valid: false, error: '' }
+  const hasLetter = /[a-zA-Zа-яА-Я]/.test(pwd)
+  const hasDigit = /\d/.test(pwd)
+  const length = pwd.length
+
+  if (length < 8) {
+    return { strength: 'weak', valid: false, error: 'Минимум 8 символов' }
+  }
+  if (!hasLetter || !hasDigit) {
+    return { strength: 'weak', valid: false, error: 'Нужна хотя бы одна буква и цифра' }
+  }
+  if (length >= 12) {
+    return { strength: 'strong', valid: true, error: '' }
+  }
+  return { strength: 'medium', valid: true, error: '' }
+}
+
 export default function Register() {
-  const [step, setStep] = useState('email') // 'email' | 'code' | 'profile'
+  const [step, setStep] = useState('email')
 
   const [email, setEmail] = useState('')
 
@@ -16,10 +35,17 @@ export default function Register() {
   const [tempToken, setTempToken] = useState('')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
+  const [passwordConfirm, setPasswordConfirm] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false)
+  const [agreed, setAgreed] = useState(false)
 
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const pwdCheck = checkPassword(password)
+  const passwordsMismatch = passwordConfirm.length > 0 && password !== passwordConfirm
+  const canSubmit = pwdCheck.valid && password === passwordConfirm && agreed && name.trim()
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -119,8 +145,16 @@ export default function Register() {
   const completeRegistration = async (e) => {
     e.preventDefault()
     setError('')
-    if (password.length < 6) {
-      setError('Пароль должен быть минимум 6 символов')
+    if (!pwdCheck.valid) {
+      setError(pwdCheck.error || 'Пароль не соответствует требованиям')
+      return
+    }
+    if (password !== passwordConfirm) {
+      setError('Пароли не совпадают')
+      return
+    }
+    if (!agreed) {
+      setError('Поставь галочку согласия с условиями')
       return
     }
     setLoading(true)
@@ -141,6 +175,8 @@ export default function Register() {
           setTempToken('')
           setName('')
           setPassword('')
+          setPasswordConfirm('')
+          setAgreed(false)
           setError('')
         }, 2500)
       } else {
@@ -166,6 +202,40 @@ export default function Register() {
     background: '#fff', fontFamily: 'inherit',
     transition: 'border-color 0.15s'
   })
+
+  const StrengthBar = ({ strength }) => {
+    if (!strength) return null
+    const colors = {
+      weak: '#DC2626',
+      medium: '#F59E0B',
+      strong: '#16A34A'
+    }
+    const labels = {
+      weak: 'Слабый',
+      medium: 'Нормальный',
+      strong: 'Сильный'
+    }
+    const filledBars = strength === 'weak' ? 1 : strength === 'medium' ? 2 : 3
+    return (
+      <div style={{ marginTop: 8 }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} style={{
+              flex: 1, height: 4, borderRadius: 2,
+              background: i < filledBars ? colors[strength] : '#E1DED6',
+              transition: 'background 0.2s'
+            }} />
+          ))}
+        </div>
+        <p style={{
+          margin: 0, fontSize: 12,
+          color: colors[strength], fontWeight: 600
+        }}>
+          {labels[strength]} {strength === 'weak' && password.length > 0 && `— ${pwdCheck.error}`}
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div style={{
@@ -204,7 +274,6 @@ export default function Register() {
               Код отправлен на <b style={{ color: '#111' }}>{email}</b>
             </p>
           )}
-          {/* На шаге 3 — без subtitle, только лого */}
         </div>
 
         {error && (
@@ -325,16 +394,15 @@ export default function Register() {
               />
             </div>
 
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Пароль</label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   required
-                  minLength={6}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="минимум 6 символов"
+                  placeholder="буквы и цифры, минимум 8"
                   autoComplete="new-password"
                   style={{ ...inputStyle, paddingRight: 44 }}
                 />
@@ -351,13 +419,80 @@ export default function Register() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              <StrengthBar strength={pwdCheck.strength} />
             </div>
 
-            <button type="submit" disabled={loading} style={{
-              width: '100%', background: '#E8FF47', color: '#111',
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Пароль ещё раз</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPasswordConfirm ? 'text' : 'password'}
+                  value={passwordConfirm}
+                  required
+                  onChange={e => setPasswordConfirm(e.target.value)}
+                  placeholder="повтори пароль"
+                  autoComplete="new-password"
+                  onPaste={e => e.preventDefault()}
+                  style={{
+                    ...inputStyle,
+                    paddingRight: 44,
+                    border: passwordsMismatch ? '1.5px solid #DC2626' : '1.5px solid #E1DED6'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordConfirm(s => !s)}
+                  aria-label={showPasswordConfirm ? 'Скрыть пароль' : 'Показать пароль'}
+                  style={{
+                    position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    padding: 8, display: 'flex', alignItems: 'center', color: '#888'
+                  }}
+                >
+                  {showPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {passwordsMismatch && (
+                <p style={{ margin: '6px 0 0', fontSize: 12, color: '#DC2626' }}>
+                  Пароли не совпадают
+                </p>
+              )}
+            </div>
+
+            {/* Чекбокс согласия */}
+            <label style={{
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+              marginBottom: 24, cursor: 'pointer'
+            }}>
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={e => setAgreed(e.target.checked)}
+                style={{
+                  width: 18, height: 18, marginTop: 2,
+                  accentColor: '#111', cursor: 'pointer', flexShrink: 0
+                }}
+              />
+              <span style={{ fontSize: 13, color: '#444', lineHeight: 1.5 }}>
+                Соглашаюсь с{' '}
+                <a href="/terms" target="_blank" rel="noreferrer" style={{ color: '#111', fontWeight: 600 }}>
+                  Условиями использования
+                </a>
+                {' '}и{' '}
+                <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: '#111', fontWeight: 600 }}>
+                  Политикой конфиденциальности
+                </a>
+              </span>
+            </label>
+
+            <button type="submit" disabled={loading || !canSubmit} style={{
+              width: '100%', background: canSubmit ? '#E8FF47' : '#E1DED6',
+              color: canSubmit ? '#111' : '#888',
               padding: '14px', borderRadius: 10, border: 'none',
-              fontSize: 15, fontWeight: 700, cursor: loading ? 'wait' : 'pointer',
-              opacity: loading ? 0.6 : 1
+              fontSize: 15, fontWeight: 700,
+              cursor: (loading || !canSubmit) ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1,
+              transition: 'background 0.15s'
             }}>
               {loading ? 'Создаём...' : 'Создать аккаунт'}
             </button>
