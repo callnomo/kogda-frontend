@@ -29,7 +29,7 @@ export default function Login() {
         window.location.href = '/dashboard'
       }
     } catch (err) {
-      setError('Неверный email или пароль')
+      setError(err.response?.data?.error || 'Неверный email или пароль')
     }
   }
 
