@@ -48,10 +48,6 @@ function FallbackError() {
   )
 }
 
-function DebugSentry() {
-  throw new Error('Тестовая ошибка фронта для Sentry!')
-}
-
 function App() {
   return (
     <Sentry.ErrorBoundary fallback={<FallbackError />}>
@@ -65,7 +61,6 @@ function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/bookings" element={<Bookings />} />
           <Route path="/booking/:token" element={<ClientBooking />} />
-          <Route path="/debug-sentry" element={<DebugSentry />} />
           <Route path="/:slug" element={<BookingPage />} />
         </Routes>
       </BrowserRouter>
