@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
-import { User, Bell, CreditCard, Plug, ChevronRight, Settings as SettingsIcon, Clock, BookOpen, Lock, Eye, EyeOff, Trash2 } from 'lucide-react'
+import { User, Bell, CreditCard, Plug, ChevronRight, Settings as SettingsIcon, Clock, BookOpen, Lock, Eye, EyeOff, Trash2, Camera } from 'lucide-react'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
@@ -72,11 +72,80 @@ const SECTION_TITLES = {
 
 const BANKS = ['Сбербанк', 'Т-Банк', 'Альфа-Банк', 'ВТБ', 'Райффайзен', 'Газпромбанк']
 
-// ============ SECTIONS (вынесены наружу — это фикс бага со слетающим курсором) ============
+// ============ SECTIONS (вынесены наружу — фикс бага со слетающим курсором) ============
 
-function ProfileSection({ form, setForm, profileSaved, saveProfile }) {
+function ProfileSection({ form, setForm, profileSaved, saveProfile, avatarLoading, uploadAvatar, removeAvatar }) {
+  const fileInputRef = useRef(null)
+
   return (
     <form onSubmit={saveProfile}>
+      {/* Аватарка */}
+      <div style={{ marginBottom: 24 }}>
+        <label style={labelStyle}>Фото профиля</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {form.avatar ? (
+            <img
+              src={form.avatar}
+              alt="Аватар"
+              style={{ width: 72, height: 72, borderRadius: 36, objectFit: 'cover', display: 'block' }}
+            />
+          ) : (
+            <div style={{
+              width: 72, height: 72, borderRadius: 36, background: '#E8FF47',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 28, fontWeight: 800, color: '#111'
+            }}>
+              {(form.name || '?').charAt(0).toUpperCase()}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) uploadAvatar(file)
+                e.target.value = ''
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarLoading}
+              style={{
+                background: '#111', color: '#fff', border: 'none',
+                padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                cursor: avatarLoading ? 'wait' : 'pointer',
+                opacity: avatarLoading ? 0.6 : 1,
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <Camera size={14} />
+              {avatarLoading ? 'Загружаем...' : form.avatar ? 'Заменить' : 'Загрузить'}
+            </button>
+            {form.avatar && !avatarLoading && (
+              <button
+                type="button"
+                onClick={removeAvatar}
+                style={{
+                  background: 'transparent', color: '#888', border: 'none',
+                  padding: '4px 0', fontSize: 12, fontWeight: 500,
+                  cursor: 'pointer', textAlign: 'left'
+                }}
+              >
+                Удалить
+              </button>
+            )}
+          </div>
+        </div>
+        <div style={{ fontSize: 12, color: '#aaa', marginTop: 8 }}>
+          JPG или PNG, до 5 МБ
+        </div>
+      </div>
+
       <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Имя</label>
         <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inp} />
@@ -459,8 +528,9 @@ export default function Settings() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
 
   // Profile
-  const [form, setForm] = useState({ name: '', bio: '', slug: '' })
+  const [form, setForm] = useState({ name: '', bio: '', slug: '', avatar: '' })
   const [profileSaved, setProfileSaved] = useState(false)
+  const [avatarLoading, setAvatarLoading] = useState(false)
 
   // Notifications
   const [notifications, setNotifications] = useState({
@@ -509,7 +579,12 @@ export default function Settings() {
     const token = localStorage.getItem('token')
     try {
       const res = await axios.get(`${API}/settings`, { headers: { Authorization: `Bearer ${token}` } })
-      setForm({ name: res.data.name || '', bio: res.data.bio || '', slug: res.data.slug || '' })
+      setForm({
+        name: res.data.name || '',
+        bio: res.data.bio || '',
+        slug: res.data.slug || '',
+        avatar: res.data.avatar || '',
+      })
       setTelegramConnected(!!res.data.telegram_chat_id)
       setNotifications({
         notify_telegram: res.data.notify_telegram ?? true,
@@ -536,11 +611,47 @@ export default function Settings() {
     e.preventDefault()
     const token = localStorage.getItem('token')
     try {
-      const res = await axios.patch(`${API}/settings/profile`, form, { headers: { Authorization: `Bearer ${token}` } })
+      const res = await axios.patch(`${API}/settings/profile`, {
+        name: form.name, bio: form.bio, slug: form.slug
+      }, { headers: { Authorization: `Bearer ${token}` } })
       localStorage.setItem('user', JSON.stringify(res.data))
       setProfileSaved(true)
       setTimeout(() => setProfileSaved(false), 3000)
     } catch (err) { alert(err.response?.data?.error || 'Ошибка сохранения') }
+  }
+
+  const uploadAvatar = async (file) => {
+    setAvatarLoading(true)
+    const token = localStorage.getItem('token')
+    const formData = new FormData()
+    formData.append('avatar', file)
+    try {
+      const res = await axios.post(`${API}/settings/avatar`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        }
+      })
+      setForm(f => ({ ...f, avatar: res.data.avatar }))
+    } catch (err) {
+      alert(err.response?.data?.error || 'Ошибка загрузки фото')
+    }
+    setAvatarLoading(false)
+  }
+
+  const removeAvatar = async () => {
+    if (!window.confirm('Удалить фото профиля?')) return
+    setAvatarLoading(true)
+    const token = localStorage.getItem('token')
+    try {
+      await axios.delete(`${API}/settings/avatar`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setForm(f => ({ ...f, avatar: '' }))
+    } catch (err) {
+      alert(err.response?.data?.error || 'Ошибка удаления')
+    }
+    setAvatarLoading(false)
   }
 
   const saveNotifications = async () => {
@@ -617,7 +728,12 @@ export default function Settings() {
   }
 
   const renderSection = (key) => {
-    if (key === 'profile') return <ProfileSection form={form} setForm={setForm} profileSaved={profileSaved} saveProfile={saveProfile} />
+    if (key === 'profile') return <ProfileSection
+      form={form} setForm={setForm}
+      profileSaved={profileSaved} saveProfile={saveProfile}
+      avatarLoading={avatarLoading}
+      uploadAvatar={uploadAvatar} removeAvatar={removeAvatar}
+    />
     if (key === 'notifications') return <NotificationsSection notifications={notifications} setNotifications={setNotifications} notifSaved={notifSaved} saveNotifications={saveNotifications} />
     if (key === 'payments') return <PaymentsSection payments={payments} setPayments={setPayments} selectedBanks={selectedBanks} toggleBank={toggleBank} paymentSaved={paymentSaved} savePayments={savePayments} isMobile={isMobile} />
     if (key === 'integrations') return <IntegrationsSection telegramConnected={telegramConnected} telegramLink={telegramLink} connectTelegram={connectTelegram} />
