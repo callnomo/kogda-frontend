@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { User, Clock, BookOpen, Settings, Video, X, Check, RefreshCw } from 'lucide-react'
 
-const API = 'https://kogda-backend-production.up.railway.app'
+const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
 const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек']
 

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { User, Bell, CreditCard, Plug, ChevronRight, Settings as SettingsIcon, Clock, BookOpen, Lock, Eye, EyeOff, Trash2 } from 'lucide-react'
 
-const API = 'https://kogda-backend-production.up.railway.app'
+const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
 // ---- Shared styles ----
 const card = {

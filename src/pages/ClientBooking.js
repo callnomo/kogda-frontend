@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { Calendar, Clock, Video, X, RefreshCw, Check } from 'lucide-react'
 
-const API = 'https://kogda-backend-production.up.railway.app'
+const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
 const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
 const MONTHS_FULL = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']

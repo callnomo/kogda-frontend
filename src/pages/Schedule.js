@@ -3,7 +3,7 @@ import axios from 'axios'
 import { User, Clock, BookOpen, Settings, Plus, Trash2, Check } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-const API = 'https://kogda-backend-production.up.railway.app'
+const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
 const DAYS = [
   { id: 1, full: 'Понедельник' },

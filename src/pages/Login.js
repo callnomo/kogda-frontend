@@ -2,7 +2,7 @@ import { useState } from 'react'
 import axios from 'axios'
 import { Eye, EyeOff } from 'lucide-react'
 
-const API = 'https://kogda-backend-production.up.railway.app'
+const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
 export default function Login() {
   const [email, setEmail] = useState('')

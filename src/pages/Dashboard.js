@@ -3,7 +3,7 @@ import axios from 'axios'
 import { QRCodeSVG } from 'qrcode.react'
 import { User, Clock, BookOpen, Settings, Copy, Trash2, Plus, Check, ExternalLink, Calendar, QrCode, ChevronDown, ChevronUp, Edit2 } from 'lucide-react'
 
-const API = 'https://kogda-backend-production.up.railway.app'
+const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
 const hideArrows = `
   input[type=number]::-webkit-outer-spin-button,
