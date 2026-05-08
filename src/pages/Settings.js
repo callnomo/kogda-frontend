@@ -284,9 +284,16 @@ export default function Settings() {
       </div>
       <div style={{ marginBottom: 24 }}>
         <label style={label}>О себе</label>
-        <textarea value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })}
+        <input
+          value={form.bio}
+          onChange={e => setForm({ ...form, bio: e.target.value })}
           placeholder="Психолог, КПТ, 5 лет практики..."
-          style={{ ...inp, minHeight: 100, resize: 'vertical' }} />
+          maxLength={150}
+          style={inp}
+        />
+        <div style={{ fontSize: 12, color: '#aaa', marginTop: 6, textAlign: 'right' }}>
+          {form.bio.length}/150
+        </div>
       </div>
       <button type="submit" style={primaryBtn(profileSaved)}>
         {profileSaved ? '✓ Сохранено' : 'Сохранить'}
