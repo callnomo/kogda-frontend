@@ -105,9 +105,17 @@ export default function BookingPage() {
 
   const Sidebar = ({ showBack, onBack, backLabel }) => (
     <div style={{ background: '#fff', borderRadius: 20, padding: '24px', border: '1px solid #E8E7E0', height: 'fit-content' }}>
-      <div style={{ width: 48, height: 48, borderRadius: 24, background: '#E8FF47', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, marginBottom: 12, color: '#111' }}>
-        {profile.name.charAt(0)}
-      </div>
+      {profile.avatar ? (
+        <img
+          src={profile.avatar}
+          alt={profile.name}
+          style={{ width: 48, height: 48, borderRadius: 24, objectFit: 'cover', marginBottom: 12, display: 'block' }}
+        />
+      ) : (
+        <div style={{ width: 48, height: 48, borderRadius: 24, background: '#E8FF47', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, marginBottom: 12, color: '#111' }}>
+          {profile.name.charAt(0)}
+        </div>
+      )}
       <div style={{ fontSize: 16, fontWeight: 700, marginBottom: profile.bio ? 4 : 16 }}>{profile.name}</div>
       {profile.bio && <div style={{ fontSize: 13, color: '#888', marginBottom: 16, lineHeight: 1.5 }}>{profile.bio}</div>}
       {selectedMeeting && (
@@ -161,9 +169,17 @@ export default function BookingPage() {
         {step === 1 && (
           <div style={{ maxWidth: 520, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 28 }}>
-              <div style={{ width: 72, height: 72, borderRadius: 36, background: '#E8FF47', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 800, margin: '0 auto 14px', color: '#111' }}>
-                {profile.name.charAt(0)}
-              </div>
+              {profile.avatar ? (
+                <img
+                  src={profile.avatar}
+                  alt={profile.name}
+                  style={{ width: 72, height: 72, borderRadius: 36, objectFit: 'cover', margin: '0 auto 14px', display: 'block' }}
+                />
+              ) : (
+                <div style={{ width: 72, height: 72, borderRadius: 36, background: '#E8FF47', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 800, margin: '0 auto 14px', color: '#111' }}>
+                  {profile.name.charAt(0)}
+                </div>
+              )}
               <h2 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 4px' }}>{profile.name}</h2>
               {profile.bio && <p style={{ fontSize: 14, color: '#888', margin: 0 }}>{profile.bio}</p>}
             </div>
