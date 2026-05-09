@@ -77,7 +77,6 @@ export default function AppLayout({ children }) {
     return location.pathname.startsWith(to)
   }
 
-  // ====== AVATAR POPOVER (desktop) — минимальный ======
   const renderAvatarPopover = (closeMenu) => (
     <>
       <div style={{
@@ -113,7 +112,6 @@ export default function AppLayout({ children }) {
     </>
   )
 
-  // ====== DRAWER MENU CONTENT (mobile) ======
   const renderMobileDrawerMenu = (closeMenu) => (
     <>
       <div style={{
@@ -169,7 +167,6 @@ export default function AppLayout({ children }) {
     </>
   )
 
-  // ====== HEADER (mobile) — без колокольчика ======
   const renderHeader = () => (
     <div style={{
       background: '#F7F6F1', borderBottom: '0.5px solid #E5E5E0',
@@ -203,7 +200,6 @@ export default function AppLayout({ children }) {
     </div>
   )
 
-  // ====== SIDEBAR (desktop) ======
   const renderSidebar = () => {
     const collapsed = isNarrow
     const width = collapsed ? 64 : 220
@@ -218,9 +214,9 @@ export default function AppLayout({ children }) {
         top: 0,
         height: '100vh',
         zIndex: 5,
-        padding: '20px 0'
+        padding: '20px 0',
+        borderRight: '1px solid rgba(17, 17, 17, 0.15)'
       }}>
-        {/* Логотип */}
         <div style={{
           padding: collapsed ? '0 0 16px' : '0 14px 16px',
           display: 'flex', justifyContent: collapsed ? 'center' : 'flex-start',
@@ -241,7 +237,6 @@ export default function AppLayout({ children }) {
           )}
         </div>
 
-        {/* Меню */}
         <nav style={{ padding: '8px 4px', display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
           {NAV_ITEMS.map(item => {
             const Icon = item.icon
@@ -285,7 +280,6 @@ export default function AppLayout({ children }) {
           })}
         </nav>
 
-        {/* Аватарка */}
         <div style={{
           padding: collapsed ? '8px 0 0' : '8px 4px 0',
           position: 'relative'
@@ -348,7 +342,6 @@ export default function AppLayout({ children }) {
     )
   }
 
-  // ====== BOTTOM NAV (mobile) ======
   const renderBottomNav = () => (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -387,7 +380,6 @@ export default function AppLayout({ children }) {
     </div>
   )
 
-  // ====== DRAWER (mobile) ======
   const renderDrawer = () => {
     if (!drawerOpen) return null
     return (
@@ -420,7 +412,6 @@ export default function AppLayout({ children }) {
     )
   }
 
-  // ====== РЕНДЕР ======
   if (isMobile) {
     return (
       <div style={{
@@ -436,7 +427,6 @@ export default function AppLayout({ children }) {
     )
   }
 
-  // Desktop
   return (
     <div style={{
       minHeight: '100vh', background: '#F7F6F1',

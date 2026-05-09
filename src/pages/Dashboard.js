@@ -218,7 +218,6 @@ export default function Dashboard() {
             </h1>
           </div>
 
-          {/* НОВОЕ */}
           {pendingBookings.length > 0 && (
             <div style={{ marginBottom: 32 }}>
               <h3 style={sectionLabelStyle}>
@@ -320,7 +319,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* СЕГОДНЯ */}
           <div>
             <h3 style={sectionLabelStyle}>
               Сегодня <span style={{ fontWeight: 500, color: '#bbb', letterSpacing: 0, textTransform: 'none' }}>
@@ -358,10 +356,12 @@ export default function Dashboard() {
         {/* === ПРАВАЯ КОЛОНКА === */}
         <div style={{
           display: 'flex', flexDirection: 'column', gap: 24,
-          paddingTop: 68
+          paddingTop: 68,
+          borderLeft: '1px solid rgba(17, 17, 17, 0.15)',
+          paddingLeft: 24,
+          marginLeft: -24
         }} className="dashboard-sidebar">
 
-          {/* Обзор */}
           <div>
             <h3 style={sectionLabelStyle}>Обзор</h3>
             <div style={blockStyle}>
@@ -386,7 +386,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Твоя ссылка */}
           <div>
             <h3 style={sectionLabelStyle}>Твоя ссылка</h3>
             <div style={blockStyle}>
@@ -440,7 +439,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Ближайшие */}
           {upcomingBookings.length > 0 && (
             <div>
               <h3 style={sectionLabelStyle}>Ближайшие</h3>
@@ -474,6 +472,9 @@ export default function Dashboard() {
           .dashboard-sidebar {
             order: 2;
             padding-top: 0 !important;
+            border-left: none !important;
+            padding-left: 0 !important;
+            margin-left: 0 !important;
           }
         }
       `}</style>
