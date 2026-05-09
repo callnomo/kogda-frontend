@@ -7,7 +7,12 @@ import Schedule from './pages/Schedule'
 import BookingPage from './pages/BookingPage'
 import Settings from './pages/Settings'
 import Bookings from './pages/Bookings'
+import Services from './pages/Services'
+import Profile from './pages/Profile'
+import Premium from './pages/Premium'
+import Calendar from './pages/Calendar'
 import ClientBooking from './pages/ClientBooking'
+import AppLayout from './components/AppLayout'
 
 function FallbackError() {
   return (
@@ -48,6 +53,21 @@ function FallbackError() {
   )
 }
 
+function LayoutTest() {
+  return (
+    <AppLayout>
+      <div style={{ padding: 16 }}>
+        <h2 style={{ fontSize: 24, fontWeight: 500, color: '#111', margin: '0 0 16px' }}>
+          Тест навигации
+        </h2>
+        <p style={{ fontSize: 14, color: '#666' }}>
+          Это тестовая страница для проверки AppLayout.
+        </p>
+      </div>
+    </AppLayout>
+  )
+}
+
 function App() {
   return (
     <Sentry.ErrorBoundary fallback={<FallbackError />}>
@@ -57,10 +77,15 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/calendar" element={<Calendar />} />
           <Route path="/schedule" element={<Schedule />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/premium" element={<Premium />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/bookings" element={<Bookings />} />
           <Route path="/booking/:token" element={<ClientBooking />} />
+          <Route path="/layout-test" element={<LayoutTest />} />
           <Route path="/:slug" element={<BookingPage />} />
         </Routes>
       </BrowserRouter>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import axios from 'axios'
-import { User, Bell, CreditCard, Plug, ChevronRight, Settings as SettingsIcon, Clock, BookOpen, Lock, Eye, EyeOff, Trash2, Camera } from 'lucide-react'
+import { User, Bell, CreditCard, Plug, ChevronRight, Lock, Eye, EyeOff, Trash2, Camera } from 'lucide-react'
+import AppLayout from '../components/AppLayout'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
@@ -26,19 +26,6 @@ const primaryBtn = (saved) => ({
   border: 'none', padding: '13px 28px', borderRadius: 10,
   fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'background 0.3s'
 })
-
-// ---- Small components ----
-const NavItem = ({ icon: Icon, label: text, to, active }) => (
-  <Link to={to} style={{
-    display: 'flex', alignItems: 'center', gap: 10,
-    padding: '10px 14px', borderRadius: 10, textDecoration: 'none',
-    background: active ? '#E8FF47' : 'transparent',
-    color: '#111', fontSize: 14, fontWeight: active ? 700 : 500,
-  }}>
-    <Icon size={16} strokeWidth={active ? 2.5 : 2} />
-    {text}
-  </Link>
-)
 
 const Toggle = ({ value, onChange, disabled }) => (
   <div onClick={() => !disabled && onChange(!value)} style={{
@@ -72,14 +59,13 @@ const SECTION_TITLES = {
 
 const BANKS = ['Сбербанк', 'Т-Банк', 'Альфа-Банк', 'ВТБ', 'Райффайзен', 'Газпромбанк']
 
-// ============ SECTIONS (вынесены наружу — фикс бага со слетающим курсором) ============
+// ============ SECTIONS ============
 
 function ProfileSection({ form, setForm, profileSaved, saveProfile, avatarLoading, uploadAvatar, removeAvatar }) {
   const fileInputRef = useRef(null)
 
   return (
     <form onSubmit={saveProfile}>
-      {/* Аватарка */}
       <div style={{ marginBottom: 24 }}>
         <label style={labelStyle}>Фото профиля</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -527,12 +513,10 @@ export default function Settings() {
   const [mobileSection, setMobileSection] = useState(null)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
 
-  // Profile
   const [form, setForm] = useState({ name: '', bio: '', slug: '', avatar: '' })
   const [profileSaved, setProfileSaved] = useState(false)
   const [avatarLoading, setAvatarLoading] = useState(false)
 
-  // Notifications
   const [notifications, setNotifications] = useState({
     notify_telegram: true, notify_email: true,
     notify_whatsapp: false, notify_max: false,
@@ -541,7 +525,6 @@ export default function Settings() {
   const [telegramConnected, setTelegramConnected] = useState(false)
   const [telegramLink, setTelegramLink] = useState(null)
 
-  // Payments
   const [payments, setPayments] = useState({
     payment_sbp: false,
     payment_tinkoff: false,
@@ -556,7 +539,6 @@ export default function Settings() {
   const [selectedBanks, setSelectedBanks] = useState([])
   const [paymentSaved, setPaymentSaved] = useState(false)
 
-  // Security
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '' })
   const [showCurrentPwd, setShowCurrentPwd] = useState(false)
   const [showNextPwd, setShowNextPwd] = useState(false)
@@ -747,93 +729,70 @@ export default function Settings() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F7F6F1', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ background: '#fff', borderBottom: '1px solid #E8E7E0', padding: '16px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <img src="https://kogda.app/kogda-logo.png" alt="kogDA" style={{ height: 28, width: 'auto', display: 'block' }} />
-        <button onClick={() => { localStorage.clear(); window.location.href = '/login' }}
-          style={{ background: 'transparent', border: '1.5px solid #E0E0D8', padding: '8px 16px', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
-          Выйти
-        </button>
-      </div>
+    <AppLayout>
+      <h2 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 24px' }}>Настройки</h2>
 
-      <div style={{ display: 'flex', maxWidth: 1100, margin: '0 auto', padding: '40px 24px', gap: 32 }}>
-        {!isMobile && (
-          <div style={{ width: 200, flexShrink: 0 }}>
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <NavItem icon={User} label="Мой кабинет" to="/dashboard" active={false} />
-              <NavItem icon={Clock} label="Расписание" to="/schedule" active={false} />
-              <NavItem icon={BookOpen} label="Записи" to="/bookings" active={false} />
-              <NavItem icon={SettingsIcon} label="Настройки" to="/settings" active={true} />
-            </nav>
+      {isMobile ? (
+        mobileSection ? (
+          <div>
+            <button onClick={() => setMobileSection(null)} style={{ background: 'transparent', border: 'none', padding: '0 0 20px', fontSize: 14, fontWeight: 600, color: '#888', cursor: 'pointer' }}>
+              ← Настройки
+            </button>
+            <div style={card}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 24px' }}>{SECTION_TITLES[mobileSection]}</h3>
+              {renderSection(mobileSection)}
+            </div>
+            {mobileSection === 'security' && (
+              <div style={{ ...card, marginTop: 16 }}>
+                <DangerSection setShowDeleteModal={setShowDeleteModal} />
+              </div>
+            )}
           </div>
-        )}
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h2 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 24px' }}>Настройки</h2>
-
-          {isMobile ? (
-            mobileSection ? (
-              <div>
-                <button onClick={() => setMobileSection(null)} style={{ background: 'transparent', border: 'none', padding: '0 0 20px', fontSize: 14, fontWeight: 600, color: '#888', cursor: 'pointer' }}>
-                  ← Настройки
-                </button>
-                <div style={card}>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 24px' }}>{SECTION_TITLES[mobileSection]}</h3>
-                  {renderSection(mobileSection)}
-                </div>
-                {mobileSection === 'security' && (
-                  <div style={{ ...card, marginTop: 16 }}>
-                    <DangerSection setShowDeleteModal={setShowDeleteModal} />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {TABS.map(tab => (
+              <div key={tab.id} onClick={() => setMobileSection(tab.id)}
+                style={{ ...card, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: '#F7F6F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <tab.icon size={18} color="#111" />
                   </div>
-                )}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {TABS.map(tab => (
-                  <div key={tab.id} onClick={() => setMobileSection(tab.id)}
-                    style={{ ...card, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: '#F7F6F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <tab.icon size={18} color="#111" />
-                      </div>
-                      <span style={{ fontSize: 15, fontWeight: 600 }}>{tab.label}</span>
-                    </div>
-                    <ChevronRight size={18} color="#aaa" />
-                  </div>
-                ))}
-              </div>
-            )
-          ) : (
-            <div>
-              <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#fff', borderRadius: 14, padding: 6, border: '1px solid #E8E7E0', width: 'fit-content', flexWrap: 'wrap' }}>
-                {TABS.map(tab => (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                    padding: '8px 20px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                    background: activeTab === tab.id ? '#111' : 'transparent',
-                    color: activeTab === tab.id ? '#fff' : '#555',
-                    fontSize: 14, fontWeight: activeTab === tab.id ? 700 : 500,
-                    transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 7
-                  }}>
-                    <tab.icon size={14} />
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              <div style={card}>
-                <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 24px' }}>{SECTION_TITLES[activeTab]}</h3>
-                {renderSection(activeTab)}
-              </div>
-
-              {activeTab === 'security' && (
-                <div style={{ ...card, marginTop: 16, borderColor: '#FECACA' }}>
-                  <DangerSection setShowDeleteModal={setShowDeleteModal} />
+                  <span style={{ fontSize: 15, fontWeight: 600 }}>{tab.label}</span>
                 </div>
-              )}
+                <ChevronRight size={18} color="#aaa" />
+              </div>
+            ))}
+          </div>
+        )
+      ) : (
+        <div>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#fff', borderRadius: 14, padding: 6, border: '1px solid #E8E7E0', width: 'fit-content', flexWrap: 'wrap' }}>
+            {TABS.map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+                padding: '8px 20px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                background: activeTab === tab.id ? '#111' : 'transparent',
+                color: activeTab === tab.id ? '#fff' : '#555',
+                fontSize: 14, fontWeight: activeTab === tab.id ? 700 : 500,
+                transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 7
+              }}>
+                <tab.icon size={14} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={card}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 24px' }}>{SECTION_TITLES[activeTab]}</h3>
+            {renderSection(activeTab)}
+          </div>
+
+          {activeTab === 'security' && (
+            <div style={{ ...card, marginTop: 16, borderColor: '#FECACA' }}>
+              <DangerSection setShowDeleteModal={setShowDeleteModal} />
             </div>
           )}
         </div>
-      </div>
+      )}
 
       {showDeleteModal && (
         <div style={{
@@ -897,6 +856,6 @@ export default function Settings() {
           </div>
         </div>
       )}
-    </div>
+    </AppLayout>
   )
 }
