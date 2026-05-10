@@ -208,261 +208,277 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div style={{
-        display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 0,
-        alignItems: 'stretch',
+        position: 'relative',
         minHeight: 'calc(100vh - 48px)'
-      }} className="dashboard-grid">
+      }}>
+        {/* Вертикальная полоска от блока контента к правой колонке — на всю высоту */}
+        <div style={{
+          position: 'absolute',
+          right: 280,
+          top: 0,
+          bottom: 0,
+          width: 1,
+          background: 'rgba(17, 17, 17, 0.15)',
+          pointerEvents: 'none'
+        }} className="dashboard-divider" />
 
-        {/* === ЛЕВАЯ КОЛОНКА === */}
-        <div style={{ paddingRight: 32 }}>
-          <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>
-              Привет, {user.name}!
-            </h1>
-          </div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 280px',
+          gap: 0,
+          alignItems: 'start'
+        }} className="dashboard-grid">
 
-          {pendingBookings.length > 0 && (
-            <div style={{ marginBottom: 32 }}>
-              <h3 style={sectionLabelStyle}>
-                Новое · {pendingBookings.length}
-              </h3>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {pendingBookings.map(b => (
-                  <div key={b.id} style={{
-                    background: '#fff', borderRadius: 14, border: '1px solid #E8E7E0',
-                    borderLeft: '4px solid #E8FF47',
-                    padding: '20px 24px 20px 21px'
-                  }}>
-                    <div style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      marginBottom: 16
-                    }}>
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        background: '#F7F6F1', padding: '4px 12px', borderRadius: 100
-                      }}>
-                        {b.status === 'reschedule_requested' && <RefreshCw size={11} color="#111" />}
-                        <span style={{
-                          fontSize: 11, fontWeight: 700, color: '#111',
-                          textTransform: 'uppercase', letterSpacing: 0.5
-                        }}>
-                          {b.status === 'reschedule_requested' ? 'Перенос' : 'Новая запись'}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 13, color: '#888' }}>
-                        {b.status === 'reschedule_requested' && b.reschedule_time
-                          ? `${formatDateShort(b.reschedule_time)} · ${formatTime(b.reschedule_time)}`
-                          : `${formatDateShort(b.start_time)} · ${formatTime(b.start_time)}`}
-                      </div>
-                    </div>
-
-                    <div style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      gap: 16, flexWrap: 'wrap'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          width: 44, height: 44, borderRadius: 10,
-                          background: '#E8FF47', display: 'flex',
-                          alignItems: 'center', justifyContent: 'center',
-                          fontSize: 16, fontWeight: 700, color: '#111',
-                          flexShrink: 0
-                        }}>
-                          {initial(b.client_name)}
-                        </div>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{b.client_name}</div>
-                          {b.client_email && (
-                            <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{b.client_email}</div>
-                          )}
-                          <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>{b.meeting_title}</div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                        <button
-                          onClick={() => b.status === 'reschedule_requested' ? rejectReschedule(b.id) : rejectBooking(b.id)}
-                          style={{
-                            background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
-                            padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5
-                          }}
-                        >
-                          <XIcon size={13} /> Отклонить
-                        </button>
-                        <button
-                          onClick={() => b.status === 'reschedule_requested' ? confirmReschedule(b.id) : confirmBooking(b.id)}
-                          style={{
-                            background: '#111', color: '#fff', border: 'none',
-                            padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5
-                          }}
-                        >
-                          <Check size={13} /> Подтвердить
-                        </button>
-                      </div>
-                    </div>
-
-                    {b.notes && (
-                      <div style={{
-                        background: '#F7F6F1', borderRadius: 9,
-                        padding: '10px 14px', marginTop: 14,
-                        display: 'flex', alignItems: 'center', gap: 8
-                      }}>
-                        <MessageCircle size={14} color="#888" style={{ flexShrink: 0 }} />
-                        <div style={{ fontSize: 13, color: '#666', minWidth: 0 }}>
-                          {b.notes}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+          {/* === ЛЕВАЯ КОЛОНКА === */}
+          <div style={{ paddingRight: 32 }}>
+            <div style={{ marginBottom: 28 }}>
+              <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+                Привет, {user.name}!
+              </h1>
             </div>
-          )}
 
-          <div>
-            <h3 style={sectionLabelStyle}>
-              Сегодня <span style={{ fontWeight: 500, color: '#bbb', letterSpacing: 0, textTransform: 'none' }}>
-                {dayNumber} {monthGen} · {dayName}
-              </span>
-            </h3>
+            {pendingBookings.length > 0 && (
+              <div style={{ marginBottom: 32 }}>
+                <h3 style={sectionLabelStyle}>
+                  Новое · {pendingBookings.length}
+                </h3>
 
-            {todayBookings.length === 0 ? (
-              <div style={{
-                ...blockStyle,
-                padding: '40px 20px', textAlign: 'center'
-              }}>
-                <div style={{ fontSize: 14, color: '#888' }}>Сегодня записей нет</div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {todayBookings.map((b, idx) => {
-                  const isPast = new Date(b.start_time) < today
-                  const isNext = idx === nextBookingIndex
-                  return (
-                    <MeetingCard
-                      key={b.id}
-                      booking={b}
-                      isPast={isPast}
-                      isNext={isNext}
-                      showJoinButton={isNext}
-                    />
-                  )
-                })}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {pendingBookings.map(b => (
+                    <div key={b.id} style={{
+                      background: '#fff', borderRadius: 14, border: '1px solid #E8E7E0',
+                      borderLeft: '4px solid #E8FF47',
+                      padding: '20px 24px 20px 21px'
+                    }}>
+                      <div style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        marginBottom: 16
+                      }}>
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          background: '#F7F6F1', padding: '4px 12px', borderRadius: 100
+                        }}>
+                          {b.status === 'reschedule_requested' && <RefreshCw size={11} color="#111" />}
+                          <span style={{
+                            fontSize: 11, fontWeight: 700, color: '#111',
+                            textTransform: 'uppercase', letterSpacing: 0.5
+                          }}>
+                            {b.status === 'reschedule_requested' ? 'Перенос' : 'Новая запись'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 13, color: '#888' }}>
+                          {b.status === 'reschedule_requested' && b.reschedule_time
+                            ? `${formatDateShort(b.reschedule_time)} · ${formatTime(b.reschedule_time)}`
+                            : `${formatDateShort(b.start_time)} · ${formatTime(b.start_time)}`}
+                        </div>
+                      </div>
+
+                      <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        gap: 16, flexWrap: 'wrap'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
+                          <div style={{
+                            width: 44, height: 44, borderRadius: 10,
+                            background: '#E8FF47', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center',
+                            fontSize: 16, fontWeight: 700, color: '#111',
+                            flexShrink: 0
+                          }}>
+                            {initial(b.client_name)}
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{b.client_name}</div>
+                            {b.client_email && (
+                              <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{b.client_email}</div>
+                            )}
+                            <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>{b.meeting_title}</div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                          <button
+                            onClick={() => b.status === 'reschedule_requested' ? rejectReschedule(b.id) : rejectBooking(b.id)}
+                            style={{
+                              background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
+                              padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
+                              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5
+                            }}
+                          >
+                            <XIcon size={13} /> Отклонить
+                          </button>
+                          <button
+                            onClick={() => b.status === 'reschedule_requested' ? confirmReschedule(b.id) : confirmBooking(b.id)}
+                            style={{
+                              background: '#111', color: '#fff', border: 'none',
+                              padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
+                              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5
+                            }}
+                          >
+                            <Check size={13} /> Подтвердить
+                          </button>
+                        </div>
+                      </div>
+
+                      {b.notes && (
+                        <div style={{
+                          background: '#F7F6F1', borderRadius: 9,
+                          padding: '10px 14px', marginTop: 14,
+                          display: 'flex', alignItems: 'center', gap: 8
+                        }}>
+                          <MessageCircle size={14} color="#888" style={{ flexShrink: 0 }} />
+                          <div style={{ fontSize: 13, color: '#666', minWidth: 0 }}>
+                            {b.notes}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
-        </div>
 
-        {/* === ПРАВАЯ КОЛОНКА === */}
-        <div style={{
-          display: 'flex', flexDirection: 'column', gap: 24,
-          paddingTop: 68,
-          paddingLeft: 32,
-          borderLeft: '1px solid rgba(17, 17, 17, 0.15)'
-        }} className="dashboard-sidebar">
+            <div>
+              <h3 style={sectionLabelStyle}>
+                Сегодня <span style={{ fontWeight: 500, color: '#bbb', letterSpacing: 0, textTransform: 'none' }}>
+                  {dayNumber} {monthGen} · {dayName}
+                </span>
+              </h3>
 
-          <div>
-            <h3 style={sectionLabelStyle}>Обзор</h3>
-            <div style={blockStyle}>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>В этом месяце</div>
-                <div>
-                  <span style={{ fontSize: 32, fontWeight: 800, color: '#111' }}>{thisMonthCount}</span>
-                  <span style={{ fontSize: 13, color: '#888', marginLeft: 6 }}>
-                    {pluralize(thisMonthCount, 'запись', 'записи', 'записей')}
-                  </span>
-                </div>
-              </div>
-              <div style={{ borderTop: '1px solid #F0EFE9', paddingTop: 16 }}>
-                <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>Проведено</div>
-                <div>
-                  <span style={{ fontSize: 32, fontWeight: 800, color: '#111' }}>{completedCount}</span>
-                  <span style={{ fontSize: 13, color: '#888', marginLeft: 6 }}>
-                    {pluralize(completedCount, 'встреча', 'встречи', 'встреч')}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 style={sectionLabelStyle}>Твоя ссылка</h3>
-            <div style={blockStyle}>
-              <div style={{
-                background: '#F7F6F1', borderRadius: 9, padding: '10px 12px',
-                marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8
-              }}>
+              {todayBookings.length === 0 ? (
                 <div style={{
-                  flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#111',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                  ...blockStyle,
+                  padding: '40px 20px', textAlign: 'center'
                 }}>
-                  {bookingLink}
+                  <div style={{ fontSize: 14, color: '#888' }}>Сегодня записей нет</div>
                 </div>
-                <button
-                  onClick={copyLink}
-                  title="Скопировать"
-                  style={{
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    padding: 4, color: copied ? '#22C55E' : '#888',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0
-                  }}
-                >
-                  {copied ? <Check size={16} /> : <Copy size={16} />}
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', gap: 6 }}>
-                <a href={bookingLink} target="_blank" rel="noreferrer" style={{
-                  background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
-                  padding: '7px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-                  textDecoration: 'none'
-                }}>
-                  Открыть
-                </a>
-                <button onClick={() => setShowQR(!showQR)} style={{
-                  background: showQR ? '#E8FF47' : 'transparent',
-                  border: '1.5px solid #E0E0D8', color: '#111',
-                  padding: '7px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer'
-                }}>
-                  QR
-                </button>
-              </div>
-
-              {showQR && (
-                <div style={{ marginTop: 12, textAlign: 'center', padding: 12, background: '#F7F6F1', borderRadius: 10 }}>
-                  <QRCodeSVG value={bookingLink} size={120} />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {todayBookings.map((b, idx) => {
+                    const isPast = new Date(b.start_time) < today
+                    const isNext = idx === nextBookingIndex
+                    return (
+                      <MeetingCard
+                        key={b.id}
+                        booking={b}
+                        isPast={isPast}
+                        isNext={isNext}
+                        showJoinButton={isNext}
+                      />
+                    )
+                  })}
                 </div>
               )}
             </div>
           </div>
 
-          {upcomingBookings.length > 0 && (
+          {/* === ПРАВАЯ КОЛОНКА === */}
+          <div style={{
+            display: 'flex', flexDirection: 'column', gap: 24,
+            paddingTop: 68,
+            paddingLeft: 32
+          }} className="dashboard-sidebar">
+
             <div>
-              <h3 style={sectionLabelStyle}>Ближайшие</h3>
+              <h3 style={sectionLabelStyle}>Обзор</h3>
               <div style={blockStyle}>
-                {upcomingBookings.map((b, idx) => (
-                  <div key={b.id} style={{
-                    paddingTop: idx === 0 ? 0 : 14,
-                    paddingBottom: idx < upcomingBookings.length - 1 ? 14 : 0,
-                    borderBottom: idx < upcomingBookings.length - 1 ? '1px solid #F0EFE9' : 'none'
-                  }}>
-                    <div style={{ fontSize: 12, color: '#888', fontWeight: 600, marginBottom: 4 }}>
-                      {formatNextDay(b.start_time, today)}
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 2 }}>
-                      {formatTime(b.start_time)} — {b.client_name}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#999' }}>{b.meeting_title}</div>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>В этом месяце</div>
+                  <div>
+                    <span style={{ fontSize: 32, fontWeight: 800, color: '#111' }}>{thisMonthCount}</span>
+                    <span style={{ fontSize: 13, color: '#888', marginLeft: 6 }}>
+                      {pluralize(thisMonthCount, 'запись', 'записи', 'записей')}
+                    </span>
                   </div>
-                ))}
+                </div>
+                <div style={{ borderTop: '1px solid #F0EFE9', paddingTop: 16 }}>
+                  <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>Проведено</div>
+                  <div>
+                    <span style={{ fontSize: 32, fontWeight: 800, color: '#111' }}>{completedCount}</span>
+                    <span style={{ fontSize: 13, color: '#888', marginLeft: 6 }}>
+                      {pluralize(completedCount, 'встреча', 'встречи', 'встреч')}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
+
+            <div>
+              <h3 style={sectionLabelStyle}>Твоя ссылка</h3>
+              <div style={blockStyle}>
+                <div style={{
+                  background: '#F7F6F1', borderRadius: 9, padding: '10px 12px',
+                  marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8
+                }}>
+                  <div style={{
+                    flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#111',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                  }}>
+                    {bookingLink}
+                  </div>
+                  <button
+                    onClick={copyLink}
+                    title="Скопировать"
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      padding: 4, color: copied ? '#22C55E' : '#888',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <a href={bookingLink} target="_blank" rel="noreferrer" style={{
+                    background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
+                    padding: '7px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
+                    textDecoration: 'none'
+                  }}>
+                    Открыть
+                  </a>
+                  <button onClick={() => setShowQR(!showQR)} style={{
+                    background: showQR ? '#E8FF47' : 'transparent',
+                    border: '1.5px solid #E0E0D8', color: '#111',
+                    padding: '7px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
+                    cursor: 'pointer'
+                  }}>
+                    QR
+                  </button>
+                </div>
+
+                {showQR && (
+                  <div style={{ marginTop: 12, textAlign: 'center', padding: 12, background: '#F7F6F1', borderRadius: 10 }}>
+                    <QRCodeSVG value={bookingLink} size={120} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {upcomingBookings.length > 0 && (
+              <div>
+                <h3 style={sectionLabelStyle}>Ближайшие</h3>
+                <div style={blockStyle}>
+                  {upcomingBookings.map((b, idx) => (
+                    <div key={b.id} style={{
+                      paddingTop: idx === 0 ? 0 : 14,
+                      paddingBottom: idx < upcomingBookings.length - 1 ? 14 : 0,
+                      borderBottom: idx < upcomingBookings.length - 1 ? '1px solid #F0EFE9' : 'none'
+                    }}>
+                      <div style={{ fontSize: 12, color: '#888', fontWeight: 600, marginBottom: 4 }}>
+                        {formatNextDay(b.start_time, today)}
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 2 }}>
+                        {formatTime(b.start_time)} — {b.client_name}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#999' }}>{b.meeting_title}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -470,13 +486,14 @@ export default function Dashboard() {
         @media (max-width: 900px) {
           .dashboard-grid {
             grid-template-columns: 1fr !important;
-            min-height: auto !important;
           }
           .dashboard-sidebar {
             order: 2;
             padding-top: 0 !important;
             padding-left: 0 !important;
-            border-left: none !important;
+          }
+          .dashboard-divider {
+            display: none !important;
           }
         }
       `}</style>
