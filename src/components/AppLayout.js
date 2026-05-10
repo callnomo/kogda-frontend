@@ -302,33 +302,47 @@ export default function AppLayout({ children }) {
                     color: active ? '#111' : '#666',
                     fontSize: 15,
                     fontWeight: active ? 700 : 500,
-                    transition: 'background 0.15s'
+                    transition: 'background 0.15s',
+                    position: 'relative'
                   }}
                   onMouseOver={(e) => { if (!active) e.currentTarget.style.background = '#EAE8DD' }}
                   onMouseOut={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
                 >
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon
-                      size={20}
-                      strokeWidth={active ? 2 : 1.8}
-                      fill="none"
-                      color={active ? '#111' : '#666'}
-                      className={getIconClassName(item, active)}
-                    />
-                    {showBadge && (
-                      <div style={{
-                        position: 'absolute',
-                        top: -4,
-                        right: -5,
-                        width: 12,
-                        height: 12,
-                        borderRadius: '50%',
-                        background: '#E8FF47',
-                        border: '2px solid #111'
-                      }} />
-                    )}
-                  </div>
-                  {!collapsed && item.label}
+                  <Icon
+                    size={20}
+                    strokeWidth={active ? 2 : 1.8}
+                    fill="none"
+                    color={active ? '#111' : '#666'}
+                    className={getIconClassName(item, active)}
+                  />
+                  {!collapsed && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      {item.label}
+                      {showBadge && (
+                        <span style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: '#E8FF47',
+                          border: '1.5px solid #111',
+                          display: 'inline-block',
+                          flexShrink: 0
+                        }} />
+                      )}
+                    </span>
+                  )}
+                  {collapsed && showBadge && (
+                    <span style={{
+                      position: 'absolute',
+                      top: 6,
+                      right: 14,
+                      width: 9,
+                      height: 9,
+                      borderRadius: '50%',
+                      background: '#E8FF47',
+                      border: '1.5px solid #111'
+                    }} />
+                  )}
                 </Link>
                 {showTooltip && (
                   <div style={{
@@ -448,13 +462,13 @@ export default function AppLayout({ children }) {
               {showBadge && (
                 <div style={{
                   position: 'absolute',
-                  top: 2,
-                  right: 2,
-                  width: 12,
-                  height: 12,
+                  top: 4,
+                  right: 4,
+                  width: 9,
+                  height: 9,
                   borderRadius: '50%',
                   background: '#E8FF47',
-                  border: '2px solid #111'
+                  border: '1.5px solid #111'
                 }} />
               )}
             </div>
