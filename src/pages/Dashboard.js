@@ -375,7 +375,7 @@ export default function Dashboard() {
           <div style={{
             display: 'flex', flexDirection: 'column', gap: 24,
             paddingLeft: 32,
-            paddingTop: 76
+            paddingTop: 62
           }} className="dashboard-sidebar">
 
             <div>
