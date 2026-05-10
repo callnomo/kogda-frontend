@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { Video, X, Check, RefreshCw, MessageCircle } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
+import AIHelper from '../components/AIHelper'
 import PromoCard from '../components/PromoCard'
 import Footer from '../components/Footer'
 
@@ -322,7 +323,7 @@ export default function Bookings() {
   // Третья колонка — только на десктопе
   const rightColumn = (
     <>
-      <PromoCard />
+      <AIHelper /><PromoCard />
       <Footer />
     </>
   )
