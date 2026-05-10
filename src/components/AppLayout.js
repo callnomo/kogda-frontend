@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import axios from 'axios'
 import {
   LayoutDashboard,
   CalendarDays,
@@ -13,10 +14,12 @@ import {
   X
 } from 'lucide-react'
 
+const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
+
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Кабинет', icon: LayoutDashboard },
   { to: '/calendar', label: 'Календарь', icon: CalendarDays },
-  { to: '/bookings', label: 'Записи', icon: ClipboardList },
+  { to: '/bookings', label: 'Записи', icon: ClipboardList, hasBadge: true },
   { to: '/schedule', label: 'Расписание', icon: CalendarClock, partialFill: true },
   { to: '/services', label: 'Услуги', icon: Layers },
   { to: '/profile', label: 'Профиль', icon: User },
@@ -27,7 +30,7 @@ const NAV_ITEMS = [
 const MOBILE_NAV_ITEMS = [
   { to: '/dashboard', label: 'Кабинет', icon: LayoutDashboard },
   { to: '/calendar', label: 'Календарь', icon: CalendarDays },
-  { to: '/bookings', label: 'Записи', icon: ClipboardList },
+  { to: '/bookings', label: 'Записи', icon: ClipboardList, hasBadge: true },
   { to: '/schedule', label: 'Расписание', icon: CalendarClock, partialFill: true },
   { to: '/services', label: 'Услуги', icon: Layers }
 ]
@@ -60,6 +63,7 @@ export default function AppLayout({ children }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [hoveredItem, setHoveredItem] = useState(null)
+  const [pendingCount, setPendingCount] = useState(0)
 
   useEffect(() => {
     const u = localStorage.getItem('user')
@@ -74,6 +78,26 @@ export default function AppLayout({ children }) {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  useEffect(() => {
+    const loadPendingCount = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) return
+      try {
+        const res = await axios.get(`${API}/bookings`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const pending = res.data.filter(b =>
+          b.status === 'pending' || b.status === 'reschedule_requested'
+        )
+        setPendingCount(pending.length)
+      } catch (err) {}
+    }
+
+    loadPendingCount()
+    const interval = setInterval(loadPendingCount, 30000)
+    return () => clearInterval(interval)
+  }, [location.pathname])
 
   const handleLogout = () => {
     localStorage.clear()
@@ -260,6 +284,7 @@ export default function AppLayout({ children }) {
             const Icon = item.icon
             const active = isActive(item.to)
             const showTooltip = collapsed && hoveredItem === item.to
+            const showBadge = item.hasBadge && pendingCount > 0
 
             return (
               <div key={item.to} style={{ position: 'relative' }}>
@@ -282,13 +307,27 @@ export default function AppLayout({ children }) {
                   onMouseOver={(e) => { if (!active) e.currentTarget.style.background = '#EAE8DD' }}
                   onMouseOut={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
                 >
-                  <Icon
-                    size={20}
-                    strokeWidth={active ? 2 : 1.8}
-                    fill="none"
-                    color={active ? '#111' : '#666'}
-                    className={getIconClassName(item, active)}
-                  />
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon
+                      size={20}
+                      strokeWidth={active ? 2 : 1.8}
+                      fill="none"
+                      color={active ? '#111' : '#666'}
+                      className={getIconClassName(item, active)}
+                    />
+                    {showBadge && (
+                      <div style={{
+                        position: 'absolute',
+                        top: -2,
+                        right: -3,
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: '#E8FF47',
+                        border: '1.5px solid #F7F6F1'
+                      }} />
+                    )}
+                  </div>
                   {!collapsed && item.label}
                 </Link>
                 {showTooltip && (
@@ -381,6 +420,7 @@ export default function AppLayout({ children }) {
       {MOBILE_NAV_ITEMS.map(item => {
         const Icon = item.icon
         const active = isActive(item.to)
+        const showBadge = item.hasBadge && pendingCount > 0
         return (
           <Link
             key={item.to}
@@ -395,7 +435,8 @@ export default function AppLayout({ children }) {
             <div style={{
               width: 36, height: 36, borderRadius: '50%',
               background: 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              position: 'relative'
             }}>
               <Icon
                 size={22}
@@ -404,6 +445,18 @@ export default function AppLayout({ children }) {
                 color="#111"
                 className={getIconClassName(item, active)}
               />
+              {showBadge && (
+                <div style={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  width: 9,
+                  height: 9,
+                  borderRadius: '50%',
+                  background: '#E8FF47',
+                  border: '2px solid #fff'
+                }} />
+              )}
             </div>
           </Link>
         )
@@ -486,10 +539,7 @@ export default function AppLayout({ children }) {
         <main style={{
           flex: 1,
           padding: '24px 24px 24px 24px',
-          minWidth: 0,
-          alignSelf: 'stretch',
-          display: 'flex',
-          flexDirection: 'column'
+          minWidth: 0
         }}>
           {children}
         </main>
