@@ -209,12 +209,20 @@ export default function Dashboard() {
     <AppLayout>
       <div style={{
         position: 'relative',
-        minHeight: 'calc(100vh - 48px)'
+        minHeight: '100vh',
+        marginTop: -24,
+        marginBottom: -24,
+        marginRight: -24,
+        marginLeft: -16,
+        paddingTop: 24,
+        paddingBottom: 24,
+        paddingRight: 24,
+        paddingLeft: 16
       }}>
         {/* Вертикальная полоска от блока контента к правой колонке — на всю высоту */}
         <div style={{
           position: 'absolute',
-          right: 280,
+          right: 304,
           top: 0,
           bottom: 0,
           width: 1,
