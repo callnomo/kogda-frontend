@@ -209,20 +209,11 @@ export default function Dashboard() {
     <AppLayout>
       <div style={{
         position: 'relative',
-        minHeight: '100vh',
-        marginTop: -24,
-        marginBottom: -24,
-        marginRight: -24,
-        marginLeft: -16,
-        paddingTop: 24,
-        paddingBottom: 24,
-        paddingRight: 24,
-        paddingLeft: 16
+        minHeight: 'calc(100vh - 48px)'
       }}>
-        {/* Вертикальная полоска от блока контента к правой колонке — на всю высоту */}
         <div style={{
           position: 'absolute',
-          right: 304,
+          right: 280,
           top: 0,
           bottom: 0,
           width: 1,
@@ -239,8 +230,8 @@ export default function Dashboard() {
 
           {/* === ЛЕВАЯ КОЛОНКА === */}
           <div style={{ paddingRight: 32 }}>
-            <div style={{ marginBottom: 28 }}>
-              <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+            <div style={{ marginBottom: 28, height: 36, display: 'flex', alignItems: 'center' }}>
+              <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>
                 Привет, {user.name}!
               </h1>
             </div>
@@ -383,12 +374,13 @@ export default function Dashboard() {
           {/* === ПРАВАЯ КОЛОНКА === */}
           <div style={{
             display: 'flex', flexDirection: 'column', gap: 24,
-            paddingTop: 68,
             paddingLeft: 32
           }} className="dashboard-sidebar">
 
             <div>
-              <h3 style={sectionLabelStyle}>Обзор</h3>
+              <div style={{ marginBottom: 28, height: 36, display: 'flex', alignItems: 'center' }}>
+                <h3 style={{ ...sectionLabelStyle, margin: 0 }}>Обзор</h3>
+              </div>
               <div style={blockStyle}>
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>В этом месяце</div>
@@ -497,7 +489,6 @@ export default function Dashboard() {
           }
           .dashboard-sidebar {
             order: 2;
-            padding-top: 0 !important;
             padding-left: 0 !important;
           }
           .dashboard-divider {

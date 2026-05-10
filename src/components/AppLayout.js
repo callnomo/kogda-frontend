@@ -50,6 +50,8 @@ const ICON_STYLES = `
   }
 `
 
+const SIDEBAR_WIDTH = 180
+
 export default function AppLayout({ children }) {
   const location = useLocation()
   const [user, setUser] = useState(null)
@@ -219,7 +221,7 @@ export default function AppLayout({ children }) {
 
   const renderSidebar = () => {
     const collapsed = isNarrow
-    const width = collapsed ? 64 : 220
+    const width = collapsed ? 64 : SIDEBAR_WIDTH
 
     return (
       <div style={{
@@ -467,13 +469,13 @@ export default function AppLayout({ children }) {
         maxWidth: 1280,
         margin: '0 auto',
         display: 'flex',
-        alignItems: 'stretch',
+        alignItems: 'flex-start',
         minHeight: '100vh',
         position: 'relative'
       }}>
         <div style={{
           position: 'absolute',
-          left: 220,
+          left: SIDEBAR_WIDTH,
           top: 0,
           bottom: 0,
           width: 1,
@@ -483,7 +485,7 @@ export default function AppLayout({ children }) {
         {renderSidebar()}
         <main style={{
           flex: 1,
-          padding: '24px 24px 24px 16px',
+          padding: '24px 24px 24px 24px',
           minWidth: 0
         }}>
           {children}
