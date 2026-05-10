@@ -37,6 +37,37 @@ const statusConfig = (status) => {
   }
 }
 
+// Группа сортировки: чем меньше число — тем выше в списке
+const sortGroup = (b) => {
+  const isPending = b.status === 'pending' || b.status === 'reschedule_requested'
+  const isCancelled = b.status === 'cancelled'
+  const isPast = new Date(b.start_time) < new Date()
+
+  if (isPending) return 1
+  if (b.status === 'confirmed' && !isPast) return 2
+  if (b.status === 'confirmed' && isPast) return 3
+  if (isCancelled) return 4
+  return 5
+}
+
+const sortBookings = (arr) => {
+  return [...arr].sort((a, b) => {
+    const groupA = sortGroup(a)
+    const groupB = sortGroup(b)
+    if (groupA !== groupB) return groupA - groupB
+
+    const dateA = new Date(a.start_time)
+    const dateB = new Date(b.start_time)
+
+    // Pending и предстоящие — ближайшие сверху (asc)
+    // Прошедшие и отменённые — свежие сверху (desc)
+    if (groupA === 1 || groupA === 2) {
+      return dateA - dateB
+    }
+    return dateB - dateA
+  })
+}
+
 export default function Bookings() {
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
@@ -112,14 +143,14 @@ export default function Bookings() {
     } catch (err) { console.error(err) }
   }
 
-  const filtered = bookings.filter(b => {
+  const filtered = sortBookings(bookings.filter(b => {
     if (filter === 'all') return true
     if (filter === 'upcoming') return new Date(b.start_time) > new Date() && b.status !== 'cancelled'
     if (filter === 'pending') return b.status === 'pending' || b.status === 'reschedule_requested'
     if (filter === 'past') return new Date(b.start_time) < new Date() && b.status !== 'cancelled'
     if (filter === 'cancelled') return b.status === 'cancelled'
     return true
-  })
+  }))
 
   const upcoming = bookings.filter(b => new Date(b.start_time) > new Date() && b.status !== 'cancelled').length
   const total = bookings.length
