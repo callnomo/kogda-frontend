@@ -543,7 +543,6 @@ export default function AppLayout({ children, rightColumn }) {
         minHeight: '100vh',
         position: 'relative'
       }}>
-        {/* Left divider */}
         <div style={{
           position: 'absolute',
           left: SIDEBAR_WIDTH,
@@ -554,11 +553,10 @@ export default function AppLayout({ children, rightColumn }) {
           pointerEvents: 'none'
         }} />
 
-        {/* Right divider — рендерится только если есть третья колонка */}
         {hasRightColumn && (
           <div style={{
             position: 'fixed',
-            right: 'calc(50vw - 640px + 320px + 24px)',
+            right: 'calc(50vw - 640px + 320px)',
             top: 0,
             bottom: 0,
             width: 1,
@@ -582,7 +580,7 @@ export default function AppLayout({ children, rightColumn }) {
           <aside style={{
             width: RIGHT_COLUMN_WIDTH,
             flexShrink: 0,
-            padding: '62px 24px 24px 24px',
+            padding: '24px 24px 24px 24px',
             display: 'flex',
             flexDirection: 'column',
             gap: 24

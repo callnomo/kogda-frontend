@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, X as XIcon, ArrowUp } from 'lucide-react'
+import { X as XIcon, ArrowUp } from 'lucide-react'
 
 const SUGGESTED_QUESTIONS = [
   'Как настроить буфер между записями?',
@@ -9,12 +9,22 @@ const SUGGESTED_QUESTIONS = [
 
 const STUB_REPLY = 'Я ещё учусь и скоро смогу отвечать по-настоящему. А пока — попробуй найти ответ в разделе «Помощь» или напиши на support@kogda.app.'
 
+const aiBadge = {
+  background: '#111',
+  color: '#E8FF47',
+  fontSize: 9,
+  fontWeight: 700,
+  letterSpacing: 0.5,
+  padding: '3px 7px',
+  borderRadius: 100
+}
+
 export default function AIHelper() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([
     {
       from: 'ai',
-      text: 'Привет! Я Кога — твой ассистент. Помогу разобраться с kogDA. Что подсказать?'
+      text: 'Привет! Я твой AI-агент. Помогу разобраться с kogDA. Что подсказать?'
     }
   ])
   const [input, setInput] = useState('')
@@ -41,7 +51,6 @@ export default function AIHelper() {
     sendMessage(input)
   }
 
-  // Свёрнутая кнопка-триггер
   if (!open) {
     return (
       <button
@@ -58,26 +67,20 @@ export default function AIHelper() {
           cursor: 'pointer',
           fontFamily: 'Inter, sans-serif',
           fontSize: 13,
-          color: '#888',
+          color: '#666',
           textAlign: 'left'
         }}
       >
-        <Sparkles size={14} fill="#E8FF47" stroke="#111" strokeWidth={1.2} />
-        Спроси Когу
+        <span style={aiBadge}>AI</span>
+        Агент
       </button>
     )
   }
 
-  // Развёрнутый чат — overlay поверх правой колонки
   return (
     <>
-      {/* Кнопка-триггер остаётся видимой как «занятое место» */}
-      <div style={{
-        height: 36,
-        visibility: 'hidden'
-      }} />
+      <div style={{ height: 36, visibility: 'hidden' }} />
 
-      {/* Overlay чата — прибит к правой колонке */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -88,10 +91,9 @@ export default function AIHelper() {
         zIndex: 30,
         display: 'flex',
         flexDirection: 'column',
-        padding: '20px 24px 20px 24px',
+        padding: '24px 24px 24px 24px',
         boxSizing: 'border-box'
       }}>
-        {/* Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -100,9 +102,9 @@ export default function AIHelper() {
           flexShrink: 0
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Sparkles size={16} fill="#E8FF47" stroke="#111" strokeWidth={1.2} />
+            <span style={aiBadge}>AI</span>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>Кога</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>Агент</div>
               <div style={{ fontSize: 11, color: '#888' }}>твой ассистент</div>
             </div>
           </div>
@@ -123,7 +125,6 @@ export default function AIHelper() {
           </button>
         </div>
 
-        {/* Messages */}
         <div
           ref={messagesRef}
           style={{
@@ -154,7 +155,6 @@ export default function AIHelper() {
             </div>
           ))}
 
-          {/* Suggested questions — только в самом начале (после приветствия) */}
           {messages.length === 1 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
               {SUGGESTED_QUESTIONS.map((q, i) => (
@@ -180,7 +180,6 @@ export default function AIHelper() {
           )}
         </div>
 
-        {/* Input */}
         <form onSubmit={handleSubmit} style={{
           flexShrink: 0,
           display: 'flex',
