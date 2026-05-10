@@ -373,7 +373,8 @@ export default function Dashboard() {
           {/* === ПРАВАЯ КОЛОНКА === */}
           <div style={{
             display: 'flex', flexDirection: 'column', gap: 24,
-            paddingLeft: 32,
+            paddingLeft: 24,
+            paddingRight: 24,
             paddingTop: 62
           }} className="dashboard-sidebar">
 
