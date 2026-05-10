@@ -31,23 +31,20 @@ const FEATURES = [
 const STORAGE_KEY_SHOWN = 'kogda_promo_shown'
 const STORAGE_KEY_DISMISSED = 'kogda_promo_dismissed_until'
 const DISMISS_DAYS = 7
+const ROTATE_INTERVAL_MS = 60 * 1000 // 60 секунд
 
 function pickFeature() {
   const shown = JSON.parse(localStorage.getItem(STORAGE_KEY_SHOWN) || '[]')
 
-  // Фильтруем те что ещё не показывали
   let candidates = FEATURES.filter(f => !shown.includes(f.id))
 
-  // Если все показаны — обнуляем
   if (candidates.length === 0) {
     localStorage.setItem(STORAGE_KEY_SHOWN, '[]')
     candidates = FEATURES
   }
 
-  // Случайная из кандидатов
   const picked = candidates[Math.floor(Math.random() * candidates.length)]
 
-  // Добавляем в показанные
   const newShown = [...shown.filter(id => id !== picked.id), picked.id]
   localStorage.setItem(STORAGE_KEY_SHOWN, JSON.stringify(newShown))
 
@@ -57,9 +54,9 @@ function pickFeature() {
 export default function PromoCard() {
   const [feature, setFeature] = useState(null)
   const [hidden, setHidden] = useState(false)
+  const [fading, setFading] = useState(false)
 
   useEffect(() => {
-    // Проверяем дисмисс
     const dismissedUntil = localStorage.getItem(STORAGE_KEY_DISMISSED)
     if (dismissedUntil && Date.now() < Number(dismissedUntil)) {
       setHidden(true)
@@ -67,6 +64,16 @@ export default function PromoCard() {
     }
 
     setFeature(pickFeature())
+
+    const interval = setInterval(() => {
+      setFading(true)
+      setTimeout(() => {
+        setFeature(pickFeature())
+        setFading(false)
+      }, 300)
+    }, ROTATE_INTERVAL_MS)
+
+    return () => clearInterval(interval)
   }, [])
 
   const handleClose = () => {
@@ -88,9 +95,10 @@ export default function PromoCard() {
       padding: '18px 22px 20px',
       paddingLeft: 19,
       position: 'relative',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      opacity: fading ? 0 : 1,
+      transition: 'opacity 0.3s ease'
     }}>
-      {/* Header — 2 пилюли + крестик */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -143,7 +151,6 @@ export default function PromoCard() {
         </button>
       </div>
 
-      {/* Body */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
         <div style={{
           width: 44,
@@ -176,7 +183,6 @@ export default function PromoCard() {
         </div>
       </div>
 
-      {/* CTA */}
       
         href="/premium"
         style={{
