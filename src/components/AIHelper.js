@@ -88,6 +88,8 @@ export default function AIHelper() {
         right: 'calc(50vw - 640px)',
         width: 320,
         background: '#F7F6F1',
+        borderLeft: '0.5px solid rgba(17, 17, 17, 0.15)',
+        boxShadow: '-8px 0 20px rgba(17, 17, 17, 0.04)',
         zIndex: 30,
         display: 'flex',
         flexDirection: 'column',
