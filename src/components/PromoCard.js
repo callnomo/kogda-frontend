@@ -31,23 +31,18 @@ const FEATURES = [
 const STORAGE_KEY_SHOWN = 'kogda_promo_shown'
 const STORAGE_KEY_DISMISSED = 'kogda_promo_dismissed_until'
 const DISMISS_DAYS = 7
-const ROTATE_INTERVAL_MS = 60 * 1000 // 60 секунд
+const ROTATE_INTERVAL_MS = 60 * 1000
 
 function pickFeature() {
   const shown = JSON.parse(localStorage.getItem(STORAGE_KEY_SHOWN) || '[]')
-
   let candidates = FEATURES.filter(f => !shown.includes(f.id))
-
   if (candidates.length === 0) {
     localStorage.setItem(STORAGE_KEY_SHOWN, '[]')
     candidates = FEATURES
   }
-
   const picked = candidates[Math.floor(Math.random() * candidates.length)]
-
   const newShown = [...shown.filter(id => id !== picked.id), picked.id]
   localStorage.setItem(STORAGE_KEY_SHOWN, JSON.stringify(newShown))
-
   return picked
 }
 
@@ -197,7 +192,7 @@ export default function PromoCard() {
           textDecoration: 'none'
         }}
       >
-        Узнать подробнее →
+        Узнать подробнее
       </a>
     </div>
   )
