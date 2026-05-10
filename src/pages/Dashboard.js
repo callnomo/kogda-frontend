@@ -230,8 +230,8 @@ export default function Dashboard() {
 
           {/* === ЛЕВАЯ КОЛОНКА === */}
           <div style={{ paddingRight: 32 }}>
-            <div style={{ marginBottom: 28, height: 36, display: 'flex', alignItems: 'center' }}>
-              <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>
+            <div style={{ marginBottom: 28 }}>
+              <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>
                 Привет, {user.name}!
               </h1>
             </div>
@@ -374,13 +374,12 @@ export default function Dashboard() {
           {/* === ПРАВАЯ КОЛОНКА === */}
           <div style={{
             display: 'flex', flexDirection: 'column', gap: 24,
-            paddingLeft: 32
+            paddingLeft: 32,
+            paddingTop: 76
           }} className="dashboard-sidebar">
 
             <div>
-              <div style={{ marginBottom: 28, height: 36, display: 'flex', alignItems: 'center' }}>
-                <h3 style={{ ...sectionLabelStyle, margin: 0 }}>Обзор</h3>
-              </div>
+              <h3 style={sectionLabelStyle}>Обзор</h3>
               <div style={blockStyle}>
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>В этом месяце</div>
@@ -489,6 +488,7 @@ export default function Dashboard() {
           }
           .dashboard-sidebar {
             order: 2;
+            padding-top: 0 !important;
             padding-left: 0 !important;
           }
           .dashboard-divider {
