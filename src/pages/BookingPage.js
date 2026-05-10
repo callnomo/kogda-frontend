@@ -8,6 +8,8 @@ const MONTHS_GEN = ['января','февраля','марта','апреля',
 const DAYS_SHORT = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 const DAYS_FULL = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота']
 
+const NOTES_MAX = 200
+
 export default function BookingPage() {
   const slug = window.location.pathname.split('/').pop()
   const [profile, setProfile] = useState(null)
@@ -49,6 +51,13 @@ export default function BookingPage() {
     setSelectedDate(date)
     setSelectedSlot(null)
     await loadSlots(date)
+  }
+
+  const handleNotesChange = (e) => {
+    const value = e.target.value
+    if (value.length <= NOTES_MAX) {
+      setForm({...form, notes: value})
+    }
   }
 
   const handleBooking = async (e) => {
@@ -102,6 +111,9 @@ export default function BookingPage() {
     border: '1.5px solid #E8E7E0', fontSize: 15, outline: 'none',
     boxSizing: 'border-box', fontFamily: 'Inter, sans-serif', background: '#fff'
   }
+
+  const notesLength = form.notes.length
+  const counterColor = notesLength >= NOTES_MAX ? '#DC2626' : notesLength >= 180 ? '#D97706' : '#aaa'
 
   const Sidebar = ({ showBack, onBack, backLabel }) => (
     <div style={{ background: '#fff', borderRadius: 20, padding: '24px', border: '1px solid #E8E7E0', height: 'fit-content' }}>
@@ -295,7 +307,19 @@ export default function BookingPage() {
                 </div>
                 <div style={{ marginBottom: 24 }}>
                   <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6, color: '#555', textTransform: 'uppercase', letterSpacing: 0.5 }}>Комментарий <span style={{ color: '#aaa', fontWeight: 400, textTransform: 'none' }}>(необязательно)</span></label>
-                  <textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Расскажите с чем хотите поработать..." style={{ ...inp, minHeight: 90, resize: 'vertical' }} />
+                  <textarea
+                    value={form.notes}
+                    onChange={handleNotesChange}
+                    maxLength={NOTES_MAX}
+                    placeholder="Расскажите с чем хотите поработать..."
+                    style={{ ...inp, minHeight: 90, resize: 'vertical', fontFamily: 'Inter, sans-serif' }}
+                  />
+                  <div style={{
+                    fontSize: 12, color: counterColor, marginTop: 6, textAlign: 'right',
+                    fontWeight: notesLength >= 180 ? 600 : 400
+                  }}>
+                    {notesLength} / {NOTES_MAX}
+                  </div>
                 </div>
                 <button type="submit" disabled={bookingLoading} style={{ width: '100%', background: '#E8FF47', color: '#111', border: 'none', padding: '15px', borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: 'pointer' }}>
                   {bookingLoading ? 'Отправляем...' : selectedMeeting?.require_confirm ? 'Отправить запрос' : 'Подтвердить встречу'}
