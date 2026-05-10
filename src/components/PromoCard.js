@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Crown, X, Globe, Tag, Code, CalendarSync } from 'lucide-react'
+import { Crown, X as XIcon, Globe, Tag, Code, CalendarSync } from 'lucide-react'
 
 const FEATURES = [
   {
@@ -24,7 +24,7 @@ const FEATURES = [
     id: 'calendar_sync',
     icon: CalendarSync,
     title: 'Синхронизация календаря',
-    subtitle: 'Двусторонняя синхронизация с Google и Apple — больше не пересекаешься'
+    subtitle: 'Двусторонняя синхронизация с Google и Apple'
   }
 ]
 
@@ -32,6 +32,18 @@ const STORAGE_KEY_SHOWN = 'kogda_promo_shown'
 const STORAGE_KEY_DISMISSED = 'kogda_promo_dismissed_until'
 const DISMISS_DAYS = 7
 const ROTATE_INTERVAL_MS = 60 * 1000
+
+const ctaStyle = {
+  display: 'inline-block',
+  marginTop: 16,
+  background: '#E8FF47',
+  color: '#111',
+  padding: '9px 18px',
+  borderRadius: 100,
+  fontSize: 12,
+  fontWeight: 700,
+  textDecoration: 'none'
+}
 
 function pickFeature() {
   const shown = JSON.parse(localStorage.getItem(STORAGE_KEY_SHOWN) || '[]')
@@ -142,7 +154,7 @@ export default function PromoCard() {
             justifyContent: 'center'
           }}
         >
-          <X size={16} />
+          <XIcon size={16} />
         </button>
       </div>
 
@@ -178,22 +190,7 @@ export default function PromoCard() {
         </div>
       </div>
 
-      
-        href="/premium"
-        style={{
-          display: 'inline-block',
-          marginTop: 16,
-          background: '#E8FF47',
-          color: '#111',
-          padding: '9px 18px',
-          borderRadius: 100,
-          fontSize: 12,
-          fontWeight: 700,
-          textDecoration: 'none'
-        }}
-      >
-        Узнать подробнее
-      </a>
+      <a href="/premium" style={ctaStyle}>Узнать подробнее</a>
     </div>
   )
 }
