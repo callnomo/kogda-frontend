@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Clock, Trash2, Plus, ExternalLink, Calendar, ChevronDown, ChevronUp, Edit2 } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, MoreVertical } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
@@ -10,6 +10,11 @@ const hideArrows = `
   input[type=number]::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
+  }
+  @media (max-width: 700px) {
+    .services-grid {
+      grid-template-columns: 1fr !important;
+    }
   }
 `
 
@@ -23,8 +28,10 @@ const inputStyle = {
 
 const selectStyle = { ...inputStyle, cursor: 'pointer', background: '#fff' }
 
+const initial = (name) => name ? name.charAt(0).toUpperCase() : '?'
+
 const ServiceForm = ({ formData, setFormData, onSubmit, onCancel, showAdv, setShowAdv, isEdit }) => (
-  <div style={{ background: '#fff', borderRadius: 16, padding: 28, border: `1.5px solid ${isEdit ? '#E8FF47' : '#E8E7E0'}`, marginBottom: 20 }}>
+  <div style={{ background: '#fff', borderRadius: 14, padding: 24, border: `1px solid ${isEdit ? '#E8FF47' : '#E8E7E0'}`, borderLeft: isEdit ? '4px solid #E8FF47' : '1px solid #E8E7E0', paddingLeft: isEdit ? 21 : 24, marginBottom: 20 }}>
     <h4 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700 }}>{isEdit ? 'Редактировать услугу' : 'Новая услуга'}</h4>
     <form onSubmit={onSubmit}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
@@ -44,7 +51,7 @@ const ServiceForm = ({ formData, setFormData, onSubmit, onCancel, showAdv, setSh
         <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Описание</label>
         <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}
           placeholder="Расскажи клиенту что будет на встрече..."
-          style={{ ...inputStyle, minHeight: 72, resize: 'vertical' }} />
+          style={{ ...inputStyle, minHeight: 72, resize: 'vertical', fontFamily: 'Inter, sans-serif' }} />
       </div>
       <div style={{ marginBottom: 20 }}>
         <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Цена (₽)</label>
@@ -54,7 +61,8 @@ const ServiceForm = ({ formData, setFormData, onSubmit, onCancel, showAdv, setSh
       <div style={{ borderTop: '1px solid #F0EFE9', paddingTop: 16, marginBottom: 20 }}>
         <button type="button" onClick={() => setShowAdv(!showAdv)} style={{
           background: 'transparent', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#888', padding: 0
+          display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#888', padding: 0,
+          fontFamily: 'Inter, sans-serif'
         }}>
           {showAdv ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           Дополнительные настройки
@@ -117,10 +125,10 @@ const ServiceForm = ({ formData, setFormData, onSubmit, onCancel, showAdv, setSh
         )}
       </div>
       <div style={{ display: 'flex', gap: 10 }}>
-        <button type="submit" style={{ background: '#111', color: '#F7F6F1', border: 'none', padding: '11px 26px', borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+        <button type="submit" style={{ background: '#111', color: '#F7F6F1', border: 'none', padding: '11px 26px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
           {isEdit ? 'Сохранить' : 'Создать'}
         </button>
-        <button type="button" onClick={onCancel} style={{ background: 'transparent', border: '1.5px solid #E0E0D8', padding: '11px 26px', borderRadius: 9, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+        <button type="button" onClick={onCancel} style={{ background: 'transparent', border: '1.5px solid #E0E0D8', padding: '11px 26px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
           Отмена
         </button>
       </div>
@@ -177,6 +185,7 @@ export default function Services() {
   }
 
   const deleteMeeting = async (id) => {
+    if (!window.confirm('Удалить эту услугу?')) return
     const token = localStorage.getItem('token')
     try {
       await axios.delete(`${API}/meetings/${id}`, { headers: { Authorization: `Bearer ${token}` } })
@@ -188,16 +197,23 @@ export default function Services() {
 
   const bookingLink = `https://app.kogda.app/${user.slug}`
 
+  const visibleMeetings = meetings.filter(m => editMeeting?.id !== m.id)
+
   return (
     <AppLayout>
       <style>{hideArrows}</style>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Услуги</h2>
-          <p style={{ color: '#888', marginTop: 6, fontSize: 15 }}>Что ты предлагаешь клиентам</p>
+          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Услуги</h1>
+          <p style={{ color: '#888', marginTop: 6, fontSize: 14 }}>Что ты предлагаешь клиентам</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} style={{ background: '#E8FF47', color: '#111', border: 'none', padding: '10px 22px', borderRadius: 100, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button onClick={() => setShowForm(!showForm)} style={{
+          background: '#E8FF47', color: '#111', border: 'none',
+          padding: '10px 22px', borderRadius: 100, fontSize: 13, fontWeight: 700,
+          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+          fontFamily: 'Inter, sans-serif'
+        }}>
           <Plus size={15} />Добавить услугу
         </button>
       </div>
@@ -221,38 +237,86 @@ export default function Services() {
       )}
 
       {meetings.length === 0 ? (
-        <div style={{ background: '#fff', borderRadius: 16, padding: '48px', border: '1px solid #E8E7E0', textAlign: 'center' }}>
-          <Calendar size={36} color="#ccc" style={{ marginBottom: 12 }} />
-          <h4 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>Пока нет услуг</h4>
-          <p style={{ color: '#888', fontSize: 14 }}>Добавь первую услугу и поделись ссылкой с клиентами</p>
+        <div style={{ background: '#fff', borderRadius: 14, padding: '48px 20px', border: '1px solid #E8E7E0', textAlign: 'center' }}>
+          <div style={{ fontSize: 14, color: '#888', marginBottom: 4 }}>Пока нет услуг</div>
+          <div style={{ fontSize: 13, color: '#aaa' }}>Добавь первую услугу и поделись ссылкой с клиентами</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {meetings.map(m => editMeeting?.id === m.id ? null : (
-            <div key={m.id} style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', border: '1px solid #E8E7E0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, flex: '1 1 200px' }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: '#F0EFE9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Calendar size={20} color="#888" />
+        <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+          {visibleMeetings.map(m => (
+            <div key={m.id} style={{
+              background: '#fff', borderRadius: 14, border: '1px solid #E8E7E0',
+              padding: '20px 24px', display: 'flex', flexDirection: 'column'
+            }}>
+              {/* Top: avatar + info + dots */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 16 }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 10,
+                  background: '#E8FF47', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  fontSize: 16, fontWeight: 700, color: '#111',
+                  flexShrink: 0
+                }}>
+                  {initial(m.title)}
                 </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>{m.title}</div>
-                  <div style={{ fontSize: 13, color: '#888', marginTop: 2, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <Clock size={12} />
-                    {m.duration} мин · {m.price > 0 ? `${m.price} ₽` : 'Бесплатно'}
-                    {m.buffer_after > 0 && <span>· +{m.buffer_after}м буфер</span>}
-                    {m.max_per_day > 0 && <span>· макс {m.max_per_day}/день</span>}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 4 }}>{m.title}</div>
+                  <div style={{ fontSize: 13, color: '#999' }}>
+                    {m.duration} мин · {m.price > 0 ? `${m.price.toLocaleString()} ₽` : 'Бесплатно'}
                   </div>
+                  {(m.buffer_after > 0 || m.max_per_day > 0 || m.require_confirm) && (
+                    <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>
+                      {m.buffer_after > 0 && `+${m.buffer_after}м буфер`}
+                      {m.buffer_after > 0 && (m.max_per_day > 0 || m.require_confirm) && ' · '}
+                      {m.max_per_day > 0 && `макс ${m.max_per_day}/день`}
+                      {m.max_per_day > 0 && m.require_confirm && ' · '}
+                      {m.require_confirm && 'требует подтверждения'}
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <a href={bookingLink} target="_blank" rel="noreferrer" style={{ background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111', padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <ExternalLink size={12} />Открыть
-                </a>
-                <button onClick={() => { setEditMeeting(m); setEditForm({ title: m.title, description: m.description || '', duration: m.duration, price: m.price, buffer_before: m.buffer_before || 0, buffer_after: m.buffer_after || 0, min_notice: m.min_notice || 0, max_days_ahead: m.max_days_ahead || 60, max_per_day: m.max_per_day || 0 }) }} style={{ background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111', padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Edit2 size={12} />Редактировать
+                <button style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  padding: 4, color: '#888', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <MoreVertical size={16} />
                 </button>
-                <button onClick={() => deleteMeeting(m.id)} style={{ background: 'transparent', border: '1.5px solid #FFE0E0', color: '#DC2626', padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Trash2 size={12} />Удалить
+              </div>
+
+              {/* Bottom: divider + buttons */}
+              <div style={{ borderTop: '1px solid #F0EFE9', paddingTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <a href={bookingLink} target="_blank" rel="noreferrer" style={{
+                    background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
+                    padding: '7px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
+                    textDecoration: 'none'
+                  }}>
+                    Открыть
+                  </a>
+                  <button onClick={() => {
+                    setEditMeeting(m)
+                    setEditForm({
+                      title: m.title, description: m.description || '',
+                      duration: m.duration, price: m.price,
+                      buffer_before: m.buffer_before || 0, buffer_after: m.buffer_after || 0,
+                      min_notice: m.min_notice || 0, max_days_ahead: m.max_days_ahead || 60,
+                      max_per_day: m.max_per_day || 0, require_confirm: m.require_confirm || false
+                    })
+                  }} style={{
+                    background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
+                    padding: '7px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif'
+                  }}>
+                    Редактировать
+                  </button>
+                </div>
+                <button onClick={() => deleteMeeting(m.id)} style={{
+                  background: 'transparent', border: 'none',
+                  color: '#999', padding: '7px 4px', fontSize: 12, fontWeight: 500,
+                  cursor: 'pointer', fontFamily: 'Inter, sans-serif'
+                }}>
+                  Удалить
                 </button>
               </div>
             </div>
