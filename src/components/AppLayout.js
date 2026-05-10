@@ -231,8 +231,7 @@ export default function AppLayout({ children }) {
         top: 0,
         height: '100vh',
         zIndex: 5,
-        padding: '20px 0',
-        borderRight: '1px solid rgba(17, 17, 17, 0.15)'
+        padding: '20px 0'
       }}>
         <div style={{
           padding: collapsed ? '0 0 16px' : '0 14px 16px',
@@ -468,9 +467,19 @@ export default function AppLayout({ children }) {
         maxWidth: 1280,
         margin: '0 auto',
         display: 'flex',
-        alignItems: 'flex-start',
-        minHeight: '100vh'
+        alignItems: 'stretch',
+        minHeight: '100vh',
+        position: 'relative'
       }}>
+        <div style={{
+          position: 'absolute',
+          left: 220,
+          top: 0,
+          bottom: 0,
+          width: 1,
+          background: 'rgba(17, 17, 17, 0.15)',
+          pointerEvents: 'none'
+        }} />
         {renderSidebar()}
         <main style={{
           flex: 1,
