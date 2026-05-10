@@ -209,13 +209,14 @@ export default function Dashboard() {
     <AppLayout>
       <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
         <div style={{
-          position: 'absolute',
-          right: 280,
+          position: 'fixed',
+          right: 'calc(50vw - 640px + 320px)',
           top: 0,
           bottom: 0,
           width: 1,
           background: 'rgba(17, 17, 17, 0.15)',
-          pointerEvents: 'none'
+          pointerEvents: 'none',
+          zIndex: 1
         }} className="dashboard-divider" />
 
         <div style={{
