@@ -24,7 +24,7 @@ export default function AIHelper() {
   const [messages, setMessages] = useState([
     {
       from: 'ai',
-      text: 'Привет! Я твой AI-агент. Помогу разобраться с kogDA. Что подсказать?'
+      text: 'Привет! Я твой AI-ассистент. Помогу разобраться с kogDA. Что подсказать?'
     }
   ])
   const [input, setInput] = useState('')
@@ -72,30 +72,34 @@ export default function AIHelper() {
         }}
       >
         <span style={aiBadge}>AI</span>
-        Агент
+        Ассистент
       </button>
     )
   }
 
+  // Развёрнутый чат — карточка-overlay в стиле kogDA с lime-полоской
   return (
     <>
       <div style={{ height: 36, visibility: 'hidden' }} />
 
       <div style={{
         position: 'fixed',
-        top: 0,
-        bottom: 0,
-        right: 'calc(50vw - 640px)',
-        width: 320,
-        background: '#F7F6F1',
-        borderLeft: '0.5px solid rgba(17, 17, 17, 0.15)',
-        boxShadow: '-8px 0 20px rgba(17, 17, 17, 0.04)',
+        top: 24,
+        bottom: 24,
+        right: 'calc(50vw - 640px + 24px)',
+        width: 272,
+        background: '#fff',
+        border: '1px solid #E8E7E0',
+        borderLeft: '4px solid #E8FF47',
+        borderRadius: 14,
         zIndex: 30,
         display: 'flex',
         flexDirection: 'column',
-        padding: '24px 24px 24px 24px',
-        boxSizing: 'border-box'
+        padding: '20px 22px',
+        boxSizing: 'border-box',
+        boxShadow: '0 8px 32px rgba(17, 17, 17, 0.08)'
       }}>
+        {/* Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -106,8 +110,8 @@ export default function AIHelper() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={aiBadge}>AI</span>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>Агент</div>
-              <div style={{ fontSize: 11, color: '#888' }}>твой ассистент</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>Ассистент</div>
+              <div style={{ fontSize: 11, color: '#888' }}>помогу разобраться</div>
             </div>
           </div>
           <button
@@ -127,6 +131,7 @@ export default function AIHelper() {
           </button>
         </div>
 
+        {/* Messages */}
         <div
           ref={messagesRef}
           style={{
@@ -144,8 +149,7 @@ export default function AIHelper() {
               style={{
                 alignSelf: m.from === 'user' ? 'flex-end' : 'flex-start',
                 maxWidth: '85%',
-                background: m.from === 'user' ? '#E8FF47' : '#fff',
-                border: m.from === 'user' ? 'none' : '1px solid #E8E7E0',
+                background: m.from === 'user' ? '#E8FF47' : '#F7F6F1',
                 borderRadius: 12,
                 padding: '10px 14px',
                 fontSize: 13,
@@ -182,12 +186,13 @@ export default function AIHelper() {
           )}
         </div>
 
+        {/* Input */}
         <form onSubmit={handleSubmit} style={{
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          background: '#fff',
+          background: '#F7F6F1',
           border: '1px solid #E0E0D8',
           borderRadius: 100,
           padding: '6px 6px 6px 14px'
