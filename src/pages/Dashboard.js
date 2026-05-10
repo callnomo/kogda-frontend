@@ -207,8 +207,11 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 0, alignItems: 'start' }}
-        className="dashboard-grid">
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 0,
+        alignItems: 'stretch',
+        minHeight: 'calc(100vh - 48px)'
+      }} className="dashboard-grid">
 
         {/* === ЛЕВАЯ КОЛОНКА === */}
         <div style={{ paddingRight: 32 }}>
@@ -358,8 +361,7 @@ export default function Dashboard() {
           display: 'flex', flexDirection: 'column', gap: 24,
           paddingTop: 68,
           paddingLeft: 32,
-          borderLeft: '1px solid rgba(17, 17, 17, 0.15)',
-          alignSelf: 'stretch'
+          borderLeft: '1px solid rgba(17, 17, 17, 0.15)'
         }} className="dashboard-sidebar">
 
           <div>
@@ -468,6 +470,7 @@ export default function Dashboard() {
         @media (max-width: 900px) {
           .dashboard-grid {
             grid-template-columns: 1fr !important;
+            min-height: auto !important;
           }
           .dashboard-sidebar {
             order: 2;

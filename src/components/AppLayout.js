@@ -17,7 +17,7 @@ const NAV_ITEMS = [
   { to: '/dashboard', label: 'Кабинет', icon: LayoutDashboard },
   { to: '/calendar', label: 'Календарь', icon: CalendarDays },
   { to: '/bookings', label: 'Записи', icon: ClipboardList },
-  { to: '/schedule', label: 'Расписание', icon: CalendarClock },
+  { to: '/schedule', label: 'Расписание', icon: CalendarClock, partialFill: true },
   { to: '/services', label: 'Услуги', icon: Layers },
   { to: '/profile', label: 'Профиль', icon: User },
   { to: '/premium', label: 'Премиум', icon: Crown },
@@ -28,7 +28,7 @@ const MOBILE_NAV_ITEMS = [
   { to: '/dashboard', label: 'Кабинет', icon: LayoutDashboard },
   { to: '/calendar', label: 'Календарь', icon: CalendarDays },
   { to: '/bookings', label: 'Записи', icon: ClipboardList },
-  { to: '/schedule', label: 'Расписание', icon: CalendarClock },
+  { to: '/schedule', label: 'Расписание', icon: CalendarClock, partialFill: true },
   { to: '/services', label: 'Услуги', icon: Layers }
 ]
 
@@ -37,6 +37,18 @@ const DRAWER_TOP = [
   { to: '/premium', label: 'Премиум', icon: Crown },
   { to: '/settings', label: 'Настройки', icon: SettingsIcon }
 ]
+
+const ICON_STYLES = `
+  .nav-icon-partial path:not(:last-child),
+  .nav-icon-partial circle:not(:last-child),
+  .nav-icon-partial rect:not(:last-child),
+  .nav-icon-partial line:not(:last-child) {
+    fill: #E8FF47;
+  }
+  .nav-icon-full {
+    fill: #E8FF47;
+  }
+`
 
 export default function AppLayout({ children }) {
   const location = useLocation()
@@ -75,6 +87,11 @@ export default function AppLayout({ children }) {
   const isActive = (to) => {
     if (to === '/dashboard') return location.pathname === '/dashboard' || location.pathname === '/'
     return location.pathname.startsWith(to)
+  }
+
+  const getIconClassName = (item, active) => {
+    if (!active) return ''
+    return item.partialFill ? 'nav-icon-partial' : 'nav-icon-full'
   }
 
   const renderAvatarPopover = (closeMenu) => (
@@ -267,8 +284,9 @@ export default function AppLayout({ children }) {
                   <Icon
                     size={20}
                     strokeWidth={active ? 2 : 1.8}
-                    fill={active ? '#E8FF47' : 'none'}
+                    fill="none"
                     color={active ? '#111' : '#666'}
+                    className={getIconClassName(item, active)}
                   />
                   {!collapsed && item.label}
                 </Link>
@@ -375,13 +393,15 @@ export default function AppLayout({ children }) {
           >
             <div style={{
               width: 36, height: 36, borderRadius: '50%',
-              background: active ? '#E8FF47' : 'transparent',
+              background: 'transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
               <Icon
-                size={20}
+                size={22}
                 strokeWidth={active ? 2 : 1.8}
+                fill="none"
                 color="#111"
+                className={getIconClassName(item, active)}
               />
             </div>
           </Link>
@@ -429,6 +449,7 @@ export default function AppLayout({ children }) {
         fontFamily: 'Inter, sans-serif',
         paddingBottom: 70
       }}>
+        <style>{ICON_STYLES}</style>
         {renderHeader()}
         <main>{children}</main>
         {renderBottomNav()}
@@ -442,16 +463,18 @@ export default function AppLayout({ children }) {
       minHeight: '100vh', background: '#F7F6F1',
       fontFamily: 'Inter, sans-serif'
     }}>
+      <style>{ICON_STYLES}</style>
       <div style={{
         maxWidth: 1280,
         margin: '0 auto',
         display: 'flex',
-        alignItems: 'flex-start'
+        alignItems: 'flex-start',
+        minHeight: '100vh'
       }}>
         {renderSidebar()}
         <main style={{
           flex: 1,
-          padding: '24px 32px',
+          padding: '24px 24px 24px 16px',
           minWidth: 0
         }}>
           {children}
