@@ -324,7 +324,7 @@ export default function AppLayout({ children }) {
                           height: 8,
                           borderRadius: 999,
                           background: '#111',
-                          border: '1.5px solid #E8FF47',
+                          border: '2px solid #E8FF47',
                           display: 'inline-block',
                           flexShrink: 0
                         }} />
@@ -340,7 +340,7 @@ export default function AppLayout({ children }) {
                       height: 8,
                       borderRadius: 999,
                       background: '#111',
-                      border: '1.5px solid #E8FF47'
+                      border: '2px solid #E8FF47'
                     }} />
                   )}
                 </Link>
@@ -468,7 +468,7 @@ export default function AppLayout({ children }) {
                   height: 8,
                   borderRadius: 999,
                   background: '#111',
-                  border: '1.5px solid #E8FF47'
+                  border: '2px solid #E8FF47'
                 }} />
               )}
             </div>
