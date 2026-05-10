@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Crown, X as XIcon, Globe, Tag, Code, CalendarSync } from 'lucide-react'
+import { Crown, X as XIcon, Globe, Tag, Code, RefreshCw } from 'lucide-react'
 
 const FEATURES = [
   {
@@ -22,7 +22,7 @@ const FEATURES = [
   },
   {
     id: 'calendar_sync',
-    icon: CalendarSync,
+    icon: RefreshCw,
     title: 'Синхронизация календаря',
     subtitle: 'Двусторонняя синхронизация с Google и Apple'
   }
