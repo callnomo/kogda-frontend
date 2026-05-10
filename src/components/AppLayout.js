@@ -54,8 +54,9 @@ const ICON_STYLES = `
 `
 
 const SIDEBAR_WIDTH = 180
+const RIGHT_COLUMN_WIDTH = 320
 
-export default function AppLayout({ children }) {
+export default function AppLayout({ children, rightColumn }) {
   const location = useLocation()
   const [user, setUser] = useState(null)
   const [isMobile, setIsMobile] = useState(false)
@@ -526,6 +527,8 @@ export default function AppLayout({ children }) {
     )
   }
 
+  const hasRightColumn = !!rightColumn
+
   return (
     <div style={{
       minHeight: '100vh', background: '#F7F6F1',
@@ -540,6 +543,7 @@ export default function AppLayout({ children }) {
         minHeight: '100vh',
         position: 'relative'
       }}>
+        {/* Left divider */}
         <div style={{
           position: 'absolute',
           left: SIDEBAR_WIDTH,
@@ -549,7 +553,23 @@ export default function AppLayout({ children }) {
           background: 'rgba(17, 17, 17, 0.15)',
           pointerEvents: 'none'
         }} />
+
+        {/* Right divider — рендерится только если есть третья колонка */}
+        {hasRightColumn && (
+          <div style={{
+            position: 'fixed',
+            right: 'calc(50vw - 640px + ' + RIGHT_COLUMN_WIDTH + 'px)',
+            top: 0,
+            bottom: 0,
+            width: 1,
+            background: 'rgba(17, 17, 17, 0.15)',
+            pointerEvents: 'none',
+            zIndex: 1
+          }} />
+        )}
+
         {renderSidebar()}
+
         <main style={{
           flex: 1,
           padding: '24px 24px 24px 24px',
@@ -557,6 +577,19 @@ export default function AppLayout({ children }) {
         }}>
           {children}
         </main>
+
+        {hasRightColumn && (
+          <aside style={{
+            width: RIGHT_COLUMN_WIDTH,
+            flexShrink: 0,
+            padding: '24px 24px 24px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16
+          }}>
+            {rightColumn}
+          </aside>
+        )}
       </div>
     </div>
   )
