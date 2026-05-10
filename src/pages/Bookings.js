@@ -133,11 +133,6 @@ export default function Bookings() {
     padding: 20
   }
 
-  const sectionLabelStyle = {
-    fontSize: 11, fontWeight: 700, color: '#999',
-    textTransform: 'uppercase', letterSpacing: 1.5, margin: '0 0 14px'
-  }
-
   return (
     <AppLayout>
       <div style={{ marginBottom: 28 }}>
@@ -145,7 +140,7 @@ export default function Bookings() {
         <p style={{ color: '#888', marginTop: 6, fontSize: 14 }}>Все записи твоих клиентов</p>
       </div>
 
-      {/* Stats — 4 unified cards */}
+      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
         <div style={{ ...blockStyle, padding: 20 }}>
           <div style={{ fontSize: 28, fontWeight: 800, color: '#111', marginBottom: 4 }}>{upcoming}</div>
@@ -220,7 +215,6 @@ export default function Bookings() {
                 padding: '20px 24px 20px 21px',
                 opacity: cardOpacity
               }}>
-                {/* TOP: status pill (left) + date (right) */}
                 <div style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   marginBottom: 16
@@ -243,7 +237,6 @@ export default function Bookings() {
                   </div>
                 </div>
 
-                {/* BODY: avatar + info LEFT, buttons RIGHT */}
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   gap: 16, flexWrap: 'wrap'
@@ -267,8 +260,7 @@ export default function Bookings() {
                     </div>
                   </div>
 
-                  {/* Action buttons */}
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
                     {b.status === 'pending' && (
                       <>
                         <button onClick={() => rejectBooking(b.id)} style={{
@@ -309,13 +301,6 @@ export default function Bookings() {
 
                     {b.status === 'confirmed' && !isPast && b.video_link && (
                       <>
-                        <a href={b.video_link} target="_blank" rel="noreferrer" style={{
-                          background: '#111', color: '#fff', padding: '8px 14px',
-                          borderRadius: 100, fontSize: 12, fontWeight: 600, textDecoration: 'none',
-                          display: 'flex', alignItems: 'center', gap: 5
-                        }}>
-                          <Video size={13} /> Войти
-                        </a>
                         <button onClick={() => cancelBooking(b.id)} style={{
                           background: 'transparent', border: 'none',
                           color: '#999', padding: '8px 4px', fontSize: 12, fontWeight: 500,
@@ -323,12 +308,18 @@ export default function Bookings() {
                         }}>
                           Отменить
                         </button>
+                        <a href={b.video_link} target="_blank" rel="noreferrer" style={{
+                          background: '#111', color: '#fff', padding: '8px 14px',
+                          borderRadius: 100, fontSize: 12, fontWeight: 600, textDecoration: 'none',
+                          display: 'flex', alignItems: 'center', gap: 5
+                        }}>
+                          <Video size={13} /> Войти
+                        </a>
                       </>
                     )}
                   </div>
                 </div>
 
-                {/* Reschedule info */}
                 {b.status === 'reschedule_requested' && b.reschedule_time && (
                   <div style={{
                     background: '#F7F6F1', borderRadius: 9,
@@ -339,7 +330,6 @@ export default function Bookings() {
                   </div>
                 )}
 
-                {/* Comment */}
                 {b.notes && (
                   <div style={{
                     background: '#F7F6F1', borderRadius: 9,
