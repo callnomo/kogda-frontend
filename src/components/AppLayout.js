@@ -322,9 +322,9 @@ export default function AppLayout({ children }) {
                         <span style={{
                           width: 8,
                           height: 8,
-                          borderRadius: '50%',
-                          background: '#E8FF47',
-                          border: '1.5px solid #111',
+                          borderRadius: 999,
+                          background: '#111',
+                          border: '1.5px solid #E8FF47',
                           display: 'inline-block',
                           flexShrink: 0
                         }} />
@@ -336,11 +336,11 @@ export default function AppLayout({ children }) {
                       position: 'absolute',
                       top: 6,
                       right: 14,
-                      width: 9,
-                      height: 9,
-                      borderRadius: '50%',
-                      background: '#E8FF47',
-                      border: '1.5px solid #111'
+                      width: 8,
+                      height: 8,
+                      borderRadius: 999,
+                      background: '#111',
+                      border: '1.5px solid #E8FF47'
                     }} />
                   )}
                 </Link>
@@ -464,11 +464,11 @@ export default function AppLayout({ children }) {
                   position: 'absolute',
                   top: 4,
                   right: 4,
-                  width: 9,
-                  height: 9,
-                  borderRadius: '50%',
-                  background: '#E8FF47',
-                  border: '1.5px solid #111'
+                  width: 8,
+                  height: 8,
+                  borderRadius: 999,
+                  background: '#111',
+                  border: '1.5px solid #E8FF47'
                 }} />
               )}
             </div>
