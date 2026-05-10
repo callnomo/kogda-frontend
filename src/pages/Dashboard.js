@@ -221,7 +221,7 @@ export default function Dashboard() {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 280px',
+          gridTemplateColumns: 'minmax(0, 1fr) 320px',
           gap: 0,
           alignItems: 'stretch',
           flex: 1
