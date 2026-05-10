@@ -558,7 +558,7 @@ export default function AppLayout({ children, rightColumn }) {
         {hasRightColumn && (
           <div style={{
             position: 'fixed',
-            right: 'calc(50vw - 640px + 320px)',
+            right: 'calc(50vw - 640px + 320px + 24px)',
             top: 0,
             bottom: 0,
             width: 1,

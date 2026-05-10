@@ -210,7 +210,7 @@ export default function Dashboard() {
       <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
         <div style={{
           position: 'fixed',
-          right: 'calc(50vw - 640px + 320px)',
+          right: 'calc(50vw - 640px + 320px + 24px)',
           top: 0,
           bottom: 0,
           width: 1,
@@ -228,7 +228,7 @@ export default function Dashboard() {
         }} className="dashboard-grid">
 
           {/* === ЛЕВАЯ КОЛОНКА === */}
-          <div style={{ paddingRight: 24 }}>
+          <div style={{ paddingRight: 32 }}>
             <div style={{ marginBottom: 28 }}>
               <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>
                 Привет, {user.name}!
