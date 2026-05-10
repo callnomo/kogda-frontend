@@ -212,7 +212,8 @@ export default function Dashboard() {
         gridTemplateColumns: 'minmax(0, 1fr) 280px',
         gap: 0,
         alignItems: 'stretch',
-        minHeight: 'calc(100vh - 48px)'
+        minHeight: 'calc(100vh - 48px)',
+        height: '100%'
       }} className="dashboard-grid">
 
         {/* === ЛЕВАЯ КОЛОНКА === */}
@@ -364,7 +365,7 @@ export default function Dashboard() {
           paddingLeft: 32,
           paddingTop: 62,
           borderLeft: '1px solid rgba(17, 17, 17, 0.15)',
-          minHeight: 'calc(100vh - 48px)'
+          height: '100%'
         }} className="dashboard-sidebar">
 
           <div>
@@ -474,13 +475,14 @@ export default function Dashboard() {
           .dashboard-grid {
             grid-template-columns: 1fr !important;
             min-height: auto !important;
+            height: auto !important;
           }
           .dashboard-sidebar {
             order: 2;
             padding-top: 0 !important;
             padding-left: 0 !important;
             border-left: none !important;
-            min-height: auto !important;
+            height: auto !important;
           }
         }
       `}</style>
