@@ -486,7 +486,10 @@ export default function AppLayout({ children }) {
         <main style={{
           flex: 1,
           padding: '24px 24px 24px 24px',
-          minWidth: 0
+          minWidth: 0,
+          alignSelf: 'stretch',
+          display: 'flex',
+          flexDirection: 'column'
         }}>
           {children}
         </main>
