@@ -94,36 +94,38 @@ export default function PromoCard() {
   const Icon = feature.icon
 
   return (
-    <div style={{
-      background: '#fff',
-      borderRadius: 14,
-      border: '1.5px solid #E8FF47',
-      borderLeft: '4px solid #E8FF47',
-      padding: '18px 22px 20px',
-      paddingLeft: 19,
-      position: 'relative',
-      overflow: 'hidden',
-      opacity: fading ? 0 : 1,
-      transition: 'opacity 0.3s ease'
-    }}>
+    <div>
+      {/* Заголовок снаружи карточки — как "ОБЗОР" */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 14
+        fontSize: 11,
+        fontWeight: 700,
+        color: '#888',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+        marginBottom: 10,
+        paddingLeft: 2
       }}>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <span style={{
-            background: '#F0EFE9',
-            color: '#888',
-            fontSize: 9,
-            fontWeight: 700,
-            letterSpacing: 0.5,
-            padding: '3px 8px',
-            borderRadius: 100
-          }}>
-            РЕКЛАМА
-          </span>
+        Реклама
+      </div>
+
+      <div style={{
+        background: '#fff',
+        borderRadius: 14,
+        border: '1.5px solid #E8FF47',
+        borderLeft: '4px solid #E8FF47',
+        padding: '18px 22px 20px',
+        paddingLeft: 19,
+        position: 'relative',
+        overflow: 'hidden',
+        opacity: fading ? 0 : 1,
+        transition: 'opacity 0.3s ease'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 14
+        }}>
           <span style={{
             background: '#111',
             color: '#E8FF47',
@@ -139,58 +141,58 @@ export default function PromoCard() {
             <Crown size={9} fill="#E8FF47" stroke="#E8FF47" />
             kogDA PREMIUM
           </span>
+          <button
+            onClick={handleClose}
+            aria-label="Скрыть"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 4,
+              color: '#aaa',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <XIcon size={16} />
+          </button>
         </div>
-        <button
-          onClick={handleClose}
-          aria-label="Скрыть"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 4,
-            color: '#aaa',
+
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <div style={{
+            width: 44,
+            height: 44,
+            borderRadius: 10,
+            background: '#111',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <XIcon size={16} />
-        </button>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-        <div style={{
-          width: 44,
-          height: 44,
-          borderRadius: 10,
-          background: '#111',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0
-        }}>
-          <Icon size={20} color="#E8FF47" strokeWidth={2} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: 15,
-            fontWeight: 700,
-            color: '#111',
-            marginBottom: 4
+            justifyContent: 'center',
+            flexShrink: 0
           }}>
-            {feature.title}
+            <Icon size={20} color="#E8FF47" strokeWidth={2} />
           </div>
-          <div style={{
-            fontSize: 13,
-            color: '#666',
-            lineHeight: 1.4
-          }}>
-            {feature.subtitle}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: '#111',
+              marginBottom: 4
+            }}>
+              {feature.title}
+            </div>
+            <div style={{
+              fontSize: 13,
+              color: '#666',
+              lineHeight: 1.4
+            }}>
+              {feature.subtitle}
+            </div>
           </div>
         </div>
-      </div>
 
-      <a href="/premium" style={ctaStyle}>Узнать подробнее</a>
+        <a href="/premium" style={ctaStyle}>Узнать подробнее</a>
+      </div>
     </div>
   )
 }

@@ -558,7 +558,7 @@ export default function AppLayout({ children, rightColumn }) {
         {hasRightColumn && (
           <div style={{
             position: 'fixed',
-            right: 'calc(50vw - 640px + ' + RIGHT_COLUMN_WIDTH + 'px)',
+            right: 'calc(50vw - 640px + 320px - 1px)',
             top: 0,
             bottom: 0,
             width: 1,
@@ -582,10 +582,10 @@ export default function AppLayout({ children, rightColumn }) {
           <aside style={{
             width: RIGHT_COLUMN_WIDTH,
             flexShrink: 0,
-            padding: '24px 24px 24px 24px',
+            padding: '62px 24px 24px 24px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 16
+            gap: 24
           }}>
             {rightColumn}
           </aside>
