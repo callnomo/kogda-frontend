@@ -228,7 +228,7 @@ export default function Dashboard() {
         }} className="dashboard-grid">
 
           {/* === ЛЕВАЯ КОЛОНКА === */}
-          <div style={{ paddingRight: 32 }}>
+          <div style={{ paddingRight: 24 }}>
             <div style={{ marginBottom: 28 }}>
               <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>
                 Привет, {user.name}!
