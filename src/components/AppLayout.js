@@ -255,12 +255,21 @@ export default function AppLayout({ children }) {
                     justifyContent: collapsed ? 'center' : 'flex-start',
                     padding: collapsed ? '10px 0' : '10px 14px',
                     borderRadius: 10, textDecoration: 'none',
-                    background: active ? '#E8FF47' : 'transparent',
-                    color: '#111', fontSize: 15,
-                    fontWeight: active ? 700 : 500
+                    background: 'transparent',
+                    color: active ? '#111' : '#666',
+                    fontSize: 15,
+                    fontWeight: active ? 700 : 500,
+                    transition: 'background 0.15s'
                   }}
+                  onMouseOver={(e) => { if (!active) e.currentTarget.style.background = '#EAE8DD' }}
+                  onMouseOut={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
                 >
-                  <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
+                  <Icon
+                    size={20}
+                    strokeWidth={active ? 2 : 1.8}
+                    fill={active ? '#E8FF47' : 'none'}
+                    color={active ? '#111' : '#666'}
+                  />
                   {!collapsed && item.label}
                 </Link>
                 {showTooltip && (
@@ -347,7 +356,7 @@ export default function AppLayout({ children }) {
       position: 'fixed', bottom: 0, left: 0, right: 0,
       background: '#FFFFFF', borderTop: '0.5px solid #E5E5E0',
       display: 'flex', justifyContent: 'space-around',
-      padding: '8px 0 12px',
+      padding: '10px 0 14px',
       zIndex: 10
     }}>
       {MOBILE_NAV_ITEMS.map(item => {
@@ -358,22 +367,23 @@ export default function AppLayout({ children }) {
             key={item.to}
             to={item.to}
             style={{
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: 4,
-              textDecoration: 'none', color: active ? '#111' : '#888',
+              display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              textDecoration: 'none',
               flex: 1
             }}
           >
             <div style={{
-              width: 32, height: 32, borderRadius: '50%',
+              width: 36, height: 36, borderRadius: '50%',
               background: active ? '#E8FF47' : 'transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
+              <Icon
+                size={20}
+                strokeWidth={active ? 2 : 1.8}
+                color="#111"
+              />
             </div>
-            <span style={{ fontSize: 10, fontWeight: active ? 700 : 500 }}>
-              {item.label}
-            </span>
           </Link>
         )
       })}
