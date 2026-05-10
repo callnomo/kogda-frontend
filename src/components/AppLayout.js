@@ -318,13 +318,13 @@ export default function AppLayout({ children }) {
                     {showBadge && (
                       <div style={{
                         position: 'absolute',
-                        top: -2,
-                        right: -3,
-                        width: 8,
-                        height: 8,
+                        top: -4,
+                        right: -5,
+                        width: 12,
+                        height: 12,
                         borderRadius: '50%',
                         background: '#E8FF47',
-                        border: '1.5px solid #F7F6F1'
+                        border: '2px solid #111'
                       }} />
                     )}
                   </div>
@@ -448,13 +448,13 @@ export default function AppLayout({ children }) {
               {showBadge && (
                 <div style={{
                   position: 'absolute',
-                  top: 4,
-                  right: 4,
-                  width: 9,
-                  height: 9,
+                  top: 2,
+                  right: 2,
+                  width: 12,
+                  height: 12,
                   borderRadius: '50%',
                   background: '#E8FF47',
-                  border: '2px solid #fff'
+                  border: '2px solid #111'
                 }} />
               )}
             </div>
