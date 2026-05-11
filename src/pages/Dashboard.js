@@ -4,6 +4,7 @@ import { Copy, Check, Video, X as XIcon, RefreshCw, MoreVertical, MessageCircle,
 import { QRCodeSVG } from 'qrcode.react'
 import AppLayout from '../components/AppLayout'
 import AIHelper from '../components/AIHelper'
+import PromoCard from '../components/PromoCard'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
@@ -240,6 +241,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      <PromoCard />
 
       {upcomingBookings.length > 0 && (
         <div>

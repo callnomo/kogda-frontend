@@ -284,7 +284,7 @@ export default function AppLayout({ children, rightColumn }) {
         display: 'flex', flexDirection: 'column',
         position: 'sticky',
         top: 0,
-        height: '100vh',
+        height: '100dvh',
         zIndex: 5,
         padding: '0 0 20px'
       }}>
@@ -579,7 +579,7 @@ export default function AppLayout({ children, rightColumn }) {
   if (isMobile) {
     return (
       <div style={{
-        minHeight: '100vh', background: '#F7F6F1',
+        minHeight: '100dvh', background: '#F7F6F1',
         fontFamily: 'Inter, sans-serif',
         paddingBottom: 74
       }}>
@@ -598,7 +598,7 @@ export default function AppLayout({ children, rightColumn }) {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#F7F6F1',
+      minHeight: '100dvh', background: '#F7F6F1',
       fontFamily: 'Inter, sans-serif'
     }}>
       <style>{ICON_STYLES}</style>
@@ -607,7 +607,7 @@ export default function AppLayout({ children, rightColumn }) {
         margin: '0 auto',
         display: 'flex',
         alignItems: 'flex-start',
-        minHeight: '100vh',
+        minHeight: '100dvh',
         position: 'relative'
       }}>
         <div style={{
