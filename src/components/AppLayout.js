@@ -132,7 +132,9 @@ export default function AppLayout({ children, rightColumn }) {
       }}>
         <div style={{
           width: 40, height: 40, borderRadius: '50%',
-          background: '#D3D1C7', display: 'flex',
+          background: '#D3D1C7', border: '2px solid #E8FF47',
+          boxSizing: 'border-box',
+          display: 'flex',
           alignItems: 'center', justifyContent: 'center',
           fontSize: 14, fontWeight: 600, color: '#444'
         }}>{initials}</div>
@@ -167,7 +169,9 @@ export default function AppLayout({ children, rightColumn }) {
       }}>
         <div style={{
           width: 40, height: 40, borderRadius: '50%',
-          background: '#D3D1C7', display: 'flex',
+          background: '#D3D1C7', border: '2px solid #E8FF47',
+          boxSizing: 'border-box',
+          display: 'flex',
           alignItems: 'center', justifyContent: 'center',
           fontSize: 14, fontWeight: 600, color: '#444'
         }}>{initials}</div>
@@ -230,18 +234,23 @@ export default function AppLayout({ children, rightColumn }) {
       >
         <div style={{
           width: 32, height: 32, borderRadius: '50%',
-          background: '#D3D1C7', display: 'flex',
+          background: '#D3D1C7', border: '2px solid #E8FF47',
+          boxSizing: 'border-box',
+          display: 'flex',
           alignItems: 'center', justifyContent: 'center',
           fontSize: 12, fontWeight: 600, color: '#444'
         }}>{initials}</div>
       </button>
 
-      <div style={{
-        fontFamily: 'Syne, sans-serif',
-        fontSize: 18, fontWeight: 800, color: '#111'
-      }}>
-        kog<span style={{ background: '#E8FF47', padding: '0 5px', borderRadius: 4 }}>DA</span>
-      </div>
+      <img
+        src="/kogda-logo.png"
+        alt="kogDA"
+        style={{
+          height: 24,
+          width: 'auto',
+          display: 'block'
+        }}
+      />
 
       <button
         onClick={() => setAiOpen(true)}
@@ -284,19 +293,16 @@ export default function AppLayout({ children, rightColumn }) {
           display: 'flex', justifyContent: collapsed ? 'center' : 'flex-start',
           alignItems: 'center'
         }}>
-          {collapsed ? (
-            <div style={{
-              fontFamily: 'Syne, sans-serif', fontSize: 14, fontWeight: 800,
-              color: '#111', background: '#E8FF47',
-              padding: '4px 8px', borderRadius: 4
-            }}>DA</div>
-          ) : (
-            <div style={{
-              fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 800, color: '#111'
-            }}>
-              kog<span style={{ background: '#E8FF47', padding: '0 6px', borderRadius: 4 }}>DA</span>
-            </div>
-          )}
+          <img
+            src="/kogda-logo.png"
+            alt="kogDA"
+            style={{
+              height: collapsed ? 18 : 28,
+              width: 'auto',
+              maxWidth: collapsed ? 48 : '100%',
+              display: 'block'
+            }}
+          />
         </div>
 
         <nav style={{ padding: '8px 4px', display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
@@ -416,7 +422,9 @@ export default function AppLayout({ children, rightColumn }) {
           >
             <div style={{
               width: 32, height: 32, borderRadius: '50%',
-              background: '#D3D1C7', display: 'flex',
+              background: '#D3D1C7', border: '2px solid #E8FF47',
+              boxSizing: 'border-box',
+              display: 'flex',
               alignItems: 'center', justifyContent: 'center',
               fontSize: 12, fontWeight: 600, color: '#444',
               flexShrink: 0
