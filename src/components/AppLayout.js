@@ -13,6 +13,7 @@ import {
   LogOut,
   X
 } from 'lucide-react'
+import AIHelper from './AIHelper'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
@@ -521,6 +522,7 @@ export default function AppLayout({ children, rightColumn }) {
         <style>{ICON_STYLES}</style>
         {renderHeader()}
         <main>{children}</main>
+        <AIHelper />
         {renderBottomNav()}
         {renderDrawer()}
       </div>
