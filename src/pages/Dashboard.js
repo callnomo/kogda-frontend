@@ -270,7 +270,7 @@ export default function Dashboard() {
     <AppLayout rightColumn={rightColumn}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>
-          Привет, {user.name}!
+          Мой кабинет
         </h1>
       </div>
 
@@ -324,15 +324,6 @@ export default function Dashboard() {
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>
                   {user.name}
                 </div>
-                {user.bio && (
-                  <div style={{
-                    fontSize: 12, color: '#999', marginTop: 2,
-                    overflow: 'hidden', textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {user.bio}
-                  </div>
-                )}
                 <a
                   href={bookingLink}
                   target="_blank"
