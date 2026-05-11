@@ -436,96 +436,134 @@ export default function Dashboard() {
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {pendingBookings.map(b => (
-              <div key={b.id} style={{
-                background: '#fff', borderRadius: 14, border: '1px solid #E8E7E0',
-                borderLeft: '4px solid #E8FF47',
-                padding: '20px 24px 20px 21px'
-              }}>
+            {pendingBookings.map(b => {
+              const actionsBlock = (
                 <div style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  marginBottom: 16
+                  display: 'flex',
+                  gap: 8,
+                  alignItems: 'center',
+                  ...(isMobile ? { width: '100%', justifyContent: 'flex-end' } : { flexShrink: 0 })
                 }}>
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    background: '#F7F6F1', padding: '4px 12px', borderRadius: 100
-                  }}>
-                    {b.status === 'reschedule_requested' && <RefreshCw size={11} color="#111" />}
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, color: '#111',
-                      textTransform: 'uppercase', letterSpacing: 0.5
-                    }}>
-                      {b.status === 'reschedule_requested' ? 'Перенос' : 'Новая запись'}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 13, color: '#888' }}>
-                    {b.status === 'reschedule_requested' && b.reschedule_time
-                      ? `${formatDateShort(b.reschedule_time)} · ${formatTime(b.reschedule_time)}`
-                      : `${formatDateShort(b.start_time)} · ${formatTime(b.start_time)}`}
+                  <button
+                    onClick={() => b.status === 'reschedule_requested' ? rejectReschedule(b.id) : rejectBooking(b.id)}
+                    style={{
+                      background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
+                      padding: isMobile ? '10px 14px' : '8px 14px',
+                      borderRadius: 100,
+                      fontSize: isMobile ? 13 : 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      gap: 5,
+                      ...(isMobile ? { flex: '1 1 auto', maxWidth: 200 } : {})
+                    }}
+                  >
+                    <XIcon size={13} /> Отклонить
+                  </button>
+                  <button
+                    onClick={() => b.status === 'reschedule_requested' ? confirmReschedule(b.id) : confirmBooking(b.id)}
+                    style={{
+                      background: '#111', color: '#fff', border: 'none',
+                      padding: isMobile ? '10px 14px' : '8px 14px',
+                      borderRadius: 100,
+                      fontSize: isMobile ? 13 : 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      gap: 5,
+                      ...(isMobile ? { flex: '1 1 auto', maxWidth: 200 } : {})
+                    }}
+                  >
+                    <Check size={13} /> Подтвердить
+                  </button>
+                </div>
+              )
+
+              const notesBlock = b.notes && (
+                <div style={{
+                  background: '#F7F6F1', borderRadius: 9,
+                  padding: '10px 14px',
+                  display: 'flex', alignItems: 'center', gap: 8
+                }}>
+                  <MessageCircle size={14} color="#888" style={{ flexShrink: 0 }} />
+                  <div style={{ fontSize: 13, color: '#666', minWidth: 0 }}>
+                    {b.notes}
                   </div>
                 </div>
+              )
 
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  gap: 16, flexWrap: 'wrap'
+              return (
+                <div key={b.id} style={{
+                  background: '#fff', borderRadius: 14, border: '1px solid #E8E7E0',
+                  borderLeft: '4px solid #E8FF47',
+                  padding: '20px 24px 20px 21px',
+                  display: 'flex', flexDirection: 'column', gap: 14
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
+                  {/* Шапка: бейдж + дата */}
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                  }}>
                     <div style={{
-                      width: 44, height: 44, borderRadius: 10,
-                      background: '#E8FF47', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center',
-                      fontSize: 16, fontWeight: 700, color: '#111',
-                      flexShrink: 0
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      background: '#F7F6F1', padding: '4px 12px', borderRadius: 100
                     }}>
-                      {initial(b.client_name)}
+                      {b.status === 'reschedule_requested' && <RefreshCw size={11} color="#111" />}
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, color: '#111',
+                        textTransform: 'uppercase', letterSpacing: 0.5
+                      }}>
+                        {b.status === 'reschedule_requested' ? 'Перенос' : 'Новая запись'}
+                      </span>
                     </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{b.client_name}</div>
-                      {b.client_email && (
-                        <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{b.client_email}</div>
-                      )}
-                      <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>{b.meeting_title}</div>
+                    <div style={{ fontSize: 13, color: '#888' }}>
+                      {b.status === 'reschedule_requested' && b.reschedule_time
+                        ? `${formatDateShort(b.reschedule_time)} · ${formatTime(b.reschedule_time)}`
+                        : `${formatDateShort(b.start_time)} · ${formatTime(b.start_time)}`}
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    <button
-                      onClick={() => b.status === 'reschedule_requested' ? rejectReschedule(b.id) : rejectBooking(b.id)}
-                      style={{
-                        background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
-                        padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5
-                      }}
-                    >
-                      <XIcon size={13} /> Отклонить
-                    </button>
-                    <button
-                      onClick={() => b.status === 'reschedule_requested' ? confirmReschedule(b.id) : confirmBooking(b.id)}
-                      style={{
-                        background: '#111', color: '#fff', border: 'none',
-                        padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5
-                      }}
-                    >
-                      <Check size={13} /> Подтвердить
-                    </button>
-                  </div>
-                </div>
+                  {/* На мобайле: notes сверху */}
+                  {isMobile && notesBlock}
 
-                {b.notes && (
+                  {/* Тело: аватар + текст (+ кнопки на десктопе) */}
                   <div style={{
-                    background: '#F7F6F1', borderRadius: 9,
-                    padding: '10px 14px', marginTop: 14,
-                    display: 'flex', alignItems: 'center', gap: 8
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 16,
+                    flexWrap: isMobile ? 'nowrap' : 'wrap'
                   }}>
-                    <MessageCircle size={14} color="#888" style={{ flexShrink: 0 }} />
-                    <div style={{ fontSize: 13, color: '#666', minWidth: 0 }}>
-                      {b.notes}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 10,
+                        background: '#E8FF47', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center',
+                        fontSize: 16, fontWeight: 700, color: '#111',
+                        flexShrink: 0
+                      }}>
+                        {initial(b.client_name)}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{b.client_name}</div>
+                        {b.client_email && (
+                          <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{b.client_email}</div>
+                        )}
+                        <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>{b.meeting_title}</div>
+                      </div>
                     </div>
+
+                    {/* На десктопе кнопки в той же строке */}
+                    {!isMobile && actionsBlock}
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {/* На мобайле кнопки на отдельной строке снизу */}
+                  {isMobile && actionsBlock}
+
+                  {/* На десктопе notes снизу */}
+                  {!isMobile && notesBlock}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
