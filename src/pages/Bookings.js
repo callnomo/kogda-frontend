@@ -500,31 +500,6 @@ export default function Bookings() {
       </div>
 
       {/* Stats — только на десктопе */}
-      {!isMobile && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
-          <div style={{ ...blockStyle, padding: 20 }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#111', marginBottom: 4 }}>{upcoming}</div>
-            <div style={{ fontSize: 13, color: '#888' }}>{pluralize(upcoming, 'Предстоящая', 'Предстоящих', 'Предстоящих')}</div>
-          </div>
-          <div style={{
-            ...blockStyle, padding: 20,
-            borderLeft: pending > 0 ? '4px solid #E8FF47' : '1px solid #E8E7E0',
-            paddingLeft: pending > 0 ? 17 : 20
-          }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#111', marginBottom: 4 }}>{pending}</div>
-            <div style={{ fontSize: 13, color: '#888' }}>Ожидают</div>
-          </div>
-          <div style={{ ...blockStyle, padding: 20 }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#111', marginBottom: 4 }}>{total}</div>
-            <div style={{ fontSize: 13, color: '#888' }}>Всего</div>
-          </div>
-          <div style={{ ...blockStyle, padding: 20 }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#666', marginBottom: 4 }}>{cancelled}</div>
-            <div style={{ fontSize: 13, color: '#888' }}>Отменено</div>
-          </div>
-        </div>
-      )}
-
       {/* Filter tabs */}
       <div
         className="bookings-filter-tabs"
