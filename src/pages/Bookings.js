@@ -214,7 +214,7 @@ export default function Bookings() {
         display: 'flex',
         gap: 8,
         alignItems: 'center',
-        ...(isMobile ? { width: '100%' } : { flexShrink: 0 })
+        ...(isMobile ? { width: '100%', justifyContent: 'flex-end' } : { flexShrink: 0 })
       }}>
         {b.status === 'pending' && (
           <>
@@ -227,7 +227,7 @@ export default function Bookings() {
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               gap: 5,
-              flex: isMobile ? 1 : 'none'
+              ...(isMobile ? { flex: '1 1 auto', maxWidth: 200 } : {})
             }}>
               <X size={13} /> Отклонить
             </button>
@@ -240,7 +240,7 @@ export default function Bookings() {
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               gap: 5,
-              flex: isMobile ? 1 : 'none'
+              ...(isMobile ? { flex: '1 1 auto', maxWidth: 200 } : {})
             }}>
               <Check size={13} /> Подтвердить
             </button>
@@ -258,7 +258,7 @@ export default function Bookings() {
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               gap: 5,
-              flex: isMobile ? 1 : 'none'
+              ...(isMobile ? { flex: '1 1 auto', maxWidth: 200 } : {})
             }}>
               <X size={13} /> Отклонить
             </button>
@@ -271,7 +271,7 @@ export default function Bookings() {
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               gap: 5,
-              flex: isMobile ? 1 : 'none'
+              ...(isMobile ? { flex: '1 1 auto', maxWidth: 200 } : {})
             }}>
               <Check size={13} /> Подтвердить
             </button>
