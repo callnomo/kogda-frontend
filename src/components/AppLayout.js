@@ -33,7 +33,7 @@ const MOBILE_NAV_ITEMS = [
   { to: '/dashboard', label: 'Кабинет', icon: LayoutDashboard },
   { to: '/calendar', label: 'Календарь', icon: CalendarDays },
   { to: '/bookings', label: 'Записи', icon: ClipboardList, hasBadge: true },
-  { to: '/schedule', label: 'Расписание', icon: CalendarClock, partialFill: true },
+  { to: '/schedule', label: 'Расписание', shortLabel: 'Распис.', icon: CalendarClock, partialFill: true },
   { to: '/services', label: 'Услуги', icon: Layers }
 ]
 
@@ -340,28 +340,45 @@ export default function AppLayout({ children, rightColumn }) {
                       {item.label}
                       {showBadge && (
                         <span style={{
-                          width: 8,
-                          height: 8,
+                          minWidth: 18,
+                          height: 18,
                           borderRadius: 999,
                           background: '#111',
-                          border: '2px solid #E8FF47',
-                          display: 'inline-block',
+                          color: '#E8FF47',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '0 6px',
+                          boxSizing: 'border-box',
                           flexShrink: 0
-                        }} />
+                        }}>
+                          {pendingCount > 99 ? '99+' : pendingCount}
+                        </span>
                       )}
                     </span>
                   )}
                   {collapsed && showBadge && (
                     <span style={{
                       position: 'absolute',
-                      top: 6,
-                      right: 14,
-                      width: 8,
-                      height: 8,
+                      top: 2,
+                      right: 8,
+                      minWidth: 18,
+                      height: 18,
                       borderRadius: 999,
                       background: '#111',
-                      border: '2px solid #E8FF47'
-                    }} />
+                      color: '#E8FF47',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 5px',
+                      boxSizing: 'border-box'
+                    }}>
+                      {pendingCount > 99 ? '99+' : pendingCount}
+                    </span>
                   )}
                 </Link>
                 {showTooltip && (
@@ -448,7 +465,7 @@ export default function AppLayout({ children, rightColumn }) {
       position: 'fixed', bottom: 0, left: 0, right: 0,
       background: '#FFFFFF', borderTop: '0.5px solid #E5E5E0',
       display: 'flex', justifyContent: 'space-around',
-      padding: '10px 0 14px',
+      padding: '8px 0 10px',
       zIndex: 10
     }}>
       {MOBILE_NAV_ITEMS.map(item => {
@@ -461,13 +478,15 @@ export default function AppLayout({ children, rightColumn }) {
             to={item.to}
             style={{
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
               textDecoration: 'none',
-              flex: 1
+              flex: 1,
+              gap: 2
             }}
           >
             <div style={{
-              width: 36, height: 36, borderRadius: '50%',
+              width: 32, height: 32, borderRadius: '50%',
               background: 'transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               position: 'relative'
@@ -482,16 +501,35 @@ export default function AppLayout({ children, rightColumn }) {
               {showBadge && (
                 <div style={{
                   position: 'absolute',
-                  top: 4,
-                  right: 4,
-                  width: 8,
-                  height: 8,
+                  top: -4,
+                  right: -6,
+                  minWidth: 18,
+                  height: 18,
                   borderRadius: 999,
                   background: '#111',
-                  border: '2px solid #E8FF47'
-                }} />
+                  color: '#E8FF47',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 5px',
+                  boxSizing: 'border-box',
+                  border: '2px solid #fff'
+                }}>
+                  {pendingCount > 99 ? '99+' : pendingCount}
+                </div>
               )}
             </div>
+            <span style={{
+              fontSize: 10,
+              fontWeight: active ? 700 : 500,
+              color: active ? '#111' : '#666',
+              fontFamily: 'Inter, sans-serif',
+              lineHeight: 1
+            }}>
+              {item.shortLabel || item.label}
+            </span>
           </Link>
         )
       })}
@@ -535,7 +573,7 @@ export default function AppLayout({ children, rightColumn }) {
       <div style={{
         minHeight: '100vh', background: '#F7F6F1',
         fontFamily: 'Inter, sans-serif',
-        paddingBottom: 70
+        paddingBottom: 74
       }}>
         <style>{ICON_STYLES}</style>
         {renderHeader()}

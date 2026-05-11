@@ -9,7 +9,7 @@ const SUGGESTED_QUESTIONS = [
 
 const STUB_REPLY = 'Я ещё учусь и скоро смогу отвечать по-настоящему. А пока — попробуй найти ответ в разделе «Помощь» или напиши на support@kogda.app.'
 
-const BOTTOM_NAV_HEIGHT = 60
+const BOTTOM_NAV_HEIGHT = 64
 
 const aiBadge = {
   background: '#111',
