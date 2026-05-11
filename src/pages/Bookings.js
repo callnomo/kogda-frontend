@@ -496,7 +496,6 @@ export default function Bookings() {
     <AppLayout rightColumn={rightColumn}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Записи</h1>
-        <p style={{ color: '#888', marginTop: 6, fontSize: 14 }}>Все записи твоих клиентов</p>
       </div>
 
       {/* Stats — только на десктопе */}
