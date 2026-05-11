@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Copy, Check, Video, X as XIcon, RefreshCw, MoreVertical, MessageCircle } from 'lucide-react'
+import { Copy, Check, Video, X as XIcon, RefreshCw, MoreVertical, MessageCircle, ExternalLink, QrCode } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import AppLayout from '../components/AppLayout'
 import AIHelper from '../components/AIHelper'
@@ -47,12 +47,18 @@ export default function Dashboard() {
   const [user, setUser] = useState(null)
   const [copied, setCopied] = useState(false)
   const [showQR, setShowQR] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
     const u = localStorage.getItem('user')
     if (!u) { window.location.href = '/login'; return }
     setUser(JSON.parse(u))
     loadBookings()
+
+    const onResize = () => setIsMobile(window.innerWidth < 900)
+    onResize()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
 
   const loadBookings = async () => {
@@ -235,59 +241,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div>
-        <h3 style={sectionLabelStyle}>Твоя ссылка</h3>
-        <div style={blockStyle}>
-          <div style={{
-            background: '#F7F6F1', borderRadius: 9, padding: '10px 12px',
-            marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8
-          }}>
-            <div style={{
-              flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#111',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-            }}>
-              {bookingLink}
-            </div>
-            <button
-              onClick={copyLink}
-              title="Скопировать"
-              style={{
-                background: 'transparent', border: 'none', cursor: 'pointer',
-                padding: 4, color: copied ? '#22C55E' : '#888',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0
-              }}
-            >
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', gap: 6 }}>
-            <a href={bookingLink} target="_blank" rel="noreferrer" style={{
-              background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
-              padding: '7px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-              textDecoration: 'none'
-            }}>
-              Открыть
-            </a>
-            <button onClick={() => setShowQR(!showQR)} style={{
-              background: showQR ? '#E8FF47' : 'transparent',
-              border: '1.5px solid #E0E0D8', color: '#111',
-              padding: '7px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-              cursor: 'pointer'
-            }}>
-              QR
-            </button>
-          </div>
-
-          {showQR && (
-            <div style={{ marginTop: 12, textAlign: 'center', padding: 12, background: '#F7F6F1', borderRadius: 10 }}>
-              <QRCodeSVG value={bookingLink} size={120} />
-            </div>
-          )}
-        </div>
-      </div>
-
       {upcomingBookings.length > 0 && (
         <div>
           <h3 style={sectionLabelStyle}>Ближайшие</h3>
@@ -319,6 +272,170 @@ export default function Dashboard() {
         <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>
           Привет, {user.name}!
         </h1>
+      </div>
+
+      {/* === БЛОК ТВОЯ ССЫЛКА === */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{
+          background: '#fff',
+          borderRadius: 14,
+          border: '1px solid #E8E7E0',
+          padding: isMobile ? 20 : '20px 24px'
+        }}>
+          {/* Верхняя строка: аватар + текст + иконки */}
+          <div style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'stretch' : 'center',
+            gap: isMobile ? 16 : 20
+          }}>
+            {/* Левая часть: аватар + имя + bio + ссылка */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              flex: 1,
+              minWidth: 0
+            }}>
+              {/* Аватар */}
+              {user.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.name}
+                  style={{
+                    width: 52, height: 52, borderRadius: '50%',
+                    objectFit: 'cover', flexShrink: 0
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: 52, height: 52, borderRadius: '50%',
+                  background: '#E0E0D8',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 16, fontWeight: 700, color: '#555',
+                  flexShrink: 0
+                }}>
+                  {initial(user.name)}
+                </div>
+              )}
+
+              {/* Текстовая часть */}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>
+                  {user.name}
+                </div>
+                {user.bio && (
+                  <div style={{
+                    fontSize: 12, color: '#999', marginTop: 2,
+                    overflow: 'hidden', textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {user.bio}
+                  </div>
+                )}
+                <a
+                  href={bookingLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'inline-block',
+                    fontSize: 14, fontWeight: 600, color: '#111',
+                    marginTop: 6,
+                    textDecoration: 'none',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '100%'
+                  }}
+                >
+                  {bookingLink}
+                </a>
+              </div>
+            </div>
+
+            {/* Правая часть: 3 иконки */}
+            <div style={{
+              display: 'flex',
+              gap: 8,
+              flexShrink: 0,
+              ...(isMobile ? { width: '100%' } : {})
+            }}>
+              {/* Open */}
+              <a
+                href={bookingLink}
+                target="_blank"
+                rel="noreferrer"
+                title="Открыть страницу"
+                style={{
+                  ...(isMobile ? { flex: 1, height: 40 } : { width: 40, height: 40 }),
+                  borderRadius: 10,
+                  background: '#fff',
+                  border: '1px solid #E0E0D8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#111',
+                  textDecoration: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <ExternalLink size={18} />
+              </a>
+
+              {/* QR */}
+              <button
+                onClick={() => setShowQR(!showQR)}
+                title="Показать QR-код"
+                style={{
+                  ...(isMobile ? { flex: 1, height: 40 } : { width: 40, height: 40 }),
+                  borderRadius: 10,
+                  background: showQR ? '#E8FF47' : '#fff',
+                  border: showQR ? '1px solid #E8FF47' : '1px solid #E0E0D8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#111',
+                  cursor: 'pointer'
+                }}
+              >
+                <QrCode size={18} />
+              </button>
+
+              {/* Copy — главная */}
+              <button
+                onClick={copyLink}
+                title="Скопировать ссылку"
+                style={{
+                  ...(isMobile ? { flex: 1, height: 40 } : { width: 40, height: 40 }),
+                  borderRadius: 10,
+                  background: '#111',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: copied ? '#E8FF47' : '#fff',
+                  cursor: 'pointer',
+                  transition: 'color 0.15s'
+                }}
+              >
+                {copied ? <Check size={18} /> : <Copy size={18} />}
+              </button>
+            </div>
+          </div>
+
+          {/* QR-код раскрывается под верхней строкой */}
+          {showQR && (
+            <div style={{
+              textAlign: 'center',
+              padding: 16,
+              background: '#F7F6F1',
+              borderRadius: 10,
+              marginTop: 16
+            }}>
+              <QRCodeSVG value={bookingLink} size={140} />
+            </div>
+          )}
+        </div>
       </div>
 
       {pendingBookings.length > 0 && (
