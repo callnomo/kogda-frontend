@@ -434,7 +434,25 @@ export default function Bookings() {
       )}
 
       {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+      <div
+        className="bookings-filter-tabs"
+        style={{
+          display: 'flex',
+          gap: 8,
+          marginBottom: 24,
+          ...(isMobile
+            ? {
+                flexWrap: 'nowrap',
+                overflowX: 'auto',
+                marginLeft: -16,
+                marginRight: -16,
+                paddingLeft: 16,
+                paddingRight: 16,
+                scrollbarWidth: 'none'
+              }
+            : { flexWrap: 'wrap' })
+        }}
+      >
         {[
           { key: 'all', label: 'Все' },
           { key: 'pending', label: pending > 0 ? `Ожидают (${pending})` : 'Ожидают' },
@@ -448,10 +466,17 @@ export default function Bookings() {
             color: filter === f.key ? '#fff' : '#111',
             fontSize: 13, fontWeight: 600, cursor: 'pointer',
             border: `1.5px solid ${filter === f.key ? '#111' : '#E0E0D8'}`,
-            transition: 'all 0.15s'
+            transition: 'all 0.15s',
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}>{f.label}</button>
         ))}
       </div>
+
+      {/* Скрываем scrollbar в Webkit-браузерах */}
+      <style>{`
+        .bookings-filter-tabs::-webkit-scrollbar { display: none; }
+      `}</style>
 
       {/* List */}
       {loading ? (
