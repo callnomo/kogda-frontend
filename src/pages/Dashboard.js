@@ -279,6 +279,7 @@ export default function Dashboard() {
 
       {/* === БЛОК ТВОЯ ССЫЛКА === */}
       <div style={{ marginBottom: 32 }}>
+        <h3 style={sectionLabelStyle}>Твоя ссылка</h3>
         <div style={{
           background: '#fff',
           borderRadius: 14,
