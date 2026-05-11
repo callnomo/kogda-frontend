@@ -273,7 +273,7 @@ export default function Dashboard() {
     <AppLayout rightColumn={rightColumn}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>
-          Мой кабинет
+          Кабинет
         </h1>
       </div>
 
