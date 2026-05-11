@@ -163,6 +163,34 @@ export default function Bookings() {
   const cancelled = bookings.filter(b => b.status === 'cancelled').length
   const pending = bookings.filter(b => b.status === 'pending' || b.status === 'reschedule_requested').length
 
+  // Статистика за последние 7 дней
+  const now = new Date()
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+  const inWeek = (b) => {
+    const t = new Date(b.start_time).getTime()
+    return t >= weekAgo.getTime() && t <= now.getTime()
+  }
+
+  const weekMeetings = bookings.filter(b => inWeek(b) && b.status !== 'cancelled').length
+  const weekCancelled = bookings.filter(b => inWeek(b) && b.status === 'cancelled').length
+  const weekCompleted = bookings.filter(b =>
+    inWeek(b) && b.status === 'confirmed' && new Date(b.start_time) < now
+  ).length
+
+  // Новые клиенты: первая запись по email попала в окно недели
+  const firstByEmail = {}
+  bookings.forEach(b => {
+    if (!b.client_email) return
+    const t = new Date(b.start_time).getTime()
+    if (!firstByEmail[b.client_email] || t < firstByEmail[b.client_email]) {
+      firstByEmail[b.client_email] = t
+    }
+  })
+  const weekNewClients = Object.values(firstByEmail).filter(t =>
+    t >= weekAgo.getTime() && t <= now.getTime()
+  ).length
+
   const blockStyle = {
     background: '#fff',
     borderRadius: 14,
@@ -393,9 +421,73 @@ export default function Bookings() {
     )
   }
 
+  // Блок "За эту неделю" — рендерится в правой колонке (только на десктопе)
+  const weekStatsBlock = (
+    <div>
+      <div style={{
+        fontSize: 11,
+        fontWeight: 700,
+        color: '#888',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+        marginBottom: 10,
+        paddingLeft: 2
+      }}>
+        За эту неделю
+      </div>
+      <div style={blockStyle}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingTop: 4,
+          paddingBottom: 12
+        }}>
+          <span style={{ fontSize: 13, color: '#888' }}>Встречи</span>
+          <span style={{ fontSize: 22, fontWeight: 800, color: '#111' }}>{weekMeetings}</span>
+        </div>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingTop: 12,
+          paddingBottom: 12,
+          borderTop: '1px solid #F0EFE9'
+        }}>
+          <span style={{ fontSize: 13, color: '#888' }}>Новых клиентов</span>
+          <span style={{ fontSize: 22, fontWeight: 800, color: '#111' }}>{weekNewClients}</span>
+        </div>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingTop: 12,
+          paddingBottom: 12,
+          borderTop: '1px solid #F0EFE9'
+        }}>
+          <span style={{ fontSize: 13, color: '#888' }}>Проведено</span>
+          <span style={{ fontSize: 22, fontWeight: 800, color: '#111' }}>{weekCompleted}</span>
+        </div>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingTop: 12,
+          paddingBottom: 4,
+          borderTop: '1px solid #F0EFE9'
+        }}>
+          <span style={{ fontSize: 13, color: '#888' }}>Отмен</span>
+          <span style={{ fontSize: 22, fontWeight: 800, color: '#666' }}>{weekCancelled}</span>
+        </div>
+      </div>
+    </div>
+  )
+
   const rightColumn = (
     <>
-      <AIHelper /><PromoCard />
+      <AIHelper />
+      {weekStatsBlock}
+      <PromoCard />
       <Footer />
     </>
   )
