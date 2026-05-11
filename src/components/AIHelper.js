@@ -9,7 +9,7 @@ const SUGGESTED_QUESTIONS = [
 
 const STUB_REPLY = 'Я ещё учусь и скоро смогу отвечать по-настоящему. А пока — попробуй найти ответ в разделе «Помощь» или напиши на support@kogda.app.'
 
-const BOTTOM_NAV_HEIGHT = 60 // высота bottom nav на мобайле
+const BOTTOM_NAV_HEIGHT = 60
 
 const aiBadge = {
   background: '#111',
@@ -21,8 +21,22 @@ const aiBadge = {
   borderRadius: 100
 }
 
-export default function AIHelper() {
-  const [open, setOpen] = useState(false)
+/**
+ * AIHelper можно использовать двумя способами:
+ *
+ * 1. Uncontrolled (десктоп, в rightColumn) — без пропсов:
+ *    <AIHelper />
+ *    Имеет свою кнопку-pill, своё состояние open/closed.
+ *
+ * 2. Controlled (мобайл, из AppLayout) — с пропсами:
+ *    <AIHelper isOpen={aiOpen} onClose={() => setAiOpen(false)} />
+ *    Не рисует свою кнопку. Открывается/закрывается извне.
+ *    Кнопка триггера живёт в header AppLayout (иконка "?").
+ */
+export default function AIHelper({ isOpen, onClose }) {
+  const controlled = typeof isOpen === 'boolean'
+
+  const [internalOpen, setInternalOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [messages, setMessages] = useState([
     {
@@ -32,6 +46,15 @@ export default function AIHelper() {
   ])
   const [input, setInput] = useState('')
   const messagesRef = useRef(null)
+
+  const open = controlled ? isOpen : internalOpen
+  const closeChat = () => {
+    if (controlled) {
+      onClose && onClose()
+    } else {
+      setInternalOpen(false)
+    }
+  }
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 900)
@@ -61,7 +84,6 @@ export default function AIHelper() {
     sendMessage(input)
   }
 
-  // Общий блок чата (header + messages + input)
   const renderChatBody = () => (
     <>
       <div style={{
@@ -79,7 +101,7 @@ export default function AIHelper() {
           </div>
         </div>
         <button
-          onClick={() => setOpen(false)}
+          onClick={closeChat}
           style={{
             background: 'transparent',
             border: 'none',
@@ -200,41 +222,11 @@ export default function AIHelper() {
   )
 
   // ============== МОБАЙЛ ==============
+  // На мобайле AIHelper всегда controlled — кнопка триггера живёт в header AppLayout.
+  // Если closed — ничего не рендерим (нет своего FAB).
   if (isMobile) {
-    if (!open) {
-      // FAB — lime круг с "AI", над bottom nav
-      return (
-        <button
-          onClick={() => setOpen(true)}
-          aria-label="Открыть AI-ассистента"
-          style={{
-            position: 'fixed',
-            right: 16,
-            bottom: BOTTOM_NAV_HEIGHT + 16,
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            background: '#E8FF47',
-            border: '1.5px solid #111',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: 'Inter, sans-serif',
-            fontSize: 14,
-            fontWeight: 800,
-            color: '#111',
-            letterSpacing: 0.5,
-            boxShadow: '0 4px 16px rgba(17, 17, 17, 0.15)',
-            zIndex: 20
-          }}
-        >
-          AI
-        </button>
-      )
-    }
+    if (!open) return null
 
-    // Открытый чат — full-screen, но bottom nav остаётся видна
     return (
       <div style={{
         position: 'fixed',
@@ -256,10 +248,11 @@ export default function AIHelper() {
   }
 
   // ============== ДЕСКТОП ==============
+  // На десктопе AIHelper uncontrolled — рисует свою pill-кнопку и сам управляет состоянием.
   if (!open) {
     return (
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => controlled ? null : setInternalOpen(true)}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -282,7 +275,6 @@ export default function AIHelper() {
     )
   }
 
-  // Десктоп открытый — overlay внутри третьей колонки (родитель = aside с position relative)
   return (
     <>
       <div style={{ height: 36, visibility: 'hidden' }} />

@@ -11,7 +11,8 @@ import {
   Settings as SettingsIcon,
   Crown,
   LogOut,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react'
 import AIHelper from './AIHelper'
 
@@ -66,6 +67,7 @@ export default function AppLayout({ children, rightColumn }) {
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [hoveredItem, setHoveredItem] = useState(null)
   const [pendingCount, setPendingCount] = useState(0)
+  const [aiOpen, setAiOpen] = useState(false)
 
   useEffect(() => {
     const u = localStorage.getItem('user')
@@ -241,7 +243,23 @@ export default function AppLayout({ children, rightColumn }) {
         kog<span style={{ background: '#E8FF47', padding: '0 5px', borderRadius: 4 }}>DA</span>
       </div>
 
-      <div style={{ width: 32, height: 32 }} />
+      <button
+        onClick={() => setAiOpen(true)}
+        aria-label="Открыть помощника"
+        style={{
+          width: 32, height: 32,
+          background: 'transparent',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#666'
+        }}
+      >
+        <HelpCircle size={22} strokeWidth={1.8} />
+      </button>
     </div>
   )
 
@@ -522,7 +540,7 @@ export default function AppLayout({ children, rightColumn }) {
         <style>{ICON_STYLES}</style>
         {renderHeader()}
         <main style={{ padding: '16px 16px 24px' }}>{children}</main>
-        <AIHelper />
+        <AIHelper isOpen={aiOpen} onClose={() => setAiOpen(false)} />
         {renderBottomNav()}
         {renderDrawer()}
       </div>
