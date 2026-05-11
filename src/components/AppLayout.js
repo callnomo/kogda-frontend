@@ -521,7 +521,7 @@ export default function AppLayout({ children, rightColumn }) {
       }}>
         <style>{ICON_STYLES}</style>
         {renderHeader()}
-        <main>{children}</main>
+        <main style={{ padding: '16px 16px 24px' }}>{children}</main>
         <AIHelper />
         {renderBottomNav()}
         {renderDrawer()}
