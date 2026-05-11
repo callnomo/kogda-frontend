@@ -77,27 +77,30 @@ export default function AIHelper() {
     )
   }
 
-  // Развёрнутый чат — карточка-overlay в стиле kogDA с lime-полоской
+  // Развёрнутый чат — overlay в пределах третьей колонки
+  // Родительский <aside> в AppLayout имеет position: relative
+  // и width = 320px, padding = 24px → AIHelper ширина = 272px (320 - 48)
   return (
     <>
+      {/* Невидимый плейсхолдер чтобы pill сохранил место в потоке колонки */}
       <div style={{ height: 36, visibility: 'hidden' }} />
 
       <div style={{
-        position: 'fixed',
+        position: 'absolute',
         top: 24,
-        bottom: 24,
-        right: 'calc(50vw - 640px + 24px)',
-        left: 'calc(50vw + 640px - 320px + 24px)',
+        left: 24,
+        right: 24,
+        height: 'calc(100vh - 48px)',
         background: '#fff',
         border: '1px solid #E8E7E0',
         borderLeft: '4px solid #E8FF47',
         borderRadius: 14,
-        zIndex: 30,
         display: 'flex',
         flexDirection: 'column',
         padding: '20px 22px',
         boxSizing: 'border-box',
-        boxShadow: '0 8px 32px rgba(17, 17, 17, 0.08)'
+        boxShadow: '0 8px 32px rgba(17, 17, 17, 0.08)',
+        zIndex: 30
       }}>
         {/* Header */}
         <div style={{

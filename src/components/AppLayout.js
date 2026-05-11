@@ -583,7 +583,8 @@ export default function AppLayout({ children, rightColumn }) {
             padding: '24px 24px 24px 24px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 24
+            gap: 24,
+            position: 'relative'
           }}>
             {rightColumn}
           </aside>
