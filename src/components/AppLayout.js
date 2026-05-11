@@ -553,18 +553,17 @@ export default function AppLayout({ children, rightColumn }) {
           pointerEvents: 'none'
         }} />
 
-        {hasRightColumn && (
-          <div style={{
-            position: 'fixed',
-            right: 'calc(50vw - 640px + 320px)',
-            top: 0,
-            bottom: 0,
-            width: 1,
-            background: 'rgba(17, 17, 17, 0.15)',
-            pointerEvents: 'none',
-            zIndex: 1
-          }} />
-        )}
+       {hasRightColumn && (
+  <div style={{
+    position: 'absolute',
+    right: RIGHT_COLUMN_WIDTH,
+    top: 0,
+    bottom: 0,
+    width: 1,
+    background: 'rgba(17, 17, 17, 0.15)',
+    pointerEvents: 'none'
+  }} />
+)}
 
         {renderSidebar()}
 
