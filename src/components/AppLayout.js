@@ -528,6 +528,7 @@ export default function AppLayout({ children, rightColumn }) {
   }
 
   const hasRightColumn = !!rightColumn
+  const sidebarWidth = isNarrow ? 64 : SIDEBAR_WIDTH
 
   return (
     <div style={{
@@ -545,7 +546,7 @@ export default function AppLayout({ children, rightColumn }) {
       }}>
         <div style={{
           position: 'absolute',
-          left: SIDEBAR_WIDTH,
+          left: sidebarWidth,
           top: 0,
           bottom: 0,
           width: 1,
@@ -553,17 +554,17 @@ export default function AppLayout({ children, rightColumn }) {
           pointerEvents: 'none'
         }} />
 
-       {hasRightColumn && (
-  <div style={{
-    position: 'absolute',
-    right: RIGHT_COLUMN_WIDTH,
-    top: 0,
-    bottom: 0,
-    width: 1,
-    background: 'rgba(17, 17, 17, 0.15)',
-    pointerEvents: 'none'
-  }} />
-)}
+        {hasRightColumn && (
+          <div style={{
+            position: 'absolute',
+            right: RIGHT_COLUMN_WIDTH,
+            top: 0,
+            bottom: 0,
+            width: 1,
+            background: 'rgba(17, 17, 17, 0.15)',
+            pointerEvents: 'none'
+          }} />
+        )}
 
         {renderSidebar()}
 
