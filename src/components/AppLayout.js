@@ -72,8 +72,8 @@ export default function AppLayout({ children, rightColumn }) {
 
     const onResize = () => {
       const w = window.innerWidth
-      setIsMobile(w < 700)
-      setIsNarrow(w >= 700 && w < 1200)
+      setIsMobile(w < 900)
+      setIsNarrow(w >= 900 && w < 1200)
     }
     onResize()
     window.addEventListener('resize', onResize)
