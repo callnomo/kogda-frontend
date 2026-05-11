@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X as XIcon, ArrowUp } from 'lucide-react'
+import { X as XIcon, ArrowUp, HelpCircle } from 'lucide-react'
 
 const SUGGESTED_QUESTIONS = [
   'Как настроить буфер между записями?',
@@ -256,6 +256,7 @@ export default function AIHelper({ isOpen, onClose }) {
         style={{
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
           gap: 8,
           width: '100%',
           padding: '8px 14px',
@@ -269,8 +270,8 @@ export default function AIHelper({ isOpen, onClose }) {
           textAlign: 'left'
         }}
       >
-        <span style={aiBadge}>AI</span>
-        Ассистент
+        <span>Ассистент</span>
+        <HelpCircle size={18} strokeWidth={1.6} color="#666" />
       </button>
     )
   }
