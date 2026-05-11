@@ -476,7 +476,7 @@ export default function Bookings() {
           paddingBottom: 4,
           borderTop: '1px solid #F0EFE9'
         }}>
-          <span style={{ fontSize: 13, color: '#888' }}>Отмен</span>
+          <span style={{ fontSize: 13, color: '#888' }}>Отменено</span>
           <span style={{ fontSize: 22, fontWeight: 800, color: '#666' }}>{weekCancelled}</span>
         </div>
       </div>
