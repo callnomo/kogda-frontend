@@ -79,7 +79,7 @@ export default function Bookings() {
     if (!u) { window.location.href = '/login'; return }
     loadBookings()
 
-    const onResize = () => setIsMobile(window.innerWidth < 700)
+    const onResize = () => setIsMobile(window.innerWidth < 900)
     onResize()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
@@ -180,6 +180,122 @@ export default function Bookings() {
     const cardOpacity = isCancelled ? 0.4 : isPastConfirmed ? 0.5 : 1
     const showLimeAccent = isPending
 
+    // Блок кнопок действий — выносим в переменную чтобы рендерить в разных местах
+    const actionsBlock = (
+      <div style={{
+        display: 'flex',
+        gap: 8,
+        alignItems: 'center',
+        ...(isMobile ? { width: '100%' } : { flexShrink: 0 })
+      }}>
+        {b.status === 'pending' && (
+          <>
+            <button onClick={() => rejectBooking(b.id)} style={{
+              background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
+              padding: isMobile ? '10px 14px' : '8px 14px',
+              borderRadius: 100,
+              fontSize: isMobile ? 13 : 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 5,
+              flex: isMobile ? 1 : 'none'
+            }}>
+              <X size={13} /> Отклонить
+            </button>
+            <button onClick={() => confirmBooking(b.id)} style={{
+              background: '#111', color: '#fff', border: 'none',
+              padding: isMobile ? '10px 14px' : '8px 14px',
+              borderRadius: 100,
+              fontSize: isMobile ? 13 : 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 5,
+              flex: isMobile ? 1 : 'none'
+            }}>
+              <Check size={13} /> Подтвердить
+            </button>
+          </>
+        )}
+
+        {b.status === 'reschedule_requested' && (
+          <>
+            <button onClick={() => rejectReschedule(b.id)} style={{
+              background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
+              padding: isMobile ? '10px 14px' : '8px 14px',
+              borderRadius: 100,
+              fontSize: isMobile ? 13 : 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 5,
+              flex: isMobile ? 1 : 'none'
+            }}>
+              <X size={13} /> Отклонить
+            </button>
+            <button onClick={() => confirmReschedule(b.id)} style={{
+              background: '#111', color: '#fff', border: 'none',
+              padding: isMobile ? '10px 14px' : '8px 14px',
+              borderRadius: 100,
+              fontSize: isMobile ? 13 : 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 5,
+              flex: isMobile ? 1 : 'none'
+            }}>
+              <Check size={13} /> Подтвердить
+            </button>
+          </>
+        )}
+
+        {b.status === 'confirmed' && !isPast && b.video_link && (
+          <>
+            <button onClick={() => cancelBooking(b.id)} style={{
+              background: 'transparent', border: 'none',
+              color: '#999', padding: '8px 4px', fontSize: 12, fontWeight: 500,
+              cursor: 'pointer'
+            }}>
+              Отменить
+            </button>
+            <a href={b.video_link} target="_blank" rel="noreferrer" style={{
+              background: '#111', color: '#fff', padding: '8px 14px',
+              borderRadius: 100, fontSize: 12, fontWeight: 600, textDecoration: 'none',
+              display: 'flex', alignItems: 'center', gap: 5
+            }}>
+              <Video size={13} /> Войти
+            </a>
+          </>
+        )}
+      </div>
+    )
+
+    // Блок коммента (notes) — рендерим только если есть
+    const notesBlock = b.notes ? (
+      <div style={{
+        background: '#F7F6F1', borderRadius: 9,
+        padding: '10px 14px',
+        display: 'flex', alignItems: 'center', gap: 8
+      }}>
+        <MessageCircle size={14} color="#888" style={{ flexShrink: 0 }} />
+        <div style={{ fontSize: 13, color: '#666', minWidth: 0 }}>
+          {b.notes}
+        </div>
+      </div>
+    ) : null
+
+    // Блок reschedule_time (если есть)
+    const rescheduleBlock = (b.status === 'reschedule_requested' && b.reschedule_time) ? (
+      <div style={{
+        background: '#F7F6F1', borderRadius: 9,
+        padding: '10px 14px',
+        fontSize: 13, color: '#111', fontWeight: 600
+      }}>
+        → перенести на {formatDateShort(b.reschedule_time)} в {formatTime(b.reschedule_time)}
+      </div>
+    ) : null
+
     return (
       <div key={b.id} style={{
         background: '#fff',
@@ -189,6 +305,7 @@ export default function Bookings() {
         padding: '20px 24px 20px 21px',
         opacity: cardOpacity
       }}>
+        {/* Шапка: статус + дата */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           marginBottom: 16
@@ -211,116 +328,71 @@ export default function Bookings() {
           </div>
         </div>
 
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: 16, flexWrap: 'wrap'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
+        {isMobile ? (
+          // ============== МОБАЙЛ ==============
+          // Структура: клиент (с услугой) → коммент → кнопки на всю ширину
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 10,
+                background: '#E8FF47', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                fontSize: 16, fontWeight: 700, color: '#111',
+                flexShrink: 0
+              }}>
+                {initial(b.client_name)}
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{b.client_name}</div>
+                {b.client_email && (
+                  <div style={{ fontSize: 12, color: '#999', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.client_email}</div>
+                )}
+                <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>{b.meeting_title}</div>
+              </div>
+            </div>
+
+            {rescheduleBlock}
+            {notesBlock}
+            {actionsBlock}
+          </div>
+        ) : (
+          // ============== ДЕСКТОП ==============
+          // Структура как было: клиент + кнопки в одной строке, потом reschedule, потом коммент
+          <>
             <div style={{
-              width: 44, height: 44, borderRadius: 10,
-              background: '#E8FF47', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 16, fontWeight: 700, color: '#111',
-              flexShrink: 0
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 16, flexWrap: 'wrap'
             }}>
-              {initial(b.client_name)}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 10,
+                  background: '#E8FF47', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  fontSize: 16, fontWeight: 700, color: '#111',
+                  flexShrink: 0
+                }}>
+                  {initial(b.client_name)}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{b.client_name}</div>
+                  {b.client_email && (
+                    <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{b.client_email}</div>
+                  )}
+                  <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>{b.meeting_title}</div>
+                </div>
+              </div>
+
+              {actionsBlock}
             </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{b.client_name}</div>
-              {b.client_email && (
-                <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{b.client_email}</div>
-              )}
-              <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>{b.meeting_title}</div>
-            </div>
-          </div>
 
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
-            {b.status === 'pending' && (
-              <>
-                <button onClick={() => rejectBooking(b.id)} style={{
-                  background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
-                  padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5
-                }}>
-                  <X size={13} /> Отклонить
-                </button>
-                <button onClick={() => confirmBooking(b.id)} style={{
-                  background: '#111', color: '#fff', border: 'none',
-                  padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5
-                }}>
-                  <Check size={13} /> Подтвердить
-                </button>
-              </>
-            )}
-
-            {b.status === 'reschedule_requested' && (
-              <>
-                <button onClick={() => rejectReschedule(b.id)} style={{
-                  background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
-                  padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5
-                }}>
-                  <X size={13} /> Отклонить
-                </button>
-                <button onClick={() => confirmReschedule(b.id)} style={{
-                  background: '#111', color: '#fff', border: 'none',
-                  padding: '8px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5
-                }}>
-                  <Check size={13} /> Подтвердить
-                </button>
-              </>
-            )}
-
-            {b.status === 'confirmed' && !isPast && b.video_link && (
-              <>
-                <button onClick={() => cancelBooking(b.id)} style={{
-                  background: 'transparent', border: 'none',
-                  color: '#999', padding: '8px 4px', fontSize: 12, fontWeight: 500,
-                  cursor: 'pointer'
-                }}>
-                  Отменить
-                </button>
-                <a href={b.video_link} target="_blank" rel="noreferrer" style={{
-                  background: '#111', color: '#fff', padding: '8px 14px',
-                  borderRadius: 100, fontSize: 12, fontWeight: 600, textDecoration: 'none',
-                  display: 'flex', alignItems: 'center', gap: 5
-                }}>
-                  <Video size={13} /> Войти
-                </a>
-              </>
-            )}
-          </div>
-        </div>
-
-        {b.status === 'reschedule_requested' && b.reschedule_time && (
-          <div style={{
-            background: '#F7F6F1', borderRadius: 9,
-            padding: '10px 14px', marginTop: 14,
-            fontSize: 13, color: '#111', fontWeight: 600
-          }}>
-            → перенести на {formatDateShort(b.reschedule_time)} в {formatTime(b.reschedule_time)}
-          </div>
-        )}
-
-        {b.notes && (
-          <div style={{
-            background: '#F7F6F1', borderRadius: 9,
-            padding: '10px 14px', marginTop: 14,
-            display: 'flex', alignItems: 'center', gap: 8
-          }}>
-            <MessageCircle size={14} color="#888" style={{ flexShrink: 0 }} />
-            <div style={{ fontSize: 13, color: '#666', minWidth: 0 }}>
-              {b.notes}
-            </div>
-          </div>
+            {rescheduleBlock && <div style={{ marginTop: 14 }}>{rescheduleBlock}</div>}
+            {notesBlock && <div style={{ marginTop: 14 }}>{notesBlock}</div>}
+          </>
         )}
       </div>
     )
   }
 
-  // Третья колонка — только на десктопе
   const rightColumn = (
     <>
       <AIHelper /><PromoCard />
@@ -335,29 +407,31 @@ export default function Bookings() {
         <p style={{ color: '#888', marginTop: 6, fontSize: 14 }}>Все записи твоих клиентов</p>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
-        <div style={{ ...blockStyle, padding: 20 }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#111', marginBottom: 4 }}>{upcoming}</div>
-          <div style={{ fontSize: 13, color: '#888' }}>{pluralize(upcoming, 'Предстоящая', 'Предстоящих', 'Предстоящих')}</div>
+      {/* Stats — только на десктопе */}
+      {!isMobile && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+          <div style={{ ...blockStyle, padding: 20 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#111', marginBottom: 4 }}>{upcoming}</div>
+            <div style={{ fontSize: 13, color: '#888' }}>{pluralize(upcoming, 'Предстоящая', 'Предстоящих', 'Предстоящих')}</div>
+          </div>
+          <div style={{
+            ...blockStyle, padding: 20,
+            borderLeft: pending > 0 ? '4px solid #E8FF47' : '1px solid #E8E7E0',
+            paddingLeft: pending > 0 ? 17 : 20
+          }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#111', marginBottom: 4 }}>{pending}</div>
+            <div style={{ fontSize: 13, color: '#888' }}>Ожидают</div>
+          </div>
+          <div style={{ ...blockStyle, padding: 20 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#111', marginBottom: 4 }}>{total}</div>
+            <div style={{ fontSize: 13, color: '#888' }}>Всего</div>
+          </div>
+          <div style={{ ...blockStyle, padding: 20 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#666', marginBottom: 4 }}>{cancelled}</div>
+            <div style={{ fontSize: 13, color: '#888' }}>Отменено</div>
+          </div>
         </div>
-        <div style={{
-          ...blockStyle, padding: 20,
-          borderLeft: pending > 0 ? '4px solid #E8FF47' : '1px solid #E8E7E0',
-          paddingLeft: pending > 0 ? 17 : 20
-        }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#111', marginBottom: 4 }}>{pending}</div>
-          <div style={{ fontSize: 13, color: '#888' }}>Ожидают</div>
-        </div>
-        <div style={{ ...blockStyle, padding: 20 }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#111', marginBottom: 4 }}>{total}</div>
-          <div style={{ fontSize: 13, color: '#888' }}>Всего</div>
-        </div>
-        <div style={{ ...blockStyle, padding: 20 }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#666', marginBottom: 4 }}>{cancelled}</div>
-          <div style={{ fontSize: 13, color: '#888' }}>Отменено</div>
-        </div>
-      </div>
+      )}
 
       {/* Filter tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
