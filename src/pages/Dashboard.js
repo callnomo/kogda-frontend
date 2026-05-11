@@ -3,6 +3,7 @@ import axios from 'axios'
 import { Copy, Check, Video, X as XIcon, RefreshCw, MoreVertical, MessageCircle } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import AppLayout from '../components/AppLayout'
+import AIHelper from '../components/AIHelper'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
@@ -208,6 +209,8 @@ export default function Dashboard() {
   // === ПРАВАЯ КОЛОНКА — теперь передаётся через проп rightColumn в AppLayout ===
   const rightColumn = (
     <>
+      <AIHelper />
+
       <div>
         <h3 style={sectionLabelStyle}>Обзор</h3>
         <div style={blockStyle}>
