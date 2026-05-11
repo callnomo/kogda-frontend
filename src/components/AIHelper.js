@@ -41,7 +41,7 @@ export default function AIHelper({ isOpen, onClose }) {
   const [messages, setMessages] = useState([
     {
       from: 'ai',
-      text: 'Привет! Я твой AI-ассистент. Помогу разобраться с kogDA. Что подсказать?'
+      text: 'Привет! Я твой ассистент. Помогу разобраться с kogDA. Что подсказать?'
     }
   ])
   const [input, setInput] = useState('')
@@ -94,11 +94,7 @@ export default function AIHelper({ isOpen, onClose }) {
         flexShrink: 0
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={aiBadge}>AI</span>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>Ассистент</div>
-            <div style={{ fontSize: 11, color: '#888' }}>помогу разобраться</div>
-          </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>Ассистент</div>
         </div>
         <button
           onClick={closeChat}
