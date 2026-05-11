@@ -277,10 +277,10 @@ export default function AppLayout({ children, rightColumn }) {
         top: 0,
         height: '100vh',
         zIndex: 5,
-        padding: '20px 0'
+        padding: '0 0 20px'
       }}>
         <div style={{
-          padding: collapsed ? '0 0 16px' : '0 14px 16px',
+          padding: collapsed ? '24px 0 16px' : '24px 14px 16px',
           display: 'flex', justifyContent: collapsed ? 'center' : 'flex-start',
           alignItems: 'center'
         }}>
