@@ -1,6 +1,22 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
-import { Plus, ChevronDown, ChevronUp, MoreHorizontal, Trash2, Pencil, Copy, Eye, EyeOff, Code2, ExternalLink, Check, Layers, Link2 } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, MoreHorizontal, Trash2, Pencil, Copy, Eye, EyeOff, Code2, ExternalLink, Check, Layers, GripVertical } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import AppLayout from '../components/AppLayout'
 import AIHelper from '../components/AIHelper'
 import PromoCard from '../components/PromoCard'
@@ -29,6 +45,61 @@ const hideArrows = `
     to { transform: translateY(0); }
   }
 `
+
+// Обёртка для каждой карточки услуги — делает её перетаскиваемой через @dnd-kit.
+// Содержит ручку (точечки) слева. Когда тянут — карточка приподнимается.
+// disabled=true (на фильтре «Скрытые») — ручка спрятана, перетаскивать нельзя.
+function SortableCard({ id, isHovered, disabled, children }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id, disabled })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    position: 'relative',
+    zIndex: isDragging ? 10 : 1,
+    boxShadow: isDragging ? '0 8px 24px rgba(0,0,0,0.12)' : 'none',
+    opacity: isDragging ? 0.95 : 1
+  }
+
+  // Ручка показывается только на hover. На мобайле hover нет — там drag отключен через disabled=true (мобайл сложно).
+  const handleVisible = isHovered && !disabled
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      {/* Ручка — иконка GripVertical слева. На hover видна. */}
+      {!disabled && (
+        <div
+          {...attributes}
+          {...listeners}
+          style={{
+            position: 'absolute',
+            left: -6,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 28, height: 32,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: isDragging ? 'grabbing' : 'grab',
+            opacity: handleVisible || isDragging ? 0.6 : 0,
+            transition: 'opacity 0.15s',
+            color: '#888',
+            zIndex: 2,
+            touchAction: 'none'
+          }}
+        >
+          <GripVertical size={18} />
+        </div>
+      )}
+      {children}
+    </div>
+  )
+}
 
 const emptyForm = { title: '', description: '', duration: 60, price: 0, hide_price: false, buffer_before: 0, buffer_after: 0, min_notice: 0, max_days_ahead: 60, max_per_day: 0, require_confirm: false }
 
@@ -230,7 +301,18 @@ export default function Services() {
   const [openSheetId, setOpenSheetId] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
   const [hoveredId, setHoveredId] = useState(null)
+  const [filter, setFilter] = useState('all')  // 'all' или 'hidden'
   const menuRef = useRef(null)
+
+  // DnD sensors — для мыши и клавиатуры
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 }  // 5px движения чтобы начать drag — иначе мешает обычным кликам
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates
+    })
+  )
 
   useEffect(() => {
     const u = localStorage.getItem('user')
@@ -326,7 +408,41 @@ export default function Services() {
 
   const bookingLink = `https://app.kogda.app/${user.slug}`
 
-  const visibleMeetings = meetings.filter(m => editMeeting?.id !== m.id)
+  // Список услуг с применённым фильтром.
+  // Backend уже возвращает услуги в правильном порядке (по sort_order ASC).
+  // Здесь только применяем фильтр (Все / Скрытые) и убираем редактируемую.
+  const visibleMeetings = meetings
+    .filter(m => editMeeting?.id !== m.id)
+    .filter(m => filter === 'hidden' ? !m.is_active : true)
+
+  // Считаем сколько скрытых — для бейджа на фильтре
+  const hiddenCount = meetings.filter(m => !m.is_active).length
+
+  // Обработчик drag-end: меняем порядок локально (оптимистично) + сохраняем на backend
+  const handleDragEnd = async (event) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = meetings.findIndex(m => m.id === active.id)
+    const newIndex = meetings.findIndex(m => m.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const newOrder = arrayMove(meetings, oldIndex, newIndex)
+    setMeetings(newOrder)  // оптимистичное обновление UI
+
+    // Сохраняем порядок на backend
+    const token = localStorage.getItem('token')
+    try {
+      await axios.patch(
+        `${API}/meetings/reorder`,
+        { order: newOrder.map(m => m.id) },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+    } catch (err) {
+      console.error('[reorder]', err)
+      loadMeetings()  // если упало — откатываемся к серверной версии
+    }
+  }
 
   // Самая популярная услуга — считаем по подтверждённым бронированиям
   const confirmedBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed')
@@ -447,12 +563,41 @@ export default function Services() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 28,
+        marginBottom: 20,
         gap: 12
       }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Услуги</h1>
         {!isMobile && addButtonDesktop}
       </div>
+
+      {/* Фильтры — показываем только если есть скрытые услуги */}
+      {hiddenCount > 0 && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+          {[
+            { key: 'all', label: `Все (${meetings.length})` },
+            { key: 'hidden', label: `Скрытые (${hiddenCount})` }
+          ].map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              style={{
+                padding: '7px 16px',
+                borderRadius: 100,
+                background: filter === f.key ? '#111' : '#fff',
+                color: filter === f.key ? '#fff' : '#111',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                border: `1.5px solid ${filter === f.key ? '#111' : '#E0E0D8'}`,
+                transition: 'all 0.15s',
+                fontFamily: 'Inter, sans-serif'
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {showForm && (
         <ServiceForm
@@ -478,9 +623,18 @@ export default function Services() {
           <div style={{ fontSize: 13, color: '#aaa' }}>Добавь первую услугу и поделись ссылкой с клиентами</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {visibleMeetings.map(m => {
-            const detailsStr = [
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={visibleMeetings.map(m => m.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {visibleMeetings.map(m => {
+                const detailsStr = [
               `${m.duration} мин`,
               m.buffer_after > 0 && `${m.buffer_after} мин буфер`,
               m.max_per_day > 0 && `макс ${m.max_per_day}/день`,
@@ -509,21 +663,25 @@ export default function Services() {
             const showOtherButtons = isHovered  // одноразовая, дублировать, встроить, удалить — только на hover
 
             return (
-              <div
+              <SortableCard
                 key={m.id}
+                id={m.id}
+                isHovered={isHovered}
+                disabled={filter === 'hidden' || isMobile}
+              >
+              <div
                 onClick={() => isMobile && setOpenSheetId(m.id)}
                 onMouseEnter={() => !isMobile && setHoveredId(m.id)}
                 onMouseLeave={() => !isMobile && setHoveredId(null)}
                 style={{
                   background: isHovered ? '#FAFAF7' : '#fff',
-                  opacity: isHidden && !isHovered ? 0.55 : 1,
                   borderRadius: 14,
                   border: '1px solid #E8E7E0',
                   padding: '20px 24px',
                   display: 'flex', flexDirection: 'column', gap: isMobile ? 0 : 14,
                   position: 'relative',
                   cursor: isMobile ? 'pointer' : 'default',
-                  transition: 'background 0.15s, opacity 0.15s',
+                  transition: 'background 0.15s',
                   WebkitTapHighlightColor: 'transparent'
                 }}
               >
@@ -597,23 +755,6 @@ export default function Services() {
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
                     >
                       {isHidden ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-
-                    {/* Создать одноразовую — Скоро. Только на hover */}
-                    <button
-                      onClick={() => alert('Одноразовая ссылка — скоро будет доступна. Ссылка которая работает только для одного бронирования и автоматически закроется после использования.')}
-                      title="Создать одноразовую ссылку (Скоро)"
-                      style={{
-                        ...iconBtnStyle,
-                        cursor: 'pointer',
-                        opacity: showOtherButtons ? 0.5 : 0,
-                        pointerEvents: showOtherButtons ? 'auto' : 'none',
-                        transition: 'opacity 0.15s'
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.opacity = '0.8' }}
-                      onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}
-                    >
-                      <Link2 size={16} />
                     </button>
 
                     {/* Дублировать — Скоро. Только на hover */}
@@ -718,6 +859,7 @@ export default function Services() {
                 </div>
                 )}
               </div>
+              </SortableCard>
             )
           })}
 
@@ -727,7 +869,9 @@ export default function Services() {
               {addButtonMobile}
             </div>
           )}
-        </div>
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Если услуг нет — на мобайле тоже нужна кнопка снизу */}
@@ -848,18 +992,6 @@ export default function Services() {
                 >
                   {!sheetMeeting.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
                   {!sheetMeeting.is_active ? 'Показать на публичной странице' : 'Скрыть на публичной странице'}
-                </button>
-
-                <button
-                  onClick={() => {
-                    alert('Одноразовая ссылка — скоро будет доступна')
-                    setOpenSheetId(null)
-                  }}
-                  style={sheetItemStyle}
-                >
-                  <Link2 size={18} />
-                  <span style={{ flex: 1, textAlign: 'left' }}>Создать одноразовую</span>
-                  <span style={menuSoonBadgeStyle}>Скоро</span>
                 </button>
 
                 <button
