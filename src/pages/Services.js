@@ -11,11 +11,6 @@ const hideArrows = `
     -webkit-appearance: none;
     margin: 0;
   }
-  @media (max-width: 700px) {
-    .services-grid {
-      grid-template-columns: 1fr !important;
-    }
-  }
 `
 
 const emptyForm = { title: '', description: '', duration: 60, price: 0, buffer_before: 0, buffer_after: 0, min_notice: 0, max_days_ahead: 60, max_per_day: 0, require_confirm: false }
@@ -145,12 +140,18 @@ export default function Services() {
   const [editForm, setEditForm] = useState(emptyForm)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showEditAdvanced, setShowEditAdvanced] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
     const u = localStorage.getItem('user')
     if (!u) { window.location.href = '/login'; return }
     setUser(JSON.parse(u))
     loadMeetings()
+
+    const onResize = () => setIsMobile(window.innerWidth < 900)
+    onResize()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
 
   const loadMeetings = async () => {
@@ -199,23 +200,36 @@ export default function Services() {
 
   const visibleMeetings = meetings.filter(m => editMeeting?.id !== m.id)
 
+  // Кнопка "Добавить услугу" — используется в двух местах
+  const addButton = (
+    <button onClick={() => setShowForm(!showForm)} style={{
+      background: '#E8FF47', color: '#111', border: 'none',
+      padding: isMobile ? '12px 22px' : '10px 22px',
+      borderRadius: 100,
+      fontSize: 13, fontWeight: 700,
+      cursor: 'pointer',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+      fontFamily: 'Inter, sans-serif',
+      ...(isMobile ? { width: '100%' } : {})
+    }}>
+      <Plus size={15} />Добавить услугу
+    </button>
+  )
+
   return (
     <AppLayout>
       <style>{hideArrows}</style>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Услуги</h1>
-          <p style={{ color: '#888', marginTop: 6, fontSize: 14 }}>Что ты предлагаешь клиентам</p>
-        </div>
-        <button onClick={() => setShowForm(!showForm)} style={{
-          background: '#E8FF47', color: '#111', border: 'none',
-          padding: '10px 22px', borderRadius: 100, fontSize: 13, fontWeight: 700,
-          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-          fontFamily: 'Inter, sans-serif'
-        }}>
-          <Plus size={15} />Добавить услугу
-        </button>
+      {/* Шапка: заголовок + кнопка справа на десктопе */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 28,
+        gap: 12
+      }}>
+        <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Услуги</h1>
+        {!isMobile && addButton}
       </div>
 
       {showForm && (
@@ -242,85 +256,157 @@ export default function Services() {
           <div style={{ fontSize: 13, color: '#aaa' }}>Добавь первую услугу и поделись ссылкой с клиентами</div>
         </div>
       ) : (
-        <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-          {visibleMeetings.map(m => (
-            <div key={m.id} style={{
-              background: '#fff', borderRadius: 14, border: '1px solid #E8E7E0',
-              padding: '20px 24px', display: 'flex', flexDirection: 'column'
-            }}>
-              {/* Top: avatar + info + dots */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 16 }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 10,
-                  background: '#E8FF47', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  fontSize: 16, fontWeight: 700, color: '#111',
-                  flexShrink: 0
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {visibleMeetings.map(m => {
+            const detailsStr = [
+              m.buffer_after > 0 && `+${m.buffer_after}м буфер`,
+              m.max_per_day > 0 && `макс ${m.max_per_day}/день`,
+              m.require_confirm && 'требует подтверждения'
+            ].filter(Boolean).join(' · ')
+
+            const actionsBlock = (
+              <div style={{
+                display: 'flex',
+                gap: 8,
+                alignItems: 'center',
+                ...(isMobile ? { width: '100%', justifyContent: 'flex-end' } : { flexShrink: 0 })
+              }}>
+                <a href={bookingLink} target="_blank" rel="noreferrer" style={{
+                  background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
+                  padding: isMobile ? '10px 14px' : '8px 14px',
+                  borderRadius: 100,
+                  fontSize: isMobile ? 13 : 12,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  ...(isMobile ? { flex: '1 1 auto', maxWidth: 200 } : {})
                 }}>
-                  {initial(m.title)}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 4 }}>{m.title}</div>
-                  <div style={{ fontSize: 13, color: '#999' }}>
-                    {m.duration} мин · {m.price > 0 ? `${m.price.toLocaleString()} ₽` : 'Бесплатно'}
+                  Открыть
+                </a>
+                <button onClick={() => {
+                  setEditMeeting(m)
+                  setEditForm({
+                    title: m.title, description: m.description || '',
+                    duration: m.duration, price: m.price,
+                    buffer_before: m.buffer_before || 0, buffer_after: m.buffer_after || 0,
+                    min_notice: m.min_notice || 0, max_days_ahead: m.max_days_ahead || 60,
+                    max_per_day: m.max_per_day || 0, require_confirm: m.require_confirm || false
+                  })
+                }} style={{
+                  background: '#111', color: '#fff', border: 'none',
+                  padding: isMobile ? '10px 14px' : '8px 14px',
+                  borderRadius: 100,
+                  fontSize: isMobile ? 13 : 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'Inter, sans-serif',
+                  ...(isMobile ? { flex: '1 1 auto', maxWidth: 200 } : {})
+                }}>
+                  Редактировать
+                </button>
+              </div>
+            )
+
+            return (
+              <div key={m.id} style={{
+                background: '#fff', borderRadius: 14, border: '1px solid #E8E7E0',
+                padding: '20px 24px',
+                display: 'flex', flexDirection: 'column', gap: 14
+              }}>
+                {/* Шапка: бейдж длительности + цена */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}>
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    background: '#F7F6F1', padding: '4px 12px', borderRadius: 100
+                  }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: '#111',
+                      textTransform: 'uppercase', letterSpacing: 0.5
+                    }}>
+                      {m.duration} мин
+                    </span>
                   </div>
-                  {(m.buffer_after > 0 || m.max_per_day > 0 || m.require_confirm) && (
-                    <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>
-                      {m.buffer_after > 0 && `+${m.buffer_after}м буфер`}
-                      {m.buffer_after > 0 && (m.max_per_day > 0 || m.require_confirm) && ' · '}
-                      {m.max_per_day > 0 && `макс ${m.max_per_day}/день`}
-                      {m.max_per_day > 0 && m.require_confirm && ' · '}
-                      {m.require_confirm && 'требует подтверждения'}
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
+                    {m.price > 0 ? `${m.price.toLocaleString()} ₽` : 'Бесплатно'}
+                  </div>
+                </div>
+
+                {/* Тело: аватар + название (+ кнопки на десктопе) */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 16,
+                  flexWrap: isMobile ? 'nowrap' : 'wrap'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 10,
+                      background: '#E8FF47', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      fontSize: 16, fontWeight: 700, color: '#111',
+                      flexShrink: 0
+                    }}>
+                      {initial(m.title)}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{m.title}</div>
+                      {detailsStr && (
+                        <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>{detailsStr}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Десктоп: кнопки + удалить в одной строке */}
+                  {!isMobile && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      {actionsBlock}
+                      <button onClick={() => deleteMeeting(m.id)} style={{
+                        background: 'transparent', border: 'none',
+                        color: '#999', padding: '7px 4px', fontSize: 12, fontWeight: 500,
+                        cursor: 'pointer', fontFamily: 'Inter, sans-serif'
+                      }}>
+                        Удалить
+                      </button>
                     </div>
                   )}
                 </div>
-                <button style={{
-                  background: 'transparent', border: 'none', cursor: 'pointer',
-                  padding: 4, color: '#888', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  <MoreVertical size={16} />
-                </button>
-              </div>
 
-              {/* Bottom: divider + buttons */}
-              <div style={{ borderTop: '1px solid #F0EFE9', paddingTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <a href={bookingLink} target="_blank" rel="noreferrer" style={{
-                    background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
-                    padding: '7px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600,
-                    textDecoration: 'none'
+                {/* Мобайл: кнопки на отдельной строке */}
+                {isMobile && actionsBlock}
+
+                {/* Мобайл: удалить ссылкой ниже */}
+                {isMobile && (
+                  <button onClick={() => deleteMeeting(m.id)} style={{
+                    background: 'transparent', border: 'none',
+                    color: '#999', padding: '4px', fontSize: 12, fontWeight: 500,
+                    cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                    textAlign: 'center',
+                    alignSelf: 'center'
                   }}>
-                    Открыть
-                  </a>
-                  <button onClick={() => {
-                    setEditMeeting(m)
-                    setEditForm({
-                      title: m.title, description: m.description || '',
-                      duration: m.duration, price: m.price,
-                      buffer_before: m.buffer_before || 0, buffer_after: m.buffer_after || 0,
-                      min_notice: m.min_notice || 0, max_days_ahead: m.max_days_ahead || 60,
-                      max_per_day: m.max_per_day || 0, require_confirm: m.require_confirm || false
-                    })
-                  }} style={{
-                    background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
-                    padding: '7px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                    fontFamily: 'Inter, sans-serif'
-                  }}>
-                    Редактировать
+                    Удалить
                   </button>
-                </div>
-                <button onClick={() => deleteMeeting(m.id)} style={{
-                  background: 'transparent', border: 'none',
-                  color: '#999', padding: '7px 4px', fontSize: 12, fontWeight: 500,
-                  cursor: 'pointer', fontFamily: 'Inter, sans-serif'
-                }}>
-                  Удалить
-                </button>
+                )}
               </div>
+            )
+          })}
+
+          {/* Мобайл: кнопка Добавить услугу снизу */}
+          {isMobile && (
+            <div style={{ marginTop: 12 }}>
+              {addButton}
             </div>
-          ))}
+          )}
+        </div>
+      )}
+
+      {/* Если услуг нет — на мобайле тоже нужна кнопка снизу */}
+      {meetings.length === 0 && isMobile && (
+        <div style={{ marginTop: 20 }}>
+          {addButton}
         </div>
       )}
     </AppLayout>
