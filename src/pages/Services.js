@@ -506,6 +506,7 @@ export default function Services() {
             const isHovered = hoveredId === m.id
             const isHidden = !m.is_active
             const showEye = isHovered || isHidden
+            const showOtherButtons = isHovered  // одноразовая, дублировать, встроить, удалить — только на hover
 
             return (
               <div
@@ -515,13 +516,14 @@ export default function Services() {
                 onMouseLeave={() => !isMobile && setHoveredId(null)}
                 style={{
                   background: isHovered ? '#FAFAF7' : '#fff',
+                  opacity: isHidden && !isHovered ? 0.55 : 1,
                   borderRadius: 14,
                   border: '1px solid #E8E7E0',
                   padding: '20px 24px',
                   display: 'flex', flexDirection: 'column', gap: isMobile ? 0 : 14,
                   position: 'relative',
                   cursor: isMobile ? 'pointer' : 'default',
-                  transition: 'background 0.15s',
+                  transition: 'background 0.15s, opacity 0.15s',
                   WebkitTapHighlightColor: 'transparent'
                 }}
               >
@@ -573,23 +575,23 @@ export default function Services() {
                   alignItems: 'center',
                   gap: 8
                 }}>
-                  {/* Слева: глаз + Скоро-иконки + удалить — на hover (или если скрыта) */}
+                  {/* Слева: глаз (если скрыта или hover) + Скоро-иконки + удалить (только hover) */}
                   <div style={{
                     display: 'flex',
                     gap: 6,
-                    alignItems: 'center',
-                    opacity: showEye ? 1 : 0,
-                    pointerEvents: showEye ? 'auto' : 'none',
-                    transition: 'opacity 0.15s'
+                    alignItems: 'center'
                   }}>
-                    {/* Глаз */}
+                    {/* Глаз — виден если hover или услуга скрыта */}
                     <button
                       onClick={() => toggleVisibility(m.id)}
                       title={isHidden ? 'Услуга скрыта — показать на публичной странице' : 'Скрыть на публичной странице'}
                       style={{
                         ...iconBtnStyle,
                         cursor: 'pointer',
-                        color: isHidden ? '#DC2626' : '#111'
+                        color: isHidden ? '#DC2626' : '#111',
+                        opacity: showEye ? 1 : 0,
+                        pointerEvents: showEye ? 'auto' : 'none',
+                        transition: 'opacity 0.15s, background 0.15s, border-color 0.15s'
                       }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
@@ -597,44 +599,69 @@ export default function Services() {
                       {isHidden ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
 
-                    {/* Создать одноразовую — Скоро */}
+                    {/* Создать одноразовую — Скоро. Только на hover */}
                     <button
                       onClick={() => alert('Одноразовая ссылка — скоро будет доступна. Ссылка которая работает только для одного бронирования и автоматически закроется после использования.')}
                       title="Создать одноразовую ссылку (Скоро)"
-                      style={{ ...iconBtnStyle, cursor: 'pointer', opacity: 0.5 }}
+                      style={{
+                        ...iconBtnStyle,
+                        cursor: 'pointer',
+                        opacity: showOtherButtons ? 0.5 : 0,
+                        pointerEvents: showOtherButtons ? 'auto' : 'none',
+                        transition: 'opacity 0.15s'
+                      }}
                       onMouseEnter={e => { e.currentTarget.style.opacity = '0.8' }}
                       onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}
                     >
                       <Link2 size={16} />
                     </button>
 
-                    {/* Дублировать — Скоро */}
+                    {/* Дублировать — Скоро. Только на hover */}
                     <button
                       onClick={() => alert('Дублирование услуги — скоро будет доступно.')}
                       title="Дублировать (Скоро)"
-                      style={{ ...iconBtnStyle, cursor: 'pointer', opacity: 0.5 }}
+                      style={{
+                        ...iconBtnStyle,
+                        cursor: 'pointer',
+                        opacity: showOtherButtons ? 0.5 : 0,
+                        pointerEvents: showOtherButtons ? 'auto' : 'none',
+                        transition: 'opacity 0.15s'
+                      }}
                       onMouseEnter={e => { e.currentTarget.style.opacity = '0.8' }}
                       onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}
                     >
                       <Layers size={16} />
                     </button>
 
-                    {/* Встроить — Скоро */}
+                    {/* Встроить — Скоро. Только на hover */}
                     <button
                       onClick={() => alert('Виджет для встраивания на сайт — Premium функция, скоро будет доступна')}
                       title="Встроить на сайт (Скоро)"
-                      style={{ ...iconBtnStyle, cursor: 'pointer', opacity: 0.5 }}
+                      style={{
+                        ...iconBtnStyle,
+                        cursor: 'pointer',
+                        opacity: showOtherButtons ? 0.5 : 0,
+                        pointerEvents: showOtherButtons ? 'auto' : 'none',
+                        transition: 'opacity 0.15s'
+                      }}
                       onMouseEnter={e => { e.currentTarget.style.opacity = '0.8' }}
                       onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}
                     >
                       <Code2 size={16} />
                     </button>
 
-                    {/* Удалить — красная корзина */}
+                    {/* Удалить — красная корзина. Только на hover */}
                     <button
                       onClick={() => deleteMeeting(m.id)}
                       title="Удалить услугу"
-                      style={{ ...iconBtnStyle, cursor: 'pointer', color: '#DC2626' }}
+                      style={{
+                        ...iconBtnStyle,
+                        cursor: 'pointer',
+                        color: '#DC2626',
+                        opacity: showOtherButtons ? 1 : 0,
+                        pointerEvents: showOtherButtons ? 'auto' : 'none',
+                        transition: 'opacity 0.15s, background 0.15s, border-color 0.15s'
+                      }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.borderColor = '#DC2626' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
                     >
