@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import axios from 'axios'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
@@ -11,7 +12,9 @@ const DAYS_FULL = ['Воскресенье','Понедельник','Вторн
 const NOTES_MAX = 200
 
 export default function BookingPage() {
-  const slug = window.location.pathname.split('/').pop()
+  // Берём параметры из URL через React Router
+  const { slug, serviceSlug } = useParams()
+
   const [profile, setProfile] = useState(null)
   const [meetings, setMeetings] = useState([])
   const [selectedMeeting, setSelectedMeeting] = useState(null)
@@ -23,15 +26,28 @@ export default function BookingPage() {
   const [form, setForm] = useState({ name: '', email: '', notes: '' })
   const [loading, setLoading] = useState(true)
   const [bookingLoading, setBookingLoading] = useState(false)
+  const [notFound, setNotFound] = useState(false)
 
   useEffect(() => { loadProfile() }, [])
 
   const loadProfile = async () => {
     try {
-      const res = await axios.get(`${API}/meetings/public/${slug}`)
-      setProfile(res.data.user)
-      setMeetings(res.data.meetings)
-    } catch (err) {}
+      if (serviceSlug) {
+        // Прямая ссылка на услугу — загружаем одну услугу и сразу шаг 2
+        const res = await axios.get(`${API}/meetings/public/${slug}/${serviceSlug}`)
+        setProfile(res.data.user)
+        setMeetings([res.data.meeting])
+        setSelectedMeeting(res.data.meeting)
+        setStep(2)
+      } else {
+        // Обычная ссылка на профиль — список услуг
+        const res = await axios.get(`${API}/meetings/public/${slug}`)
+        setProfile(res.data.user)
+        setMeetings(res.data.meetings)
+      }
+    } catch (err) {
+      setNotFound(true)
+    }
     setLoading(false)
   }
 
@@ -91,7 +107,7 @@ export default function BookingPage() {
     </div>
   )
 
-  if (!profile) return (
+  if (notFound || !profile) return (
     <div style={{ minHeight: '100vh', background: '#F7F6F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>404</div>
@@ -115,6 +131,9 @@ export default function BookingPage() {
   const notesLength = form.notes.length
   const counterColor = notesLength >= NOTES_MAX ? '#DC2626' : notesLength >= 180 ? '#D97706' : '#aaa'
 
+  // Если прямая ссылка на услугу — нельзя вернуться на step 1 (выбор услуги), только закрыть страницу
+  const canGoBack = !serviceSlug
+
   const Sidebar = ({ showBack, onBack, backLabel }) => (
     <div style={{ background: '#fff', borderRadius: 20, padding: '24px', border: '1px solid #E8E7E0', height: 'fit-content' }}>
       {profile.avatar ? (
@@ -134,7 +153,7 @@ export default function BookingPage() {
         <div style={{ background: '#F7F6F1', borderRadius: 12, padding: '14px' }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{selectedMeeting.title}</div>
           <div style={{ fontSize: 12, color: '#888', marginBottom: 3 }}>⏱ {selectedMeeting.duration} мин · 📹 Видеозвонок</div>
-          {selectedMeeting.price > 0 && <div style={{ fontSize: 15, fontWeight: 800, marginTop: 6 }}>{selectedMeeting.price.toLocaleString()} ₽</div>}
+          {selectedMeeting.price > 0 && <div style={{ fontSize: 15, fontWeight: 800, marginTop: 6 }}>{selectedMeeting.price.toLocaleString('ru-RU')} ₽</div>}
           {selectedDate && selectedSlot && (
             <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #E8E7E0' }}>
               <div style={{ fontSize: 11, color: '#aaa', marginBottom: 3 }}>{DAYS_FULL[selectedDate.getDay()]}</div>
@@ -163,17 +182,22 @@ export default function BookingPage() {
 
         {step < 4 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0, marginBottom: 32 }}>
-            {['Тип встречи', 'Дата и время', 'Контакты'].map((s, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, background: step > i+1 ? '#22C55E' : step === i+1 ? '#111' : '#E8E7E0', color: step >= i+1 ? '#fff' : '#aaa' }}>
-                    {step > i+1 ? '✓' : i+1}
+            {/* Если прямая ссылка на услугу — степпер из 2 шагов вместо 3 */}
+            {(serviceSlug ? ['Дата и время', 'Контакты'] : ['Тип встречи', 'Дата и время', 'Контакты']).map((s, i) => {
+              const stepNumber = serviceSlug ? i + 2 : i + 1
+              const totalSteps = serviceSlug ? 2 : 3
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, background: step > stepNumber ? '#22C55E' : step === stepNumber ? '#111' : '#E8E7E0', color: step >= stepNumber ? '#fff' : '#aaa' }}>
+                      {step > stepNumber ? '✓' : i + 1}
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: step === stepNumber ? 700 : 400, color: step === stepNumber ? '#111' : '#aaa' }}>{s}</span>
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: step === i+1 ? 700 : 400, color: step === i+1 ? '#111' : '#aaa' }}>{s}</span>
+                  {i < totalSteps - 1 && <div style={{ width: 36, height: 1, background: '#E8E7E0', margin: '0 8px' }} />}
                 </div>
-                {i < 2 && <div style={{ width: 36, height: 1, background: '#E8E7E0', margin: '0 8px' }} />}
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
@@ -208,7 +232,7 @@ export default function BookingPage() {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>⏱ {m.duration} мин</span>
                       <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>📹 Видеозвонок</span>
-                      {m.price > 0 && <span style={{ fontSize: 13, fontWeight: 800, color: '#111' }}>{m.price.toLocaleString()} ₽</span>}
+                      {m.price > 0 && <span style={{ fontSize: 13, fontWeight: 800, color: '#111' }}>{m.price.toLocaleString('ru-RU')} ₽</span>}
                       {m.price === 0 && <span style={{ fontSize: 12, color: '#22C55E', fontWeight: 700, background: '#DCFCE7', padding: '3px 10px', borderRadius: 20 }}>Бесплатно</span>}
                     </div>
                   </div>
@@ -222,7 +246,11 @@ export default function BookingPage() {
         {/* STEP 2 */}
         {step === 2 && (
           <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 20 }}>
-            <Sidebar showBack onBack={() => { setStep(1); setSelectedDate(null); setSelectedSlot(null); setSlots([]) }} backLabel="Назад" />
+            <Sidebar
+              showBack={canGoBack}
+              onBack={() => { setStep(1); setSelectedDate(null); setSelectedSlot(null); setSlots([]); setSelectedMeeting(null) }}
+              backLabel="Назад"
+            />
             <div style={{ background: '#fff', borderRadius: 20, padding: '28px', border: '1px solid #E8E7E0' }}>
               <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 22px' }}>Выберите дату и время</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 155px', gap: 24 }}>

@@ -86,6 +86,7 @@ function App() {
           <Route path="/bookings" element={<Bookings />} />
           <Route path="/booking/:token" element={<ClientBooking />} />
           <Route path="/layout-test" element={<LayoutTest />} />
+          <Route path="/:slug/:serviceSlug" element={<BookingPage />} />
           <Route path="/:slug" element={<BookingPage />} />
         </Routes>
       </BrowserRouter>
