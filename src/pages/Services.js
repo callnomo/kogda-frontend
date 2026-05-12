@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
-import { Plus, ChevronDown, ChevronUp, MoreVertical, Trash2, Pencil, Copy, Eye, EyeOff, Code2 } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, MoreHorizontal, Trash2, Pencil, Copy, Eye, EyeOff, Code2, ExternalLink, Check } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
 import AIHelper from '../components/AIHelper'
 import PromoCard from '../components/PromoCard'
@@ -22,7 +22,7 @@ const hideArrows = `
   }
 `
 
-const emptyForm = { title: '', description: '', duration: 60, price: 0, buffer_before: 0, buffer_after: 0, min_notice: 0, max_days_ahead: 60, max_per_day: 0, require_confirm: false }
+const emptyForm = { title: '', description: '', duration: 60, price: 0, hide_price: false, buffer_before: 0, buffer_after: 0, min_notice: 0, max_days_ahead: 60, max_per_day: 0, require_confirm: false }
 
 const inputStyle = {
   width: '100%', padding: '11px 14px', borderRadius: 9,
@@ -50,6 +50,20 @@ const menuSoonBadgeStyle = {
   borderRadius: 100,
   textTransform: 'uppercase',
   letterSpacing: 0.5
+}
+
+const iconBtnStyle = {
+  width: 36, height: 36,
+  borderRadius: 8,
+  border: '1.5px solid #E0E0D8',
+  background: 'transparent',
+  color: '#111',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textDecoration: 'none',
+  fontFamily: 'Inter, sans-serif',
+  transition: 'background 0.15s, border-color 0.15s'
 }
 
 const initial = (name) => name ? name.charAt(0).toUpperCase() : '?'
@@ -142,6 +156,29 @@ const ServiceForm = ({ formData, setFormData, onSubmit, onCancel, showAdv, setSh
                   cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background 0.2s'
                 }}>
                   <div style={{ width: 18, height: 18, borderRadius: 9, background: '#fff', position: 'absolute', top: 3, left: formData.require_confirm ? 23 : 3, transition: 'left 0.2s' }} />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F7F6F1', borderRadius: 10, padding: '12px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>Скрыть цену на публичной странице</div>
+                  <div style={{ position: 'relative', display: 'inline-block' }}
+                    onMouseEnter={e => e.currentTarget.querySelector('.tooltip').style.display = 'block'}
+                    onMouseLeave={e => e.currentTarget.querySelector('.tooltip').style.display = 'none'}>
+                    <div style={{ width: 16, height: 16, borderRadius: 8, background: '#E0E0D8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#888', cursor: 'default' }}>?</div>
+                    <div className="tooltip" style={{ display: 'none', position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', background: '#111', color: '#fff', fontSize: 12, padding: '8px 12px', borderRadius: 8, whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
+                      Клиент увидит «Цена по запросу» вместо суммы
+                    </div>
+                  </div>
+                </div>
+                <div onClick={() => setFormData({...formData, hide_price: !formData.hide_price})} style={{
+                  width: 44, height: 24, borderRadius: 12,
+                  background: formData.hide_price ? '#111' : '#E0E0D8',
+                  cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background 0.2s'
+                }}>
+                  <div style={{ width: 18, height: 18, borderRadius: 9, background: '#fff', position: 'absolute', top: 3, left: formData.hide_price ? 23 : 3, transition: 'left 0.2s' }} />
                 </div>
               </div>
             </div>
@@ -395,6 +432,7 @@ export default function Services() {
               setEditForm({
                 title: m.title, description: m.description || '',
                 duration: m.duration, price: m.price,
+                hide_price: m.hide_price || false,
                 buffer_before: m.buffer_before || 0, buffer_after: m.buffer_after || 0,
                 min_notice: m.min_notice || 0, max_days_ahead: m.max_days_ahead || 60,
                 max_per_day: m.max_per_day || 0, require_confirm: m.require_confirm || false
@@ -409,54 +447,45 @@ export default function Services() {
                 display: 'flex', flexDirection: 'column', gap: 14,
                 position: 'relative'
               }}>
-                {/* Верх: аватар + название + детали + lime-ценник + меню */}
+                {/* Глаз + меню в правом верхнем углу */}
                 <div style={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 14
+                  gap: 4
                 }}>
-                  {/* Аватар */}
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 10,
-                    background: '#E8FF47', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center',
-                    fontSize: 16, fontWeight: 700, color: '#111',
-                    flexShrink: 0
-                  }}>
-                    {initial(m.title)}
-                  </div>
-
-                  {/* Название + детали */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{m.title}</div>
-                    <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>{detailsStr}</div>
-                  </div>
-
-                  {/* Lime-ценник */}
-                  <div style={{
-                    background: '#E8FF47',
-                    borderRadius: 10,
-                    padding: isMobile ? '8px 12px' : '10px 14px',
-                    fontSize: isMobile ? 14 : 16,
-                    fontWeight: 800,
-                    color: '#111',
-                    flexShrink: 0,
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {m.price > 0 ? `${m.price.toLocaleString()} ₽` : 'Бесплатно'}
-                  </div>
+                  {/* Глаз (toggle видимости) */}
+                  <button
+                    onClick={() => {
+                      alert(m.is_hidden ? 'Эта функция скоро будет доступна — услуга станет видна на публичной странице' : 'Эта функция скоро будет доступна — услуга будет скрыта на публичной странице')
+                    }}
+                    title={m.is_hidden ? 'Показать на публичной странице' : 'Скрыть на публичной странице'}
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      padding: 6, color: '#888',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#111'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#888'}
+                  >
+                    {m.is_hidden ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
 
                   {/* Меню ··· */}
-                  <div style={{ position: 'relative', flexShrink: 0 }} ref={openMenuId === m.id ? menuRef : null}>
+                  <div style={{ position: 'relative' }} ref={openMenuId === m.id ? menuRef : null}>
                     <button
                       onClick={() => setOpenMenuId(openMenuId === m.id ? null : m.id)}
                       style={{
                         background: 'transparent', border: 'none', cursor: 'pointer',
-                        padding: 8, color: '#888',
+                        padding: 6, color: '#888',
                         display: 'flex', alignItems: 'center', justifyContent: 'center'
                       }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#111'}
+                      onMouseLeave={e => e.currentTarget.style.color = openMenuId === m.id ? '#111' : '#888'}
                     >
-                      <MoreVertical size={18} />
+                      <MoreHorizontal size={17} />
                     </button>
 
                     {openMenuId === m.id && (
@@ -471,47 +500,6 @@ export default function Services() {
                         overflow: 'hidden',
                         zIndex: 20
                       }}>
-                        {/* Редактировать */}
-                        <button
-                          onClick={startEdit}
-                          style={menuItemStyle}
-                          onMouseEnter={e => e.currentTarget.style.background = '#F7F6F1'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <Pencil size={15} />
-                          Редактировать
-                        </button>
-
-                        {/* Копировать ссылку */}
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(bookingLink)
-                            setCopiedId(m.id)
-                            setTimeout(() => setCopiedId(null), 1500)
-                          }}
-                          style={menuItemStyle}
-                          onMouseEnter={e => e.currentTarget.style.background = '#F7F6F1'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <Copy size={15} />
-                          {copiedId === m.id ? 'Скопировано' : 'Копировать ссылку'}
-                        </button>
-
-                        {/* Скрыть на публичной странице */}
-                        <button
-                          onClick={() => {
-                            alert('Эта функция скоро будет доступна')
-                            setOpenMenuId(null)
-                          }}
-                          style={menuItemStyle}
-                          onMouseEnter={e => e.currentTarget.style.background = '#F7F6F1'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <EyeOff size={15} />
-                          <span>Скрыть на публичной странице</span>
-                          <span style={menuSoonBadgeStyle}>Скоро</span>
-                        </button>
-
                         {/* Встроить на сайт */}
                         <button
                           onClick={() => {
@@ -544,19 +532,115 @@ export default function Services() {
                   </div>
                 </div>
 
-                {/* Кнопка Предпросмотр снизу */}
-                <div style={{ borderTop: '1px solid #F0EFE9', paddingTop: 14 }}>
-                  <a href={bookingLink} target="_blank" rel="noreferrer" style={{
-                    background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
-                    padding: isMobile ? '10px 18px' : '8px 16px',
-                    borderRadius: 100,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+                {/* Тело карточки: аватар + название + ценник */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  paddingRight: 80  // место для глаза и меню в углу
+                }}>
+                  {/* Аватар */}
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 10,
+                    background: '#E8FF47', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    fontSize: 16, fontWeight: 700, color: '#111',
+                    flexShrink: 0
                   }}>
-                    Предпросмотр
+                    {initial(m.title)}
+                  </div>
+
+                  {/* Название + детали */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{m.title}</div>
+                    <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>{detailsStr}</div>
+                  </div>
+
+                  {/* Lime-ценник */}
+                  {!isMobile && (
+                    <div style={{
+                      background: '#E8FF47',
+                      borderRadius: 10,
+                      padding: '10px 14px',
+                      fontSize: 16,
+                      fontWeight: 800,
+                      color: '#111',
+                      flexShrink: 0,
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {m.hide_price ? 'По запросу' : (m.price > 0 ? `${m.price.toLocaleString()} ₽` : 'Бесплатно')}
+                    </div>
+                  )}
+                </div>
+
+                {/* Мобайл: ценник отдельной строкой */}
+                {isMobile && (
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{
+                      background: '#E8FF47',
+                      borderRadius: 10,
+                      padding: '8px 12px',
+                      fontSize: 14,
+                      fontWeight: 800,
+                      color: '#111',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {m.hide_price ? 'По запросу' : (m.price > 0 ? `${m.price.toLocaleString()} ₽` : 'Бесплатно')}
+                    </div>
+                  </div>
+                )}
+
+                {/* Низ: бордер + три квадратные кнопки справа */}
+                <div style={{
+                  borderTop: '1px solid #F0EFE9',
+                  paddingTop: 14,
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: 6
+                }}>
+                  {/* Предпросмотр */}
+                  <a
+                    href={bookingLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Предпросмотр"
+                    style={iconBtnStyle}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
+                  >
+                    <ExternalLink size={16} />
                   </a>
+
+                  {/* Редактировать */}
+                  <button
+                    onClick={startEdit}
+                    title="Редактировать"
+                    style={{ ...iconBtnStyle, cursor: 'pointer' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
+                  >
+                    <Pencil size={16} />
+                  </button>
+
+                  {/* Копировать ссылку — главная (чёрная) */}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(bookingLink)
+                      setCopiedId(m.id)
+                      setTimeout(() => setCopiedId(null), 1500)
+                    }}
+                    title={copiedId === m.id ? 'Скопировано' : 'Копировать ссылку'}
+                    style={{
+                      ...iconBtnStyle,
+                      background: copiedId === m.id ? '#16A34A' : '#111',
+                      borderColor: copiedId === m.id ? '#16A34A' : '#111',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s, border-color 0.2s'
+                    }}
+                  >
+                    {copiedId === m.id ? <Check size={16} /> : <Copy size={16} />}
+                  </button>
                 </div>
               </div>
             )
