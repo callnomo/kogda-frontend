@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
-import { Plus, ChevronDown, ChevronUp, MoreHorizontal, Trash2, Pencil, Copy, Eye, EyeOff, Code2, ExternalLink, Check } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, MoreHorizontal, Trash2, Pencil, Copy, Eye, EyeOff, Code2, ExternalLink, Check, Layers, Link2 } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
 import AIHelper from '../components/AIHelper'
 import PromoCard from '../components/PromoCard'
@@ -210,6 +210,7 @@ export default function Services() {
   const [isMobile, setIsMobile] = useState(false)
   const [openMenuId, setOpenMenuId] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
+  const [hoveredId, setHoveredId] = useState(null)
   const menuRef = useRef(null)
 
   useEffect(() => {
@@ -440,207 +441,215 @@ export default function Services() {
               setOpenMenuId(null)
             }
 
+            const isHovered = hoveredId === m.id
+            const showEye = isHovered || isMobile || m.is_hidden
+
             return (
-              <div key={m.id} style={{
-                background: '#fff', borderRadius: 14, border: '1px solid #E8E7E0',
-                padding: '20px 24px',
-                display: 'flex', flexDirection: 'column', gap: 14,
-                position: 'relative'
-              }}>
-                {/* Глаз + меню в правом верхнем углу */}
-                <div style={{
-                  position: 'absolute',
-                  top: 12,
-                  right: 12,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4
-                }}>
-                  {/* Глаз (toggle видимости) */}
-                  <button
-                    onClick={() => {
-                      alert(m.is_hidden ? 'Эта функция скоро будет доступна — услуга станет видна на публичной странице' : 'Эта функция скоро будет доступна — услуга будет скрыта на публичной странице')
-                    }}
-                    title={m.is_hidden ? 'Показать на публичной странице' : 'Скрыть на публичной странице'}
-                    style={{
-                      background: 'transparent', border: 'none', cursor: 'pointer',
-                      padding: 6, color: '#888',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#111'}
-                    onMouseLeave={e => e.currentTarget.style.color = '#888'}
-                  >
-                    {m.is_hidden ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-
-                  {/* Меню ··· */}
-                  <div style={{ position: 'relative' }} ref={openMenuId === m.id ? menuRef : null}>
-                    <button
-                      onClick={() => setOpenMenuId(openMenuId === m.id ? null : m.id)}
-                      style={{
-                        background: 'transparent', border: 'none', cursor: 'pointer',
-                        padding: 6, color: '#888',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#111'}
-                      onMouseLeave={e => e.currentTarget.style.color = openMenuId === m.id ? '#111' : '#888'}
-                    >
-                      <MoreHorizontal size={17} />
-                    </button>
-
-                    {openMenuId === m.id && (
-                      <div style={{
-                        position: 'absolute',
-                        top: 'calc(100% + 4px)',
-                        right: 0,
-                        background: '#fff',
-                        borderRadius: 10,
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
-                        minWidth: 220,
-                        overflow: 'hidden',
-                        zIndex: 20
-                      }}>
-                        {/* Встроить на сайт */}
-                        <button
-                          onClick={() => {
-                            alert('Виджет для встраивания на сайт — Premium функция, скоро будет доступна')
-                            setOpenMenuId(null)
-                          }}
-                          style={menuItemStyle}
-                          onMouseEnter={e => e.currentTarget.style.background = '#F7F6F1'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <Code2 size={15} />
-                          <span>Встроить на сайт</span>
-                          <span style={menuSoonBadgeStyle}>Скоро</span>
-                        </button>
-
-                        <div style={{ borderTop: '0.5px solid #F0EFE9' }} />
-
-                        {/* Удалить */}
-                        <button
-                          onClick={() => { deleteMeeting(m.id); setOpenMenuId(null) }}
-                          style={{ ...menuItemStyle, color: '#DC2626' }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <Trash2 size={15} />
-                          Удалить
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Тело карточки: аватар + название + ценник */}
+              <div
+                key={m.id}
+                onMouseEnter={() => !isMobile && setHoveredId(m.id)}
+                onMouseLeave={() => !isMobile && setHoveredId(null)}
+                style={{
+                  background: isHovered ? '#FAFAF7' : '#fff',
+                  borderRadius: 14,
+                  border: '1px solid #E8E7E0',
+                  padding: '20px 24px',
+                  display: 'flex', flexDirection: 'column', gap: 14,
+                  position: 'relative',
+                  transition: 'background 0.15s'
+                }}
+              >
+                {/* Верх: название/детали + ценник */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 14,
-                  paddingRight: 80  // место для глаза и меню в углу
+                  gap: 14
                 }}>
-                  {/* Аватар */}
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 10,
-                    background: '#E8FF47', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center',
-                    fontSize: 16, fontWeight: 700, color: '#111',
-                    flexShrink: 0
-                  }}>
-                    {initial(m.title)}
-                  </div>
-
-                  {/* Название + детали */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{m.title}</div>
                     <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>{detailsStr}</div>
                   </div>
 
                   {/* Lime-ценник */}
-                  {!isMobile && (
-                    <div style={{
-                      background: '#E8FF47',
-                      borderRadius: 10,
-                      padding: '10px 14px',
-                      fontSize: 16,
-                      fontWeight: 800,
-                      color: '#111',
-                      flexShrink: 0,
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {m.hide_price ? 'По запросу' : (m.price > 0 ? `${m.price.toLocaleString()} ₽` : 'Бесплатно')}
-                    </div>
-                  )}
+                  <div style={{
+                    background: '#E8FF47',
+                    borderRadius: 10,
+                    padding: isMobile ? '8px 12px' : '10px 14px',
+                    fontSize: isMobile ? 14 : 16,
+                    fontWeight: 800,
+                    color: '#111',
+                    flexShrink: 0,
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {m.hide_price ? 'По запросу' : (m.price > 0 ? `${m.price.toLocaleString()} ₽` : 'Бесплатно')}
+                  </div>
                 </div>
 
-                {/* Мобайл: ценник отдельной строкой */}
-                {isMobile && (
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{
-                      background: '#E8FF47',
-                      borderRadius: 10,
-                      padding: '8px 12px',
-                      fontSize: 14,
-                      fontWeight: 800,
-                      color: '#111',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {m.hide_price ? 'По запросу' : (m.price > 0 ? `${m.price.toLocaleString()} ₽` : 'Бесплатно')}
-                    </div>
-                  </div>
-                )}
-
-                {/* Низ: бордер + три квадратные кнопки справа */}
+                {/* Низ: бордер + кнопки */}
                 <div style={{
                   borderTop: '1px solid #F0EFE9',
                   paddingTop: 14,
                   display: 'flex',
-                  justifyContent: 'flex-end',
-                  gap: 6
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 8
                 }}>
-                  {/* Предпросмотр */}
-                  <a
-                    href={bookingLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    title="Предпросмотр"
-                    style={iconBtnStyle}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
-                  >
-                    <ExternalLink size={16} />
-                  </a>
+                  {/* Глаз слева (на hover или скрытая или мобайл) */}
+                  <div style={{ display: 'flex' }}>
+                    {showEye && (
+                      <button
+                        onClick={() => {
+                          alert(m.is_hidden ? 'Эта функция скоро будет доступна — услуга станет видна на публичной странице' : 'Эта функция скоро будет доступна — услуга будет скрыта на публичной странице')
+                        }}
+                        title={m.is_hidden ? 'Услуга скрыта — показать' : 'Скрыть на публичной странице'}
+                        style={{
+                          ...iconBtnStyle,
+                          cursor: 'pointer',
+                          color: m.is_hidden ? '#DC2626' : '#111'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
+                      >
+                        {m.is_hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    )}
+                  </div>
 
-                  {/* Редактировать */}
-                  <button
-                    onClick={startEdit}
-                    title="Редактировать"
-                    style={{ ...iconBtnStyle, cursor: 'pointer' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
-                  >
-                    <Pencil size={16} />
-                  </button>
+                  {/* Кнопки справа: Предпросмотр + Редактировать + Копировать + ··· */}
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    {/* Предпросмотр */}
+                    <a
+                      href={bookingLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Предпросмотр"
+                      style={iconBtnStyle}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
+                    >
+                      <ExternalLink size={16} />
+                    </a>
 
-                  {/* Копировать ссылку — главная (чёрная) */}
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(bookingLink)
-                      setCopiedId(m.id)
-                      setTimeout(() => setCopiedId(null), 1500)
-                    }}
-                    title={copiedId === m.id ? 'Скопировано' : 'Копировать ссылку'}
-                    style={{
-                      ...iconBtnStyle,
-                      background: copiedId === m.id ? '#16A34A' : '#111',
-                      borderColor: copiedId === m.id ? '#16A34A' : '#111',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s, border-color 0.2s'
-                    }}
-                  >
-                    {copiedId === m.id ? <Check size={16} /> : <Copy size={16} />}
-                  </button>
+                    {/* Редактировать */}
+                    <button
+                      onClick={startEdit}
+                      title="Редактировать"
+                      style={{ ...iconBtnStyle, cursor: 'pointer' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
+                    >
+                      <Pencil size={16} />
+                    </button>
+
+                    {/* Копировать ссылку — главная (чёрная) */}
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(bookingLink)
+                        setCopiedId(m.id)
+                        setTimeout(() => setCopiedId(null), 1500)
+                      }}
+                      title={copiedId === m.id ? 'Скопировано' : 'Копировать ссылку'}
+                      style={{
+                        ...iconBtnStyle,
+                        background: copiedId === m.id ? '#16A34A' : '#111',
+                        borderColor: copiedId === m.id ? '#16A34A' : '#111',
+                        color: '#fff',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s, border-color 0.2s'
+                      }}
+                    >
+                      {copiedId === m.id ? <Check size={16} /> : <Copy size={16} />}
+                    </button>
+
+                    {/* Меню ··· */}
+                    <div style={{ position: 'relative' }} ref={openMenuId === m.id ? menuRef : null}>
+                      <button
+                        onClick={() => setOpenMenuId(openMenuId === m.id ? null : m.id)}
+                        title="Ещё"
+                        style={{
+                          background: 'transparent', border: 'none', cursor: 'pointer',
+                          padding: 8, color: openMenuId === m.id ? '#111' : '#888',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#111'}
+                        onMouseLeave={e => e.currentTarget.style.color = openMenuId === m.id ? '#111' : '#888'}
+                      >
+                        <MoreHorizontal size={18} />
+                      </button>
+
+                      {openMenuId === m.id && (
+                        <div style={{
+                          position: 'absolute',
+                          bottom: 'calc(100% + 4px)',
+                          right: 0,
+                          background: '#fff',
+                          borderRadius: 10,
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
+                          minWidth: 240,
+                          overflow: 'hidden',
+                          zIndex: 20
+                        }}>
+                          {/* Создать одноразовую ссылку */}
+                          <button
+                            onClick={() => {
+                              alert('Одноразовая ссылка — скоро будет доступна. Ссылка которая работает только для одного бронирования и автоматически закроется после использования.')
+                              setOpenMenuId(null)
+                            }}
+                            style={menuItemStyle}
+                            onMouseEnter={e => e.currentTarget.style.background = '#F7F6F1'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          >
+                            <Link2 size={15} />
+                            <span>Создать одноразовую</span>
+                            <span style={menuSoonBadgeStyle}>Скоро</span>
+                          </button>
+
+                          {/* Дублировать */}
+                          <button
+                            onClick={() => {
+                              alert('Дублирование услуги — скоро будет доступно.')
+                              setOpenMenuId(null)
+                            }}
+                            style={menuItemStyle}
+                            onMouseEnter={e => e.currentTarget.style.background = '#F7F6F1'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          >
+                            <Layers size={15} />
+                            <span>Дублировать</span>
+                            <span style={menuSoonBadgeStyle}>Скоро</span>
+                          </button>
+
+                          {/* Встроить на сайт */}
+                          <button
+                            onClick={() => {
+                              alert('Виджет для встраивания на сайт — Premium функция, скоро будет доступна')
+                              setOpenMenuId(null)
+                            }}
+                            style={menuItemStyle}
+                            onMouseEnter={e => e.currentTarget.style.background = '#F7F6F1'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          >
+                            <Code2 size={15} />
+                            <span>Встроить на сайт</span>
+                            <span style={menuSoonBadgeStyle}>Скоро</span>
+                          </button>
+
+                          <div style={{ borderTop: '0.5px solid #F0EFE9' }} />
+
+                          {/* Удалить */}
+                          <button
+                            onClick={() => { deleteMeeting(m.id); setOpenMenuId(null) }}
+                            style={{ ...menuItemStyle, color: '#DC2626' }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          >
+                            <Trash2 size={15} />
+                            Удалить
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )
