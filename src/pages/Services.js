@@ -487,6 +487,9 @@ export default function Services() {
               m.require_confirm && 'требует подтверждения'
             ].filter(Boolean).join(' · ')
 
+            // Прямая ссылка на услугу. Fallback на общую ссылку коуча если slug ещё нет (новая услуга до деплоя)
+            const serviceLink = m.slug ? `https://app.kogda.app/${user.slug}/${m.slug}` : bookingLink
+
             const startEdit = () => {
               setEditMeeting(m)
               setEditForm({
@@ -643,7 +646,7 @@ export default function Services() {
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     {/* Предпросмотр */}
                     <a
-                      href={bookingLink}
+                      href={serviceLink}
                       target="_blank"
                       rel="noreferrer"
                       title="Предпросмотр"
@@ -668,11 +671,11 @@ export default function Services() {
                     {/* Копировать ссылку — главная (чёрная) */}
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(bookingLink)
+                        navigator.clipboard.writeText(serviceLink)
                         setCopiedId(m.id)
                         setTimeout(() => setCopiedId(null), 1500)
                       }}
-                      title={copiedId === m.id ? 'Скопировано' : 'Копировать ссылку'}
+                      title={copiedId === m.id ? 'Скопировано' : 'Копировать ссылку на услугу'}
                       style={{
                         ...iconBtnStyle,
                         background: copiedId === m.id ? '#16A34A' : '#111',
@@ -725,6 +728,9 @@ export default function Services() {
           setOpenSheetId(null)
         }
 
+        // Прямая ссылка на услугу в sheet
+        const sheetServiceLink = sheetMeeting.slug ? `https://app.kogda.app/${user.slug}/${sheetMeeting.slug}` : bookingLink
+
         return (
           <div
             onClick={() => setOpenSheetId(null)}
@@ -773,7 +779,7 @@ export default function Services() {
               {/* Действия */}
               <div style={{ padding: '8px 0' }}>
                 <a
-                  href={bookingLink}
+                  href={sheetServiceLink}
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => setOpenSheetId(null)}
@@ -785,7 +791,7 @@ export default function Services() {
 
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(bookingLink)
+                    navigator.clipboard.writeText(sheetServiceLink)
                     setCopiedId(sheetMeeting.id)
                     setTimeout(() => {
                       setCopiedId(null)
