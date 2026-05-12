@@ -314,6 +314,14 @@ export default function Services() {
     } catch (err) { console.error(err) }
   }
 
+  const toggleVisibility = async (id) => {
+    const token = localStorage.getItem('token')
+    try {
+      await axios.patch(`${API}/meetings/${id}/visibility`, {}, { headers: { Authorization: `Bearer ${token}` } })
+      loadMeetings()
+    } catch (err) { console.error(err) }
+  }
+
   if (!user) return null
 
   const bookingLink = `https://app.kogda.app/${user.slug}`
@@ -493,7 +501,8 @@ export default function Services() {
             }
 
             const isHovered = hoveredId === m.id
-            const showEye = isHovered || m.is_hidden
+            const isHidden = !m.is_active
+            const showEye = isHovered || isHidden
 
             return (
               <div
@@ -522,7 +531,7 @@ export default function Services() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: '#111', display: 'flex', alignItems: 'center', gap: 8 }}>
                       {m.title}
-                      {m.is_hidden && (
+                      {isHidden && (
                         <span style={{
                           fontSize: 9, fontWeight: 700, color: '#888',
                           background: '#F0EFE9',
@@ -561,7 +570,7 @@ export default function Services() {
                   alignItems: 'center',
                   gap: 8
                 }}>
-                  {/* Слева: глаз + Скоро-иконки + удалить — на hover (или если is_hidden) */}
+                  {/* Слева: глаз + Скоро-иконки + удалить — на hover (или если скрыта) */}
                   <div style={{
                     display: 'flex',
                     gap: 6,
@@ -572,19 +581,17 @@ export default function Services() {
                   }}>
                     {/* Глаз */}
                     <button
-                      onClick={() => {
-                        alert(m.is_hidden ? 'Эта функция скоро будет доступна — услуга станет видна на публичной странице' : 'Эта функция скоро будет доступна — услуга будет скрыта на публичной странице')
-                      }}
-                      title={m.is_hidden ? 'Услуга скрыта — показать' : 'Скрыть на публичной странице'}
+                      onClick={() => toggleVisibility(m.id)}
+                      title={isHidden ? 'Услуга скрыта — показать на публичной странице' : 'Скрыть на публичной странице'}
                       style={{
                         ...iconBtnStyle,
                         cursor: 'pointer',
-                        color: m.is_hidden ? '#DC2626' : '#111'
+                        color: isHidden ? '#DC2626' : '#111'
                       }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
                     >
-                      {m.is_hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {isHidden ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
 
                     {/* Создать одноразовую — Скоро */}
@@ -801,13 +808,13 @@ export default function Services() {
 
                 <button
                   onClick={() => {
-                    alert(sheetMeeting.is_hidden ? 'Эта функция скоро будет доступна' : 'Эта функция скоро будет доступна')
+                    toggleVisibility(sheetMeeting.id)
                     setOpenSheetId(null)
                   }}
                   style={sheetItemStyle}
                 >
-                  {sheetMeeting.is_hidden ? <Eye size={18} /> : <EyeOff size={18} />}
-                  {sheetMeeting.is_hidden ? 'Показать на публичной странице' : 'Скрыть на публичной странице'}
+                  {!sheetMeeting.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
+                  {!sheetMeeting.is_active ? 'Показать на публичной странице' : 'Скрыть на публичной странице'}
                 </button>
 
                 <button
