@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Plus, ChevronDown, ChevronUp, MoreVertical } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, MoreVertical, Trash2 } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
 import AIHelper from '../components/AIHelper'
 import PromoCard from '../components/PromoCard'
@@ -12,6 +12,13 @@ const hideArrows = `
   input[type=number]::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
+  }
+  .delete-icon-btn {
+    color: #999;
+    transition: color 0.15s;
+  }
+  .delete-icon-btn:hover {
+    color: #DC2626;
   }
 `
 
@@ -122,11 +129,11 @@ const ServiceForm = ({ formData, setFormData, onSubmit, onCancel, showAdv, setSh
         )}
       </div>
       <div style={{ display: 'flex', gap: 10 }}>
-        <button type="submit" style={{ background: '#111', color: '#F7F6F1', border: 'none', padding: '11px 26px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-          {isEdit ? 'Сохранить' : 'Создать'}
-        </button>
         <button type="button" onClick={onCancel} style={{ background: 'transparent', border: '1.5px solid #E0E0D8', padding: '11px 26px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
           Отмена
+        </button>
+        <button type="submit" style={{ background: '#111', color: '#F7F6F1', border: 'none', padding: '11px 26px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+          {isEdit ? 'Сохранить' : 'Создать'}
         </button>
       </div>
     </form>
@@ -448,12 +455,18 @@ export default function Services() {
                   {!isMobile && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                       {actionsBlock}
-                      <button onClick={() => deleteMeeting(m.id)} style={{
-                        background: 'transparent', border: 'none',
-                        color: '#999', padding: '7px 4px', fontSize: 12, fontWeight: 500,
-                        cursor: 'pointer', fontFamily: 'Inter, sans-serif'
-                      }}>
-                        Удалить
+                      <button
+                        onClick={() => deleteMeeting(m.id)}
+                        className="delete-icon-btn"
+                        title="Удалить услугу"
+                        style={{
+                          background: 'transparent', border: 'none',
+                          padding: 8,
+                          cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}
+                      >
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   )}
@@ -462,16 +475,21 @@ export default function Services() {
                 {/* Мобайл: кнопки на отдельной строке */}
                 {isMobile && actionsBlock}
 
-                {/* Мобайл: удалить ссылкой ниже */}
+                {/* Мобайл: удалить иконкой по центру */}
                 {isMobile && (
-                  <button onClick={() => deleteMeeting(m.id)} style={{
-                    background: 'transparent', border: 'none',
-                    color: '#999', padding: '4px', fontSize: 12, fontWeight: 500,
-                    cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                    textAlign: 'center',
-                    alignSelf: 'center'
-                  }}>
-                    Удалить
+                  <button
+                    onClick={() => deleteMeeting(m.id)}
+                    className="delete-icon-btn"
+                    title="Удалить услугу"
+                    style={{
+                      background: 'transparent', border: 'none',
+                      padding: 8,
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      alignSelf: 'center'
+                    }}
+                  >
+                    <Trash2 size={20} />
                   </button>
                 )}
               </div>
