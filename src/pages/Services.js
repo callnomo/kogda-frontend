@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { Plus, ChevronDown, ChevronUp, MoreVertical } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
+import AIHelper from '../components/AIHelper'
+import PromoCard from '../components/PromoCard'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
@@ -133,6 +135,7 @@ const ServiceForm = ({ formData, setFormData, onSubmit, onCancel, showAdv, setSh
 
 export default function Services() {
   const [meetings, setMeetings] = useState([])
+  const [bookings, setBookings] = useState([])
   const [user, setUser] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
@@ -147,6 +150,7 @@ export default function Services() {
     if (!u) { window.location.href = '/login'; return }
     setUser(JSON.parse(u))
     loadMeetings()
+    loadBookings()
 
     const onResize = () => setIsMobile(window.innerWidth < 900)
     onResize()
@@ -159,6 +163,14 @@ export default function Services() {
     try {
       const res = await axios.get(`${API}/meetings`, { headers: { Authorization: `Bearer ${token}` } })
       setMeetings(res.data)
+    } catch (err) { console.error(err) }
+  }
+
+  const loadBookings = async () => {
+    const token = localStorage.getItem('token')
+    try {
+      const res = await axios.get(`${API}/bookings`, { headers: { Authorization: `Bearer ${token}` } })
+      setBookings(res.data)
     } catch (err) { console.error(err) }
   }
 
@@ -200,6 +212,78 @@ export default function Services() {
 
   const visibleMeetings = meetings.filter(m => editMeeting?.id !== m.id)
 
+  // Самая популярная услуга — считаем по подтверждённым бронированиям
+  const confirmedBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed')
+  const bookingsCount = {}
+  confirmedBookings.forEach(b => {
+    const title = b.meeting_title
+    if (!title) return
+    bookingsCount[title] = (bookingsCount[title] || 0) + 1
+  })
+
+  let mostPopular = null
+  if (Object.keys(bookingsCount).length > 0) {
+    // Сортируем по количеству, при равенстве — по алфавиту
+    const sorted = Object.entries(bookingsCount).sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1]
+      return a[0].localeCompare(b[0], 'ru')
+    })
+    mostPopular = { title: sorted[0][0], count: sorted[0][1] }
+  } else if (meetings.length > 0) {
+    // Если бронирований нет — показываем первую услугу по алфавиту с 0 бронирований
+    const sorted = [...meetings].sort((a, b) => a.title.localeCompare(b.title, 'ru'))
+    mostPopular = { title: sorted[0].title, count: 0 }
+  }
+
+  const sectionLabelStyle = {
+    fontSize: 11, fontWeight: 700, color: '#999',
+    textTransform: 'uppercase', letterSpacing: 1.5, margin: '0 0 14px'
+  }
+
+  const blockStyle = {
+    background: '#fff',
+    borderRadius: 14,
+    border: '1px solid #E8E7E0',
+    padding: 20
+  }
+
+  // === ПРАВАЯ КОЛОНКА ===
+  const rightColumn = (
+    <>
+      <AIHelper />
+
+      <div>
+        <h3 style={sectionLabelStyle}>Обзор</h3>
+        <div style={blockStyle}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>Всего услуг</div>
+            <div>
+              <span style={{ fontSize: 32, fontWeight: 800, color: '#111' }}>{meetings.length}</span>
+            </div>
+          </div>
+          {mostPopular && (
+            <div style={{ borderTop: '1px solid #F0EFE9', paddingTop: 16 }}>
+              <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>Самая популярная</div>
+              <div style={{
+                fontSize: 15, fontWeight: 700, color: '#111',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+              }}>
+                {mostPopular.title}
+              </div>
+              <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                {mostPopular.count === 0
+                  ? 'Ещё нет бронирований'
+                  : `${mostPopular.count} ${mostPopular.count === 1 ? 'бронирование' : (mostPopular.count >= 2 && mostPopular.count <= 4 ? 'бронирования' : 'бронирований')}`}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <PromoCard />
+    </>
+  )
+
   // Кнопка "Добавить услугу" — используется в двух местах
   const addButton = (
     <button onClick={() => setShowForm(!showForm)} style={{
@@ -217,7 +301,7 @@ export default function Services() {
   )
 
   return (
-    <AppLayout>
+    <AppLayout rightColumn={rightColumn}>
       <style>{hideArrows}</style>
 
       {/* Шапка: заголовок + кнопка справа на десктопе */}
