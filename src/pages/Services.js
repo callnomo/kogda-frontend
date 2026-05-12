@@ -574,8 +574,8 @@ export default function Services() {
       {hiddenCount > 0 && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
           {[
-            { key: 'all', label: `Все (${meetings.length})` },
-            { key: 'hidden', label: `Скрытые (${hiddenCount})` }
+            { key: 'all', label: 'Все' },
+            { key: 'hidden', label: 'Скрытые' }
           ].map(f => (
             <button
               key={f.key}
