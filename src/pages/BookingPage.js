@@ -153,11 +153,7 @@ export default function BookingPage() {
         <div style={{ background: '#F7F6F1', borderRadius: 12, padding: '14px' }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{selectedMeeting.title}</div>
           <div style={{ fontSize: 12, color: '#888', marginBottom: 3 }}>⏱ {selectedMeeting.duration} мин · 📹 Видеозвонок</div>
-          {selectedMeeting.hide_price ? (
-            <div style={{ fontSize: 13, color: '#888', marginTop: 6, fontStyle: 'italic' }}>Цена по запросу</div>
-          ) : selectedMeeting.price > 0 ? (
-            <div style={{ fontSize: 15, fontWeight: 800, marginTop: 6 }}>{selectedMeeting.price.toLocaleString('ru-RU')} ₽</div>
-          ) : null}
+          {selectedMeeting.price > 0 && <div style={{ fontSize: 15, fontWeight: 800, marginTop: 6 }}>{selectedMeeting.price.toLocaleString('ru-RU')} ₽</div>}
           {selectedDate && selectedSlot && (
             <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #E8E7E0' }}>
               <div style={{ fontSize: 11, color: '#aaa', marginBottom: 3 }}>{DAYS_FULL[selectedDate.getDay()]}</div>
@@ -236,7 +232,6 @@ export default function BookingPage() {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>⏱ {m.duration} мин</span>
                       <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>📹 Видеозвонок</span>
-                      {m.hide_price && <span style={{ fontSize: 13, color: '#888', fontStyle: 'italic' }}>Цена по запросу</span>}
                       {!m.hide_price && m.price > 0 && <span style={{ fontSize: 13, fontWeight: 800, color: '#111' }}>{m.price.toLocaleString('ru-RU')} ₽</span>}
                       {!m.hide_price && m.price === 0 && <span style={{ fontSize: 12, color: '#22C55E', fontWeight: 700, background: '#DCFCE7', padding: '3px 10px', borderRadius: 20 }}>Бесплатно</span>}
                     </div>
