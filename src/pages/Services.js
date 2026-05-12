@@ -392,17 +392,39 @@ export default function Services() {
     </>
   )
 
-  // Кнопка "Добавить услугу" — используется в двух местах
-  const addButton = (
+  // Кнопка "Добавить услугу"
+  // На десктопе — круглая иконка с tooltip
+  // На мобайле — полноширинная кнопка с текстом
+  const addButtonDesktop = (
+    <button
+      onClick={() => setShowForm(!showForm)}
+      title="Добавить услугу"
+      style={{
+        background: '#E8FF47', color: '#111', border: 'none',
+        width: 44, height: 44, borderRadius: '50%',
+        cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+        fontFamily: 'Inter, sans-serif',
+        transition: 'transform 0.15s'
+      }}
+      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
+      onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+    >
+      <Plus size={20} strokeWidth={2.5} />
+    </button>
+  )
+
+  const addButtonMobile = (
     <button onClick={() => setShowForm(!showForm)} style={{
       background: '#E8FF47', color: '#111', border: 'none',
-      padding: isMobile ? '12px 22px' : '10px 22px',
+      padding: '12px 22px',
       borderRadius: 100,
       fontSize: 13, fontWeight: 700,
       cursor: 'pointer',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
       fontFamily: 'Inter, sans-serif',
-      ...(isMobile ? { width: '100%' } : {})
+      width: '100%'
     }}>
       <Plus size={15} />Добавить услугу
     </button>
@@ -421,7 +443,7 @@ export default function Services() {
         gap: 12
       }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Услуги</h1>
-        {!isMobile && addButton}
+        {!isMobile && addButtonDesktop}
       </div>
 
       {showForm && (
@@ -511,7 +533,7 @@ export default function Services() {
                         }}>Скрыта</span>
                       )}
                     </div>
-                    <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>{detailsStr}</div>
+                    <div style={{ fontSize: 12, color: '#999', marginTop: 8 }}>{detailsStr}</div>
                   </div>
 
                   {/* Lime-ценник */}
@@ -665,7 +687,7 @@ export default function Services() {
           {/* Мобайл: кнопка Добавить услугу снизу */}
           {isMobile && (
             <div style={{ marginTop: 12 }}>
-              {addButton}
+              {addButtonMobile}
             </div>
           )}
         </div>
@@ -674,7 +696,7 @@ export default function Services() {
       {/* Если услуг нет — на мобайле тоже нужна кнопка снизу */}
       {meetings.length === 0 && isMobile && (
         <div style={{ marginTop: 20 }}>
-          {addButton}
+          {addButtonMobile}
         </div>
       )}
 
