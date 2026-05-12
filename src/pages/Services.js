@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
-import { Plus, ChevronDown, ChevronUp, MoreVertical, Trash2 } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, MoreVertical, Trash2, Pencil } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
 import AIHelper from '../components/AIHelper'
 import PromoCard from '../components/PromoCard'
@@ -151,6 +151,8 @@ export default function Services() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showEditAdvanced, setShowEditAdvanced] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [openMenuId, setOpenMenuId] = useState(null)
+  const menuRef = useRef(null)
 
   useEffect(() => {
     const u = localStorage.getItem('user')
@@ -162,7 +164,18 @@ export default function Services() {
     const onResize = () => setIsMobile(window.innerWidth < 900)
     onResize()
     window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
+
+    const onClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside)
+
+    return () => {
+      window.removeEventListener('resize', onResize)
+      document.removeEventListener('mousedown', onClickOutside)
+    }
   }, [])
 
   const loadMeetings = async () => {
@@ -350,148 +363,145 @@ export default function Services() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {visibleMeetings.map(m => {
             const detailsStr = [
+              `${m.duration} мин`,
               m.buffer_after > 0 && `+${m.buffer_after}м буфер`,
               m.max_per_day > 0 && `макс ${m.max_per_day}/день`,
               m.require_confirm && 'требует подтверждения'
             ].filter(Boolean).join(' · ')
 
-            const actionsBlock = (
-              <div style={{
-                display: 'flex',
-                gap: 8,
-                alignItems: 'center',
-                ...(isMobile ? { width: '100%', justifyContent: 'flex-end' } : { flexShrink: 0 })
-              }}>
-                <a href={bookingLink} target="_blank" rel="noreferrer" style={{
-                  background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
-                  padding: isMobile ? '10px 14px' : '8px 14px',
-                  borderRadius: 100,
-                  fontSize: isMobile ? 13 : 12,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  ...(isMobile ? { flex: '1 1 auto', maxWidth: 200 } : {})
-                }}>
-                  Открыть
-                </a>
-                <button onClick={() => {
-                  setEditMeeting(m)
-                  setEditForm({
-                    title: m.title, description: m.description || '',
-                    duration: m.duration, price: m.price,
-                    buffer_before: m.buffer_before || 0, buffer_after: m.buffer_after || 0,
-                    min_notice: m.min_notice || 0, max_days_ahead: m.max_days_ahead || 60,
-                    max_per_day: m.max_per_day || 0, require_confirm: m.require_confirm || false
-                  })
-                }} style={{
-                  background: '#111', color: '#fff', border: 'none',
-                  padding: isMobile ? '10px 14px' : '8px 14px',
-                  borderRadius: 100,
-                  fontSize: isMobile ? 13 : 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'Inter, sans-serif',
-                  ...(isMobile ? { flex: '1 1 auto', maxWidth: 200 } : {})
-                }}>
-                  Редактировать
-                </button>
-              </div>
-            )
+            const startEdit = () => {
+              setEditMeeting(m)
+              setEditForm({
+                title: m.title, description: m.description || '',
+                duration: m.duration, price: m.price,
+                buffer_before: m.buffer_before || 0, buffer_after: m.buffer_after || 0,
+                min_notice: m.min_notice || 0, max_days_ahead: m.max_days_ahead || 60,
+                max_per_day: m.max_per_day || 0, require_confirm: m.require_confirm || false
+              })
+              setOpenMenuId(null)
+            }
 
             return (
               <div key={m.id} style={{
                 background: '#fff', borderRadius: 14, border: '1px solid #E8E7E0',
                 padding: '20px 24px',
-                display: 'flex', flexDirection: 'column', gap: 14
+                display: 'flex', flexDirection: 'column', gap: 14,
+                position: 'relative'
               }}>
-                {/* Шапка: бейдж длительности + цена */}
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                }}>
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center',
-                    background: '#F7F6F1', padding: '4px 12px', borderRadius: 100
-                  }}>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, color: '#111',
-                      textTransform: 'uppercase', letterSpacing: 0.5
-                    }}>
-                      {m.duration} мин
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
-                    {m.price > 0 ? `${m.price.toLocaleString()} ₽` : 'Бесплатно'}
-                  </div>
-                </div>
-
-                {/* Тело: аватар + название (+ кнопки на десктопе) */}
+                {/* Верх: аватар + название + детали + lime-ценник + меню */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 16,
-                  flexWrap: isMobile ? 'nowrap' : 'wrap'
+                  gap: 14
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 10,
-                      background: '#E8FF47', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center',
-                      fontSize: 16, fontWeight: 700, color: '#111',
-                      flexShrink: 0
-                    }}>
-                      {initial(m.title)}
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{m.title}</div>
-                      {detailsStr && (
-                        <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>{detailsStr}</div>
-                      )}
-                    </div>
+                  {/* Аватар */}
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 10,
+                    background: '#E8FF47', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    fontSize: 16, fontWeight: 700, color: '#111',
+                    flexShrink: 0
+                  }}>
+                    {initial(m.title)}
                   </div>
 
-                  {/* Десктоп: кнопки + удалить в одной строке */}
-                  {!isMobile && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      {actionsBlock}
-                      <button
-                        onClick={() => deleteMeeting(m.id)}
-                        className="delete-icon-btn"
-                        title="Удалить услугу"
-                        style={{
-                          background: 'transparent', border: 'none',
-                          padding: 8,
-                          cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  )}
+                  {/* Название + детали */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{m.title}</div>
+                    <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>{detailsStr}</div>
+                  </div>
+
+                  {/* Lime-ценник */}
+                  <div style={{
+                    background: '#E8FF47',
+                    borderRadius: 10,
+                    padding: isMobile ? '8px 12px' : '10px 14px',
+                    fontSize: isMobile ? 14 : 16,
+                    fontWeight: 800,
+                    color: '#111',
+                    flexShrink: 0,
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {m.price > 0 ? `${m.price.toLocaleString()} ₽` : 'Бесплатно'}
+                  </div>
+
+                  {/* Меню ··· */}
+                  <div style={{ position: 'relative', flexShrink: 0 }} ref={openMenuId === m.id ? menuRef : null}>
+                    <button
+                      onClick={() => setOpenMenuId(openMenuId === m.id ? null : m.id)}
+                      style={{
+                        background: 'transparent', border: 'none', cursor: 'pointer',
+                        padding: 8, color: '#888',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}
+                    >
+                      <MoreVertical size={18} />
+                    </button>
+
+                    {openMenuId === m.id && (
+                      <div style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 4px)',
+                        right: 0,
+                        background: '#fff',
+                        borderRadius: 10,
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
+                        minWidth: 180,
+                        overflow: 'hidden',
+                        zIndex: 20
+                      }}>
+                        <button
+                          onClick={startEdit}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            width: '100%', padding: '12px 16px',
+                            background: 'transparent', border: 'none',
+                            cursor: 'pointer', textAlign: 'left',
+                            fontSize: 14, color: '#111',
+                            fontFamily: 'Inter, sans-serif'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#F7F6F1'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <Pencil size={15} />
+                          Редактировать
+                        </button>
+                        <div style={{ borderTop: '0.5px solid #F0EFE9' }} />
+                        <button
+                          onClick={() => { deleteMeeting(m.id); setOpenMenuId(null) }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            width: '100%', padding: '12px 16px',
+                            background: 'transparent', border: 'none',
+                            cursor: 'pointer', textAlign: 'left',
+                            fontSize: 14, color: '#DC2626',
+                            fontFamily: 'Inter, sans-serif'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <Trash2 size={15} />
+                          Удалить
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Мобайл: кнопки на отдельной строке */}
-                {isMobile && actionsBlock}
-
-                {/* Мобайл: удалить иконкой по центру */}
-                {isMobile && (
-                  <button
-                    onClick={() => deleteMeeting(m.id)}
-                    className="delete-icon-btn"
-                    title="Удалить услугу"
-                    style={{
-                      background: 'transparent', border: 'none',
-                      padding: 8,
-                      cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      alignSelf: 'center'
-                    }}
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                )}
+                {/* Кнопка Открыть снизу */}
+                <div style={{ borderTop: '1px solid #F0EFE9', paddingTop: 14 }}>
+                  <a href={bookingLink} target="_blank" rel="noreferrer" style={{
+                    background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
+                    padding: isMobile ? '10px 18px' : '8px 16px',
+                    borderRadius: 100,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    Открыть
+                  </a>
+                </div>
               </div>
             )
           })}
