@@ -20,6 +20,14 @@ const hideArrows = `
   .delete-icon-btn:hover {
     color: #DC2626;
   }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
 `
 
 const emptyForm = { title: '', description: '', duration: 60, price: 0, hide_price: false, buffer_before: 0, buffer_after: 0, min_notice: 0, max_days_ahead: 60, max_per_day: 0, require_confirm: false }
@@ -64,6 +72,16 @@ const iconBtnStyle = {
   textDecoration: 'none',
   fontFamily: 'Inter, sans-serif',
   transition: 'background 0.15s, border-color 0.15s'
+}
+
+const sheetItemStyle = {
+  display: 'flex', alignItems: 'center', gap: 14,
+  width: '100%', padding: '14px 20px',
+  background: 'transparent', border: 'none',
+  cursor: 'pointer', textAlign: 'left',
+  fontSize: 15, color: '#111',
+  fontFamily: 'Inter, sans-serif',
+  textDecoration: 'none'
 }
 
 const initial = (name) => name ? name.charAt(0).toUpperCase() : '?'
@@ -209,6 +227,7 @@ export default function Services() {
   const [showEditAdvanced, setShowEditAdvanced] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [openMenuId, setOpenMenuId] = useState(null)
+  const [openSheetId, setOpenSheetId] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
   const [hoveredId, setHoveredId] = useState(null)
   const menuRef = useRef(null)
@@ -236,6 +255,16 @@ export default function Services() {
       document.removeEventListener('mousedown', onClickOutside)
     }
   }, [])
+
+  // Блокируем скролл body когда открыт sheet
+  useEffect(() => {
+    if (openSheetId !== null) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [openSheetId])
 
   const loadMeetings = async () => {
     const token = localStorage.getItem('token')
@@ -447,6 +476,7 @@ export default function Services() {
             return (
               <div
                 key={m.id}
+                onClick={() => isMobile && setOpenSheetId(m.id)}
                 onMouseEnter={() => !isMobile && setHoveredId(m.id)}
                 onMouseLeave={() => !isMobile && setHoveredId(null)}
                 style={{
@@ -454,9 +484,11 @@ export default function Services() {
                   borderRadius: 14,
                   border: '1px solid #E8E7E0',
                   padding: '20px 24px',
-                  display: 'flex', flexDirection: 'column', gap: 14,
+                  display: 'flex', flexDirection: 'column', gap: isMobile ? 0 : 14,
                   position: 'relative',
-                  transition: 'background 0.15s'
+                  cursor: isMobile ? 'pointer' : 'default',
+                  transition: 'background 0.15s',
+                  WebkitTapHighlightColor: 'transparent'
                 }}
               >
                 {/* Верх: название/детали + ценник */}
@@ -466,7 +498,19 @@ export default function Services() {
                   gap: 14
                 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{m.title}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {m.title}
+                      {m.is_hidden && (
+                        <span style={{
+                          fontSize: 9, fontWeight: 700, color: '#888',
+                          background: '#F0EFE9',
+                          padding: '3px 8px',
+                          borderRadius: 100,
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.5
+                        }}>Скрыта</span>
+                      )}
+                    </div>
                     <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>{detailsStr}</div>
                   </div>
 
@@ -485,7 +529,8 @@ export default function Services() {
                   </div>
                 </div>
 
-                {/* Низ: бордер + кнопки */}
+                {/* Низ: бордер + кнопки — ТОЛЬКО на десктопе */}
+                {!isMobile && (
                 <div style={{
                   borderTop: '1px solid #F0EFE9',
                   paddingTop: 14,
@@ -651,6 +696,7 @@ export default function Services() {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             )
           })}
@@ -670,6 +716,170 @@ export default function Services() {
           {addButton}
         </div>
       )}
+
+      {/* Bottom Sheet для мобайла */}
+      {openSheetId !== null && (() => {
+        const sheetMeeting = meetings.find(m => m.id === openSheetId)
+        if (!sheetMeeting) return null
+
+        const startEditFromSheet = () => {
+          setEditMeeting(sheetMeeting)
+          setEditForm({
+            title: sheetMeeting.title, description: sheetMeeting.description || '',
+            duration: sheetMeeting.duration, price: sheetMeeting.price,
+            hide_price: sheetMeeting.hide_price || false,
+            buffer_before: sheetMeeting.buffer_before || 0, buffer_after: sheetMeeting.buffer_after || 0,
+            min_notice: sheetMeeting.min_notice || 0, max_days_ahead: sheetMeeting.max_days_ahead || 60,
+            max_per_day: sheetMeeting.max_per_day || 0, require_confirm: sheetMeeting.require_confirm || false
+          })
+          setOpenSheetId(null)
+        }
+
+        return (
+          <div
+            onClick={() => setOpenSheetId(null)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.4)',
+              zIndex: 100,
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              animation: 'fadeIn 0.2s ease-out'
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: '#fff',
+                borderRadius: '20px 20px 0 0',
+                width: '100%',
+                maxHeight: '85vh',
+                overflowY: 'auto',
+                padding: '8px 0 24px',
+                animation: 'slideUp 0.25s ease-out'
+              }}
+            >
+              {/* Полоска свайпа */}
+              <div style={{
+                width: 40, height: 4,
+                background: '#E0E0D8',
+                borderRadius: 2,
+                margin: '8px auto 16px'
+              }} />
+
+              {/* Заголовок */}
+              <div style={{
+                padding: '0 20px 16px',
+                borderBottom: '1px solid #F0EFE9'
+              }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>{sheetMeeting.title}</div>
+                <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
+                  {sheetMeeting.duration} мин · {sheetMeeting.hide_price ? 'По запросу' : (sheetMeeting.price > 0 ? `${sheetMeeting.price.toLocaleString()} ₽` : 'Бесплатно')}
+                </div>
+              </div>
+
+              {/* Действия */}
+              <div style={{ padding: '8px 0' }}>
+                <a
+                  href={bookingLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setOpenSheetId(null)}
+                  style={sheetItemStyle}
+                >
+                  <ExternalLink size={18} />
+                  Предпросмотр
+                </a>
+
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(bookingLink)
+                    setCopiedId(sheetMeeting.id)
+                    setTimeout(() => {
+                      setCopiedId(null)
+                      setOpenSheetId(null)
+                    }, 800)
+                  }}
+                  style={sheetItemStyle}
+                >
+                  {copiedId === sheetMeeting.id ? <Check size={18} color="#16A34A" /> : <Copy size={18} />}
+                  {copiedId === sheetMeeting.id ? 'Скопировано' : 'Копировать ссылку'}
+                </button>
+
+                <button
+                  onClick={startEditFromSheet}
+                  style={sheetItemStyle}
+                >
+                  <Pencil size={18} />
+                  Редактировать
+                </button>
+
+                <button
+                  onClick={() => {
+                    alert(sheetMeeting.is_hidden ? 'Эта функция скоро будет доступна' : 'Эта функция скоро будет доступна')
+                    setOpenSheetId(null)
+                  }}
+                  style={sheetItemStyle}
+                >
+                  {sheetMeeting.is_hidden ? <Eye size={18} /> : <EyeOff size={18} />}
+                  {sheetMeeting.is_hidden ? 'Показать на публичной странице' : 'Скрыть на публичной странице'}
+                </button>
+
+                <button
+                  onClick={() => {
+                    alert('Одноразовая ссылка — скоро будет доступна')
+                    setOpenSheetId(null)
+                  }}
+                  style={sheetItemStyle}
+                >
+                  <Link2 size={18} />
+                  <span style={{ flex: 1, textAlign: 'left' }}>Создать одноразовую</span>
+                  <span style={menuSoonBadgeStyle}>Скоро</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    alert('Дублирование — скоро будет доступно')
+                    setOpenSheetId(null)
+                  }}
+                  style={sheetItemStyle}
+                >
+                  <Layers size={18} />
+                  <span style={{ flex: 1, textAlign: 'left' }}>Дублировать</span>
+                  <span style={menuSoonBadgeStyle}>Скоро</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    alert('Виджет для встраивания на сайт — Premium функция, скоро')
+                    setOpenSheetId(null)
+                  }}
+                  style={sheetItemStyle}
+                >
+                  <Code2 size={18} />
+                  <span style={{ flex: 1, textAlign: 'left' }}>Встроить на сайт</span>
+                  <span style={menuSoonBadgeStyle}>Скоро</span>
+                </button>
+
+                <div style={{ borderTop: '1px solid #F0EFE9', margin: '8px 0' }} />
+
+                <button
+                  onClick={() => {
+                    deleteMeeting(sheetMeeting.id)
+                    setOpenSheetId(null)
+                  }}
+                  style={{ ...sheetItemStyle, color: '#DC2626' }}
+                >
+                  <Trash2 size={18} />
+                  Удалить
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </AppLayout>
   )
 }
