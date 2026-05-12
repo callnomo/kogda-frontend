@@ -482,7 +482,7 @@ export default function Services() {
           {visibleMeetings.map(m => {
             const detailsStr = [
               `${m.duration} мин`,
-              m.buffer_after > 0 && `+${m.buffer_after}м буфер`,
+              m.buffer_after > 0 && `${m.buffer_after} мин буфер`,
               m.max_per_day > 0 && `макс ${m.max_per_day}/день`,
               m.require_confirm && 'требует подтверждения'
             ].filter(Boolean).join(' · ')
@@ -556,7 +556,7 @@ export default function Services() {
                     flexShrink: 0,
                     whiteSpace: 'nowrap'
                   }}>
-                    {m.hide_price ? 'По запросу' : (m.price > 0 ? `${m.price.toLocaleString()} ₽` : 'Бесплатно')}
+                    {m.hide_price ? 'По запросу' : (m.price > 0 ? `${m.price.toLocaleString('ru-RU')} ₽` : 'Бесплатно')}
                   </div>
                 </div>
 
@@ -766,7 +766,7 @@ export default function Services() {
               }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>{sheetMeeting.title}</div>
                 <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
-                  {sheetMeeting.duration} мин · {sheetMeeting.hide_price ? 'По запросу' : (sheetMeeting.price > 0 ? `${sheetMeeting.price.toLocaleString()} ₽` : 'Бесплатно')}
+                  {sheetMeeting.duration} мин · {sheetMeeting.hide_price ? 'По запросу' : (sheetMeeting.price > 0 ? `${sheetMeeting.price.toLocaleString('ru-RU')} ₽` : 'Бесплатно')}
                 </div>
               </div>
 
