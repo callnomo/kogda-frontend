@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
-import { Plus, ChevronDown, ChevronUp, MoreVertical, Trash2, Pencil } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, MoreVertical, Trash2, Pencil, Copy, Eye, EyeOff, Code2 } from 'lucide-react'
 import AppLayout from '../components/AppLayout'
 import AIHelper from '../components/AIHelper'
 import PromoCard from '../components/PromoCard'
@@ -31,6 +31,26 @@ const inputStyle = {
 }
 
 const selectStyle = { ...inputStyle, cursor: 'pointer', background: '#fff' }
+
+const menuItemStyle = {
+  display: 'flex', alignItems: 'center', gap: 10,
+  width: '100%', padding: '12px 16px',
+  background: 'transparent', border: 'none',
+  cursor: 'pointer', textAlign: 'left',
+  fontSize: 14, color: '#111',
+  fontFamily: 'Inter, sans-serif'
+}
+
+const menuSoonBadgeStyle = {
+  marginLeft: 'auto',
+  fontSize: 10, fontWeight: 700,
+  color: '#888',
+  background: '#F7F6F1',
+  padding: '3px 8px',
+  borderRadius: 100,
+  textTransform: 'uppercase',
+  letterSpacing: 0.5
+}
 
 const initial = (name) => name ? name.charAt(0).toUpperCase() : '?'
 
@@ -152,6 +172,7 @@ export default function Services() {
   const [showEditAdvanced, setShowEditAdvanced] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [openMenuId, setOpenMenuId] = useState(null)
+  const [copiedId, setCopiedId] = useState(null)
   const menuRef = useRef(null)
 
   useEffect(() => {
@@ -446,37 +467,72 @@ export default function Services() {
                         background: '#fff',
                         borderRadius: 10,
                         boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
-                        minWidth: 180,
+                        minWidth: 220,
                         overflow: 'hidden',
                         zIndex: 20
                       }}>
+                        {/* Редактировать */}
                         <button
                           onClick={startEdit}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 10,
-                            width: '100%', padding: '12px 16px',
-                            background: 'transparent', border: 'none',
-                            cursor: 'pointer', textAlign: 'left',
-                            fontSize: 14, color: '#111',
-                            fontFamily: 'Inter, sans-serif'
-                          }}
+                          style={menuItemStyle}
                           onMouseEnter={e => e.currentTarget.style.background = '#F7F6F1'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
                           <Pencil size={15} />
                           Редактировать
                         </button>
+
+                        {/* Копировать ссылку */}
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(bookingLink)
+                            setCopiedId(m.id)
+                            setTimeout(() => setCopiedId(null), 1500)
+                          }}
+                          style={menuItemStyle}
+                          onMouseEnter={e => e.currentTarget.style.background = '#F7F6F1'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <Copy size={15} />
+                          {copiedId === m.id ? 'Скопировано' : 'Копировать ссылку'}
+                        </button>
+
+                        {/* Скрыть на публичной странице */}
+                        <button
+                          onClick={() => {
+                            alert('Эта функция скоро будет доступна')
+                            setOpenMenuId(null)
+                          }}
+                          style={menuItemStyle}
+                          onMouseEnter={e => e.currentTarget.style.background = '#F7F6F1'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <EyeOff size={15} />
+                          <span>Скрыть на публичной странице</span>
+                          <span style={menuSoonBadgeStyle}>Скоро</span>
+                        </button>
+
+                        {/* Встроить на сайт */}
+                        <button
+                          onClick={() => {
+                            alert('Виджет для встраивания на сайт — Premium функция, скоро будет доступна')
+                            setOpenMenuId(null)
+                          }}
+                          style={menuItemStyle}
+                          onMouseEnter={e => e.currentTarget.style.background = '#F7F6F1'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <Code2 size={15} />
+                          <span>Встроить на сайт</span>
+                          <span style={menuSoonBadgeStyle}>Скоро</span>
+                        </button>
+
                         <div style={{ borderTop: '0.5px solid #F0EFE9' }} />
+
+                        {/* Удалить */}
                         <button
                           onClick={() => { deleteMeeting(m.id); setOpenMenuId(null) }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 10,
-                            width: '100%', padding: '12px 16px',
-                            background: 'transparent', border: 'none',
-                            cursor: 'pointer', textAlign: 'left',
-                            fontSize: 14, color: '#DC2626',
-                            fontFamily: 'Inter, sans-serif'
-                          }}
+                          style={{ ...menuItemStyle, color: '#DC2626' }}
                           onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
@@ -488,7 +544,7 @@ export default function Services() {
                   </div>
                 </div>
 
-                {/* Кнопка Открыть снизу */}
+                {/* Кнопка Предпросмотр снизу */}
                 <div style={{ borderTop: '1px solid #F0EFE9', paddingTop: 14 }}>
                   <a href={bookingLink} target="_blank" rel="noreferrer" style={{
                     background: 'transparent', border: '1.5px solid #E0E0D8', color: '#111',
@@ -499,7 +555,7 @@ export default function Services() {
                     textDecoration: 'none',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
                   }}>
-                    Открыть
+                    Предпросмотр
                   </a>
                 </div>
               </div>
