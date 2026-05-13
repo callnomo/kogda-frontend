@@ -33,7 +33,7 @@ const MOBILE_NAV_ITEMS = [
   { to: '/dashboard', label: 'Кабинет', icon: LayoutDashboard },
   { to: '/calendar', label: 'Календарь', icon: CalendarDays },
   { to: '/bookings', label: 'Записи', icon: ClipboardList, hasBadge: true },
-  { to: '/schedule', label: 'Расписание', shortLabel: 'Распис.', icon: CalendarClock, partialFill: true },
+  { to: '/schedule', label: 'Расписание', icon: CalendarClock, partialFill: true },
   { to: '/services', label: 'Услуги', icon: Layers }
 ]
 
@@ -490,7 +490,9 @@ export default function AppLayout({ children, rightColumn }) {
               alignItems: 'center', justifyContent: 'center',
               textDecoration: 'none',
               flex: 1,
-              gap: 2
+              minWidth: 0,
+              gap: 2,
+              padding: '0 2px'
             }}
           >
             <div style={{
@@ -530,13 +532,17 @@ export default function AppLayout({ children, rightColumn }) {
               )}
             </div>
             <span style={{
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: active ? 700 : 500,
               color: active ? '#111' : '#666',
               fontFamily: 'Inter, sans-serif',
-              lineHeight: 1
+              lineHeight: 1,
+              whiteSpace: 'nowrap',
+              maxWidth: '100%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
             }}>
-              {item.shortLabel || item.label}
+              {item.label}
             </span>
           </Link>
         )
