@@ -888,13 +888,13 @@ export default function Settings() {
                    (bookingsWarning.count >= 2 && bookingsWarning.count <= 4 ? 'будущих записи' : 'будущих записей')}
                 </h3>
                 <p style={{ color: '#666', fontSize: 14, marginBottom: 16, lineHeight: 1.6 }}>
-                  Если удалишь аккаунт сейчас:
+                  Если удалить аккаунт сейчас:
                 </p>
                 <ul style={{ color: '#666', fontSize: 14, marginBottom: 20, lineHeight: 1.8, paddingLeft: 20 }}>
-                  <li>Все будущие встречи будут <b style={{ color: '#111' }}>отменены</b></li>
-                  <li>Клиенты получат email с уведомлением об отмене</li>
+                  <li>Все будущие записи будут отменены</li>
+                  <li>Клиенты получат письмо об отмене</li>
                   <li>Твоя публичная страница станет недоступна</li>
-                  <li>У тебя 30 дней чтобы передумать (войди снова)</li>
+                  <li>У тебя будет 30 дней, чтобы восстановить аккаунт</li>
                 </ul>
 
                 {deleteError && (
@@ -924,7 +924,7 @@ export default function Settings() {
                       opacity: deleteLoading ? 0.6 : 1
                     }}
                   >
-                    {deleteLoading ? 'Удаляем...' : 'Удалить всё равно'}
+                    {deleteLoading ? 'Удаляем...' : 'Да, удалить аккаунт'}
                   </button>
                 </div>
               </>
