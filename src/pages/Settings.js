@@ -59,6 +59,109 @@ const SECTION_TITLES = {
 
 const BANKS = ['Сбербанк', 'Т-Банк', 'Альфа-Банк', 'ВТБ', 'Райффайзен', 'Газпромбанк']
 
+// ============ TELEGRAM CONNECT MODAL ============
+
+function TelegramConnectModal({ telegramLink, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 200, padding: 20,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: '#fff', borderRadius: 16,
+        padding: '32px 28px 24px', maxWidth: 440, width: '100%',
+        fontFamily: 'Inter, sans-serif',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: '#E8F4FB',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="#229ED9">
+              <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/>
+            </svg>
+          </div>
+        </div>
+
+        <div style={{ fontSize: 20, fontWeight: 700, textAlign: 'center', marginBottom: 8, color: '#111' }}>
+          Подключить Telegram
+        </div>
+        <div style={{ fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 1.5, marginBottom: 24 }}>
+          Бот будет присылать тебе уведомления о новых записях.
+        </div>
+
+        <div style={{
+          background: '#FAFAF7', borderRadius: 12, padding: 16, marginBottom: 24,
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 12 }}>
+            Как подключить:
+          </div>
+          {[
+            'Открой бота kogDA',
+            'Нажми START',
+            'Вернись сюда — статус обновится сам',
+          ].map((step, idx) => (
+            <div key={idx} style={{
+              display: 'flex', gap: 10, alignItems: 'flex-start',
+              marginBottom: idx < 2 ? 8 : 0,
+            }}>
+              <div style={{
+                width: 22, height: 22, borderRadius: '50%', background: '#E8FF47',
+                flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 800, color: '#111',
+              }}>{idx + 1}</div>
+              <div style={{ fontSize: 13, color: '#444', lineHeight: 1.5 }}>
+                {step}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <a
+          href={telegramLink}
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            width: '100%', boxSizing: 'border-box',
+            background: '#229ED9', color: '#fff',
+            border: 'none', padding: '14px', borderRadius: 10,
+            fontSize: 15, fontWeight: 700,
+            cursor: 'pointer', marginBottom: 8,
+            textDecoration: 'none',
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff">
+            <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/>
+          </svg>
+          Открыть бота в Telegram
+        </a>
+
+        <button
+          onClick={onClose}
+          style={{
+            width: '100%',
+            background: 'transparent', color: '#888', border: 'none',
+            padding: 12, fontSize: 14, cursor: 'pointer',
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          Отмена
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ============ SECTIONS ============
 
 function ProfileSection({ form, setForm, profileSaved, saveProfile, avatarLoading, uploadAvatar, removeAvatar }) {
@@ -379,12 +482,6 @@ function IntegrationsSection({ telegramConnected, telegramLink, connectTelegram 
           </div>
         )
       })}
-      {telegramLink && !telegramConnected && (
-        <div style={{ marginTop: 12, padding: '10px 14px', background: '#FFF7ED', borderRadius: 8, fontSize: 13, color: '#92400E' }}>
-          Нажми START в Telegram →{' '}
-          <a href={telegramLink} target="_blank" rel="noreferrer" style={{ color: '#229ED9', fontWeight: 700 }}>Открыть бота</a>
-        </div>
-      )}
     </div>
   )
 }
@@ -560,6 +657,22 @@ export default function Settings() {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  // Polling статуса Telegram пока открыта модалка подключения
+  useEffect(() => {
+    if (!telegramLink || telegramConnected) return
+    const token = localStorage.getItem('token')
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get(`${API}/settings`, { headers: { Authorization: `Bearer ${token}` } })
+        if (res.data.telegram_chat_id) {
+          setTelegramConnected(true)
+          setTelegramLink(null) // закрываем модалку
+        }
+      } catch (err) { /* тихо игнорируем */ }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [telegramLink, telegramConnected])
 
   const loadSettings = async () => {
     const token = localStorage.getItem('token')
@@ -817,6 +930,14 @@ export default function Settings() {
       )}
 
       {/* Модалка удаления аккаунта */}
+      {/* Модалка подключения Telegram */}
+      {telegramLink && !telegramConnected && (
+        <TelegramConnectModal
+          telegramLink={telegramLink}
+          onClose={() => setTelegramLink(null)}
+        />
+      )}
+
       {showDeleteModal && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
