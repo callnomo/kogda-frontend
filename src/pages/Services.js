@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Plus, Trash2, Pencil, Copy, Eye, EyeOff, Code2, ExternalLink, Check, Layers, GripVertical } from 'lucide-react'
+import { Plus, Trash2, Pencil, Copy, Eye, EyeOff, Code2, ExternalLink, Check, Layers, GripVertical, ChevronUp } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -108,10 +108,7 @@ export default function Services() {
   const [meetings, setMeetings] = useState([])
   const [bookings, setBookings] = useState([])
   const [user, setUser] = useState(null)
-
-  // editingId — id развёрнутой формы под карточкой. null = ничего не открыто
   const [editingId, setEditingId] = useState(null)
-
   const [isMobile, setIsMobile] = useState(false)
   const [openSheetId, setOpenSheetId] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
@@ -157,7 +154,6 @@ export default function Services() {
     } catch (err) { console.error(err) }
   }
 
-  // Кнопка «+»: создаёт услугу в БД с дефолтами и сразу разворачивает её для редактирования
   const createNewService = async () => {
     const token = localStorage.getItem('token')
     try {
@@ -169,7 +165,6 @@ export default function Services() {
     } catch (err) { console.error(err) }
   }
 
-  // Локальное обновление услуги в списке после автосохранения в модалке
   const handleMeetingUpdate = (updated) => {
     setMeetings(prev => prev.map(m => m.id === updated.id ? updated : m))
   }
@@ -217,7 +212,6 @@ export default function Services() {
     }
   }
 
-  // Статистика для правой колонки
   const confirmedBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed')
   const bookingsCount = {}
   confirmedBookings.forEach(b => {
@@ -381,7 +375,7 @@ export default function Services() {
                         background: isHovered ? '#FAFAF7' : '#fff',
                         borderRadius: isExpanded ? '14px 14px 0 0' : 14,
                         border: `1px solid ${isExpanded ? '#E8FF47' : '#E8E7E0'}`,
-                        borderBottom: isExpanded ? '1px solid #F0EFE9' : `1px solid #E8E7E0`,
+                        borderBottom: isExpanded ? 'none' : `1px solid #E8E7E0`,
                         padding: '20px 24px',
                         display: 'flex', flexDirection: 'column', gap: isMobile ? 0 : 14,
                         position: 'relative',
@@ -508,17 +502,51 @@ export default function Services() {
                       )}
                     </div>
 
-                    {/* Inline-форма под карточкой */}
+                    {/* Хедер "Редактирование услуги" + chevron-кнопка свернуть */}
                     {isExpanded && (
-                      <div style={{
-                        background: '#fff',
-                        border: '1px solid #E8FF47',
-                        borderTop: 'none',
-                        borderRadius: '0 0 14px 14px',
-                        overflow: 'hidden',
-                      }}>
-                        <ServiceModal meetingId={m.id} onUpdate={handleMeetingUpdate} />
-                      </div>
+                      <>
+                        <div
+                          onClick={toggleEdit}
+                          style={{
+                            background: '#FAF9F4',
+                            borderLeft: '1px solid #E8FF47',
+                            borderRight: '1px solid #E8FF47',
+                            borderTop: '1px solid #F0EFE9',
+                            padding: '12px 24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>
+                            Редактирование услуги
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleEdit() }}
+                            title="Свернуть"
+                            style={{
+                              ...iconBtnStyle,
+                              cursor: 'pointer',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
+                          >
+                            <ChevronUp size={18} />
+                          </button>
+                        </div>
+
+                        {/* Форма */}
+                        <div style={{
+                          background: '#fff',
+                          border: '1px solid #E8FF47',
+                          borderTop: '1px solid #F0EFE9',
+                          borderRadius: '0 0 14px 14px',
+                          overflow: 'hidden',
+                        }}>
+                          <ServiceModal meetingId={m.id} onUpdate={handleMeetingUpdate} />
+                        </div>
+                      </>
                     )}
                   </SortableCard>
                 )
