@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import axios from 'axios'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
@@ -28,7 +28,7 @@ const LOCATION_TYPES = [
 ]
 
 const DAY_VALUES = Array.from({ length: 365 }, (_, i) => i + 1) // 1..365
-const COUNT_VALUES = Array.from({ length: 21 }, (_, i) => i) // 0..20
+const COUNT_VALUES = Array.from({ length: 21 }, (_, i) => i)    // 0..20
 
 const C = {
   card: '#FFFFFF',
@@ -41,8 +41,6 @@ const C = {
   lime: '#E8FF47',
   toggleOff: '#E8E7E0',
   fieldBg: '#F7F6F1',
-  wheelFade2: '#d8d8d8',
-  wheelFade1: '#a0a0a0',
 }
 
 const Toggle = ({ on, onClick }) => (
@@ -108,78 +106,151 @@ const inputStyle = {
   color: C.text,
 }
 
-// ============ WHEEL CORE ============
+// ============ DRAG WHEEL ============
 
 const ITEM_H = 36
-const VISIBLE = 5 // строк сверху/снизу от центра (для высоты колеса 5*2+1 = но используем 5 строк всего видно)
-const VISIBLE_HEIGHT_ROWS = 5 // итоговая высота колеса 5 строк
+const VISIBLE_ROWS = 5
 
-const Wheel = ({ values, value, onChange, format, width = 60, onConfirm }) => {
-  const ref = useRef(null)
+const Wheel = ({ values, value, onChange, format, width = 60 }) => {
+  const wrapRef = useRef(null)
+  const trackRef = useRef(null)
+  const [translateY, setTranslateY] = useState(0)
+  const [animate, setAnimate] = useState(true)
+
+  // Найти индекс выбранного значения
+  const currentIdx = values.indexOf(value) >= 0 ? values.indexOf(value) : 0
+
+  // Базовое смещение track: центр выбранного значения попадает в подсветку
+  // Подсветка в позиции (VISIBLE_ROWS/2)*ITEM_H от верха обёртки.
+  // Track сверху имеет padding в (VISIBLE_ROWS/2) пустых строк.
+  // baseTranslate = -(currentIdx * ITEM_H)
+  const baseTranslate = -(currentIdx * ITEM_H)
+
+  // Состояние drag
+  const dragRef = useRef({
+    active: false,
+    startY: 0,
+    startTranslate: 0,
+  })
+
+  // Сохраняем последнее onChange чтобы не вызывать без нужды
   const lastSentRef = useRef(value)
-  const scrollEndTimer = useRef(null)
 
-  useEffect(() => {
-    if (!ref.current) return
-    const idx = values.indexOf(value)
-    if (idx >= 0) {
-      ref.current.scrollTop = idx * ITEM_H
+  const handleStart = useCallback((clientY) => {
+    dragRef.current.active = true
+    dragRef.current.startY = clientY
+    dragRef.current.startTranslate = translateY
+    setAnimate(false)
+  }, [translateY])
+
+  const handleMove = useCallback((clientY) => {
+    if (!dragRef.current.active) return
+    const dy = clientY - dragRef.current.startY
+    const newTranslate = dragRef.current.startTranslate + dy
+    // Ограничиваем: чтобы нельзя было выкрутить дальше первого/последнего значения
+    const min = -(values.length - 1) * ITEM_H - baseTranslate
+    const max = -baseTranslate
+    const clamped = Math.max(min, Math.min(max, newTranslate))
+    setTranslateY(clamped)
+  }, [values.length, baseTranslate])
+
+  const handleEnd = useCallback(() => {
+    if (!dragRef.current.active) return
+    dragRef.current.active = false
+    // Сколько строк сдвинули
+    const moved = Math.round(-translateY / ITEM_H)
+    const newIdx = Math.max(0, Math.min(values.length - 1, currentIdx + moved))
+    const newValue = values[newIdx]
+
+    setAnimate(true)
+    setTranslateY(0) // visual reset — фактический сдвиг переедет через смену currentIdx (новый baseTranslate)
+
+    if (newValue !== lastSentRef.current) {
+      lastSentRef.current = newValue
+      onChange(newValue)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [translateY, currentIdx, values, onChange])
 
-  const handleScroll = () => {
-    if (!ref.current) return
-    clearTimeout(scrollEndTimer.current)
-    scrollEndTimer.current = setTimeout(() => {
-      if (!ref.current) return
-      const idx = Math.round(ref.current.scrollTop / ITEM_H)
-      const clampedIdx = Math.max(0, Math.min(values.length - 1, idx))
-      const next = values[clampedIdx]
-      ref.current.scrollTo({ top: clampedIdx * ITEM_H, behavior: 'smooth' })
-      if (next !== lastSentRef.current) {
-        lastSentRef.current = next
-        onChange(next)
+  // События мыши и тача
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (dragRef.current.active) handleMove(e.clientY)
+    }
+    const onMouseUp = () => handleEnd()
+    const onTouchMove = (e) => {
+      if (dragRef.current.active) {
+        e.preventDefault()
+        handleMove(e.touches[0].clientY)
       }
-    }, 130)
-  }
+    }
+    const onTouchEnd = () => handleEnd()
 
-  const padCount = Math.floor(VISIBLE_HEIGHT_ROWS / 2)
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
+    window.addEventListener('touchend', onTouchEnd)
+    window.addEventListener('touchcancel', onTouchEnd)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+      window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchend', onTouchEnd)
+      window.removeEventListener('touchcancel', onTouchEnd)
+    }
+  }, [handleMove, handleEnd])
+
+  // Сброс translateY когда меняется value снаружи
+  useEffect(() => {
+    setTranslateY(0)
+    lastSentRef.current = value
+  }, [value])
 
   return (
-    <div style={{ position: 'relative', height: ITEM_H * VISIBLE_HEIGHT_ROWS, minWidth: width }}>
+    <div
+      ref={wrapRef}
+      onMouseDown={(e) => { e.preventDefault(); handleStart(e.clientY) }}
+      onTouchStart={(e) => { handleStart(e.touches[0].clientY) }}
+      style={{
+        position: 'relative',
+        height: ITEM_H * VISIBLE_ROWS,
+        width,
+        overflow: 'hidden',
+        cursor: dragRef.current.active ? 'grabbing' : 'grab',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        touchAction: 'none',
+      }}
+    >
       <div
-        ref={ref}
-        onScroll={handleScroll}
-        className="kogda-wheel-scroll"
+        ref={trackRef}
         style={{
-          height: '100%', overflowY: 'scroll',
-          scrollSnapType: 'y mandatory',
-          scrollbarWidth: 'none', msOverflowStyle: 'none',
+          position: 'absolute',
+          left: 0, right: 0,
+          top: ITEM_H * Math.floor(VISIBLE_ROWS / 2),
+          transform: `translateY(${baseTranslate + translateY}px)`,
+          transition: animate ? 'transform 0.2s ease-out' : 'none',
         }}
       >
-        <style>{`.kogda-wheel-scroll::-webkit-scrollbar{display:none}`}</style>
-        <div style={{ height: ITEM_H * padCount }} />
-        {values.map((v) => {
-          const active = v === value
+        {values.map((v, i) => {
+          const diff = Math.abs(i - currentIdx)
+          let color = C.text
+          let weight = 700
+          if (diff === 1) { color = '#a0a0a0'; weight = 400 }
+          else if (diff === 2) { color = '#ccc'; weight = 400 }
+          else if (diff > 2) { color = '#e0e0e0'; weight = 400 }
           return (
-            <div
-              key={v}
-              onClick={active && onConfirm ? onConfirm : undefined}
-              style={{
-                height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, fontWeight: active ? 700 : 400,
-                color: active ? C.text : C.muted,
-                scrollSnapAlign: 'center',
-                fontVariantNumeric: 'tabular-nums',
-                cursor: active && onConfirm ? 'pointer' : 'default',
-              }}
-            >
+            <div key={v} style={{
+              height: ITEM_H,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18,
+              fontWeight: weight,
+              color,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
               {format ? format(v) : v}
             </div>
           )
         })}
-        <div style={{ height: ITEM_H * padCount }} />
       </div>
     </div>
   )
@@ -191,15 +262,11 @@ const RollerField = ({ open, setOpen, label, preview, children }) => {
   const borderColor = open ? C.lime : C.border
   const borderWidth = open ? 1.5 : 1
 
-  // Закрытие по клику мимо + Enter + Esc
   useEffect(() => {
     if (!open) return
-
     const onDocClick = (e) => {
       if (!wrapRef.current) return
-      if (!wrapRef.current.contains(e.target)) {
-        setOpen(false)
-      }
+      if (!wrapRef.current.contains(e.target)) setOpen(false)
     }
     const onKey = (e) => {
       if (e.key === 'Escape' || e.key === 'Enter') {
@@ -207,13 +274,11 @@ const RollerField = ({ open, setOpen, label, preview, children }) => {
         setOpen(false)
       }
     }
-    // Откладываем, чтобы тот же клик который открыл, сразу не закрыл
     const t = setTimeout(() => {
       document.addEventListener('mousedown', onDocClick)
       document.addEventListener('touchstart', onDocClick)
       document.addEventListener('keydown', onKey)
     }, 0)
-
     return () => {
       clearTimeout(t)
       document.removeEventListener('mousedown', onDocClick)
@@ -302,8 +367,17 @@ const formatDuration = (minutes) => {
 }
 
 const formatBuffer = (minutes) => minutes === 0 ? 'Нет' : formatDuration(minutes)
-const formatMinNotice = (minutes) => minutes === 0 ? 'Сразу' : formatDuration(minutes)
-const formatStep = (minutes) => formatDuration(minutes) // 0 здесь не бывает
+
+const formatMinNotice = (totalHours) => {
+  if (totalHours === 0) return 'Сразу'
+  const d = Math.floor(totalHours / 24)
+  const h = totalHours % 24
+  if (d === 0) return `${h} ч`
+  if (h === 0) return `${d} ${pluralDays(d)}`
+  return `${d} ${pluralDays(d)} ${h} ч`
+}
+
+const formatStep = (minutes) => formatDuration(minutes)
 const formatDays = (d) => `${d} ${pluralDays(d)}`
 const formatCount = (n) => n === 0 ? 'Без лимита' : `${n}`
 
@@ -318,44 +392,58 @@ function pluralDays(n) {
 
 // ============ ROLLER TYPES ============
 
-const HOURS_FULL = Array.from({ length: 25 }, (_, i) => i)  // 0..24
-const HOURS_SHORT = Array.from({ length: 13 }, (_, i) => i) // 0..12 — для буферов
+const HOURS_FULL = Array.from({ length: 25 }, (_, i) => i)  // 0..24 (для длительности)
+const HOURS_SHORT = Array.from({ length: 13 }, (_, i) => i) // 0..12 (для буферов/шага)
+const HOURS_24 = Array.from({ length: 24 }, (_, i) => i)    // 0..23 (для мин.до записи)
+const DAYS_30 = Array.from({ length: 31 }, (_, i) => i)     // 0..30 (для мин.до записи)
 const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5) // 0,5,...,55
 
-// Тип 1: ч + мин
-// minHours/maxHours — диапазон часов
-// minTotal — минимально допустимое значение в минутах (для шага слотов = 5)
+// Тип 1: часы + минуты (длительность, буферы, шаг слотов)
 const HourMinRoller = ({ open, setOpen, label, value, onChange, hoursRange = HOURS_FULL, minTotal = 0, preview }) => {
-  const initH = Math.floor(value / 60)
-  const initM = value % 60
-  const initMSnap = Math.round(initM / 5) * 5
-  const [h, setH] = useState(initH)
-  const [m, setM] = useState(initMSnap > 55 ? 0 : initMSnap)
+  const h = Math.floor(value / 60)
+  const mRaw = value % 60
+  const m = Math.round(mRaw / 5) * 5 > 55 ? 0 : Math.round(mRaw / 5) * 5
 
-  useEffect(() => {
-    if (!open) return
-    let total = h * 60 + m
+  const handleH = (newH) => {
+    let total = newH * 60 + m
     if (total < minTotal) total = minTotal
-    if (total !== value) onChange(total)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [h, m])
-
-  // Когда value снаружи изменилось — обновим колёса
-  useEffect(() => {
-    setH(Math.floor(value / 60))
-    const mm = value % 60
-    setM(Math.round(mm / 5) * 5 > 55 ? 0 : Math.round(mm / 5) * 5)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value])
+    onChange(total)
+  }
+  const handleM = (newM) => {
+    let total = h * 60 + newM
+    if (total < minTotal) total = minTotal
+    onChange(total)
+  }
 
   return (
     <RollerField open={open} setOpen={setOpen} label={label} preview={preview}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-        <Wheel values={hoursRange} value={h} onChange={setH} width={50} onConfirm={() => setOpen(false)} />
-        <div style={{ fontSize: 13, color: C.muted, padding: '0 6px', zIndex: 1 }}>ч</div>
-        <Wheel values={MINUTES} value={m} onChange={setM}
-          format={v => String(v).padStart(2, '0')} width={50} onConfirm={() => setOpen(false)} />
-        <div style={{ fontSize: 13, color: C.muted, padding: '0 6px', zIndex: 1 }}>мин</div>
+        <Wheel values={hoursRange} value={h} onChange={handleH} width={50} />
+        <div style={{ fontSize: 13, color: C.muted, padding: '0 6px' }}>ч</div>
+        <Wheel values={MINUTES} value={m} onChange={handleM}
+          format={v => String(v).padStart(2, '0')} width={50} />
+        <div style={{ fontSize: 13, color: C.muted, padding: '0 6px' }}>мин</div>
+      </div>
+    </RollerField>
+  )
+}
+
+// Тип 1b: дни + часы (минимум до записи)
+// value — общее число часов в БД
+const DayHourRoller = ({ open, setOpen, label, value, onChange, preview }) => {
+  const d = Math.floor(value / 24)
+  const h = value % 24
+
+  const handleD = (newD) => onChange(newD * 24 + h)
+  const handleH = (newH) => onChange(d * 24 + newH)
+
+  return (
+    <RollerField open={open} setOpen={setOpen} label={label} preview={preview}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        <Wheel values={DAYS_30} value={d} onChange={handleD} width={50} />
+        <div style={{ fontSize: 13, color: C.muted, padding: '0 6px' }}>дн</div>
+        <Wheel values={HOURS_24} value={h} onChange={handleH} width={50} />
+        <div style={{ fontSize: 13, color: C.muted, padding: '0 6px' }}>ч</div>
       </div>
     </RollerField>
   )
@@ -366,8 +454,8 @@ const DaysRoller = ({ open, setOpen, label, value, onChange, preview }) => {
   return (
     <RollerField open={open} setOpen={setOpen} label={label} preview={preview}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-        <Wheel values={DAY_VALUES} value={value} onChange={onChange} width={70} onConfirm={() => setOpen(false)} />
-        <div style={{ fontSize: 13, color: C.muted, padding: '0 6px', zIndex: 1 }}>дней</div>
+        <Wheel values={DAY_VALUES} value={value} onChange={onChange} width={70} />
+        <div style={{ fontSize: 13, color: C.muted, padding: '0 6px' }}>дней</div>
       </div>
     </RollerField>
   )
@@ -379,13 +467,13 @@ const CountRoller = ({ open, setOpen, label, value, onChange, preview }) => {
     <RollerField open={open} setOpen={setOpen} label={label} preview={preview}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
         <Wheel values={COUNT_VALUES} value={value} onChange={onChange} width={70}
-          format={v => v === 0 ? '∞' : String(v)} onConfirm={() => setOpen(false)} />
+          format={v => v === 0 ? '∞' : String(v)} />
       </div>
     </RollerField>
   )
 }
 
-// Тип 0: длительность (использует HourMinRoller с управлением извне)
+// Длительность — обёртка над HourMinRoller с внешним управлением
 const DurationField = ({ value, onChange, open, setOpen }) => {
   return (
     <HourMinRoller
@@ -702,12 +790,10 @@ const LocationSection = ({ meeting, update }) => (
 )
 
 const AvailabilitySection = ({ meeting, update }) => {
-  // Одно поле открыто за раз — отслеживаем какое
   const [openKey, setOpenKey] = useState(null)
   const makeSetOpen = (key) => (next) => {
     setOpenKey(prev => {
       const isOpen = prev === key
-      // next может быть функцией (setOpen(o => !o)) или булевым
       const wantOpen = typeof next === 'function' ? next(isOpen) : next
       return wantOpen ? key : null
     })
@@ -737,14 +823,13 @@ const AvailabilitySection = ({ meeting, update }) => {
       </Group>
 
       <Group label="Окно записи">
-        <HourMinRoller
+        <DayHourRoller
           open={openKey === 'min_notice'}
           setOpen={makeSetOpen('min_notice')}
           label="Минимум до записи"
-          value={(meeting.min_notice || 0) * 60} // min_notice в БД в часах → переводим в минуты для UI
-          onChange={v => update({ min_notice: Math.floor(v / 60) })} // обратно в часы
-          hoursRange={HOURS_FULL}
-          preview={formatMinNotice((meeting.min_notice || 0) * 60)}
+          value={meeting.min_notice || 0}
+          onChange={v => update({ min_notice: v })}
+          preview={formatMinNotice(meeting.min_notice || 0)}
         />
         <DaysRoller
           open={openKey === 'max_days_ahead'}
