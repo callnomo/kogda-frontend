@@ -115,25 +115,27 @@ const Group = ({ label, tip, children, style }) => {
               {tipOpen && (
                 <div style={{
                   position: 'absolute',
-                  top: -8,
-                  left: 'calc(100% - 4px)',
+                  top: 'calc(100% + 8px)',
+                  left: 0,
+                  right: 'auto',
                   background: '#F0EFE9', color: '#444',
                   padding: '12px 16px', borderRadius: 10,
                   fontSize: 13, lineHeight: 1.55,
-                  maxWidth: 280, width: 'max-content',
+                  width: 'min(320px, calc(100vw - 60px))',
                   zIndex: 50,
                   boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
                   border: '1px solid #E0E0D8',
                   textTransform: 'none', letterSpacing: 0, fontWeight: 400,
+                  whiteSpace: 'normal',
                 }}>
                   {tip}
                   <div style={{
                     position: 'absolute',
-                    left: -7, top: 16,
+                    top: -7, left: 80,
                     width: 12, height: 12,
                     background: '#F0EFE9',
                     borderLeft: '1px solid #E0E0D8',
-                    borderBottom: '1px solid #E0E0D8',
+                    borderTop: '1px solid #E0E0D8',
                     transform: 'rotate(45deg)',
                   }} />
                 </div>
