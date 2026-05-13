@@ -66,18 +66,86 @@ const Toggle = ({ on, onClick }) => (
   </div>
 )
 
-const Group = ({ label, children, style }) => (
-  <div style={{ marginBottom: 18, ...style }}>
-    {label && (
-      <div style={{
-        fontSize: 11, fontWeight: 500, color: C.muted,
-        letterSpacing: 0.5, textTransform: 'uppercase',
-        marginBottom: 6, padding: '0 4px',
-      }}>{label}</div>
-    )}
-    <div>{children}</div>
-  </div>
-)
+const Group = ({ label, tip, children, style }) => {
+  const [tipOpen, setTipOpen] = useState(false)
+  const tipRef = useRef(null)
+
+  useEffect(() => {
+    if (!tipOpen) return
+    const onDocClick = (e) => {
+      if (!tipRef.current) return
+      if (!tipRef.current.contains(e.target)) setTipOpen(false)
+    }
+    const t = setTimeout(() => {
+      document.addEventListener('mousedown', onDocClick)
+      document.addEventListener('touchstart', onDocClick)
+    }, 0)
+    return () => {
+      clearTimeout(t)
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('touchstart', onDocClick)
+    }
+  }, [tipOpen])
+
+  return (
+    <div style={{ marginBottom: 18, ...style }}>
+      {label && (
+        <div ref={tipRef} style={{
+          fontSize: 11, fontWeight: 500, color: C.muted,
+          letterSpacing: 0.5, textTransform: 'uppercase',
+          marginBottom: 6, padding: '0 4px',
+          display: 'flex', alignItems: 'center', gap: 6,
+          position: 'relative',
+        }}>
+          <span>{label}</span>
+          {tip && (
+            <>
+              <span
+                onClick={() => setTipOpen(o => !o)}
+                onMouseEnter={() => setTipOpen(true)}
+                onMouseLeave={() => setTipOpen(false)}
+                style={{
+                  width: 16, height: 16, borderRadius: '50%',
+                  background: '#E0E0D8', color: '#666',
+                  fontSize: 11, fontWeight: 700,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', userSelect: 'none',
+                }}
+              >?</span>
+              {tipOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: -8,
+                  left: 'calc(100% - 4px)',
+                  background: '#F0EFE9', color: '#444',
+                  padding: '12px 16px', borderRadius: 10,
+                  fontSize: 13, lineHeight: 1.55,
+                  maxWidth: 280, width: 'max-content',
+                  zIndex: 50,
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                  border: '1px solid #E0E0D8',
+                  textTransform: 'none', letterSpacing: 0, fontWeight: 400,
+                }}>
+                  {tip}
+                  <div style={{
+                    position: 'absolute',
+                    left: -7, top: 16,
+                    width: 12, height: 12,
+                    background: '#F0EFE9',
+                    borderLeft: '1px solid #E0E0D8',
+                    borderBottom: '1px solid #E0E0D8',
+                    transform: 'rotate(45deg)',
+                  }} />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+      <div>{children}</div>
+    </div>
+  )
+}
 
 const Row = ({ left, right, onClick, last, gap }) => (
   <div onClick={onClick} style={{
@@ -832,7 +900,7 @@ const AvailabilitySection = ({ meeting, update, isNarrow }) => {
   if (isNarrow) {
     return (
       <>
-        <Group label="Буферы">
+        <Group label="Буферы" tip="Время до или после записи. Клиенты не увидят это время как доступное.">
           <HourMinRoller
             open={openKey === 'buffer_before'}
             setOpen={makeSetOpen('buffer_before')}
@@ -853,7 +921,7 @@ const AvailabilitySection = ({ meeting, update, isNarrow }) => {
           />
         </Group>
 
-        <Group label="Окно записи">
+        <Group label="Окно записи" tip="За сколько до встречи нельзя записаться и как далеко вперёд клиент видит свободное время.">
           <DayHourRoller
             open={openKey === 'min_notice'}
             setOpen={makeSetOpen('min_notice')}
@@ -872,7 +940,7 @@ const AvailabilitySection = ({ meeting, update, isNarrow }) => {
           />
         </Group>
 
-        <Group label="Слоты">
+        <Group label="Слоты" tip="Шаг времени, который видит клиент при выборе, и сколько встреч можно проводить в день.">
           <HourMinRoller
             open={openKey === 'step_minutes'}
             setOpen={makeSetOpen('step_minutes')}
@@ -899,7 +967,7 @@ const AvailabilitySection = ({ meeting, update, isNarrow }) => {
   // ===== Десктоп: старые селекты =====
   return (
     <>
-      <Group label="Буферы">
+      <Group label="Буферы" tip="Время до или после записи. Клиенты не увидят это время как доступное.">
         <div style={{
           background: C.card, border: `1px solid ${C.border}`,
           borderRadius: 12, overflow: 'hidden',
@@ -912,7 +980,7 @@ const AvailabilitySection = ({ meeting, update, isNarrow }) => {
             options={BUFFERS} formatFn={v => v === 0 ? 'Нет' : `${v} мин`} />
         </div>
       </Group>
-      <Group label="Окно записи">
+      <Group label="Окно записи" tip="За сколько до встречи нельзя записаться и как далеко вперёд клиент видит свободное время.">
         <div style={{
           background: C.card, border: `1px solid ${C.border}`,
           borderRadius: 12, overflow: 'hidden',
@@ -926,7 +994,7 @@ const AvailabilitySection = ({ meeting, update, isNarrow }) => {
             options={MAX_DAYS} formatFn={v => `${v} дней`} />
         </div>
       </Group>
-      <Group label="Слоты">
+      <Group label="Слоты" tip="Шаг времени, который видит клиент при выборе, и сколько встреч можно проводить в день.">
         <div style={{
           background: C.card, border: `1px solid ${C.border}`,
           borderRadius: 12, overflow: 'hidden',
