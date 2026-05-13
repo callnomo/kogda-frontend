@@ -518,7 +518,7 @@ export default function Settings() {
   const [avatarLoading, setAvatarLoading] = useState(false)
 
   const [notifications, setNotifications] = useState({
-    notify_telegram: true, notify_email: true,
+    notify_telegram: false, notify_email: true,
     notify_whatsapp: false, notify_max: false,
   })
   const [notifSaved, setNotifSaved] = useState(false)
@@ -573,7 +573,7 @@ export default function Settings() {
       })
       setTelegramConnected(!!res.data.telegram_chat_id)
       setNotifications({
-        notify_telegram: res.data.notify_telegram ?? true,
+        notify_telegram: res.data.notify_telegram ?? false,
         notify_email: res.data.notify_email ?? true,
         notify_whatsapp: res.data.notify_whatsapp ?? false,
         notify_max: res.data.notify_max ?? false,
@@ -661,7 +661,7 @@ export default function Settings() {
   const connectTelegram = async () => {
     const token = localStorage.getItem('token')
     try {
-      const res = await axios.post(`${API}/settings/telegram-token`, {}, { headers: { Authorization: `Bearer ${token}` } })
+      const res = await axios.post(`${API}/settings/telegram/token`, {}, { headers: { Authorization: `Bearer ${token}` } })
       setTelegramLink(`https://t.me/kogdaapp_bot?start=${res.data.token}`)
     } catch (err) { console.error(err) }
   }
