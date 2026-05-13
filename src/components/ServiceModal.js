@@ -97,50 +97,53 @@ const Group = ({ label, tip, children, style }) => {
           display: 'flex', alignItems: 'center', gap: 6,
           position: 'relative',
         }}>
-          <span>{label}</span>
-          {tip && (
-            <>
-              <span
-                onClick={() => setTipOpen(o => !o)}
-                onMouseEnter={() => setTipOpen(true)}
-                onMouseLeave={() => setTipOpen(false)}
-                style={{
-                  width: 16, height: 16, borderRadius: '50%',
-                  background: '#E0E0D8', color: '#666',
-                  fontSize: 11, fontWeight: 700,
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', userSelect: 'none',
-                }}
-              >?</span>
-              {tipOpen && (
-                <div style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  left: 0,
-                  right: 'auto',
-                  background: '#F0EFE9', color: '#444',
-                  padding: '12px 16px', borderRadius: 10,
-                  fontSize: 13, lineHeight: 1.55,
-                  width: 'min(320px, calc(100vw - 60px))',
-                  zIndex: 50,
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
-                  border: '1px solid #E0E0D8',
-                  textTransform: 'none', letterSpacing: 0, fontWeight: 400,
-                  whiteSpace: 'normal',
-                }}>
-                  {tip}
-                  <div style={{
-                    position: 'absolute',
-                    top: -7, left: 80,
-                    width: 12, height: 12,
-                    background: '#F0EFE9',
-                    borderLeft: '1px solid #E0E0D8',
-                    borderTop: '1px solid #E0E0D8',
-                    transform: 'rotate(45deg)',
-                  }} />
-                </div>
-              )}
-            </>
+          <span
+            onClick={() => tip && setTipOpen(o => !o)}
+            onMouseEnter={() => tip && setTipOpen(true)}
+            onMouseLeave={() => tip && setTipOpen(false)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              cursor: tip ? 'pointer' : 'default',
+              userSelect: 'none',
+            }}
+          >
+            {label}
+            {tip && (
+              <span style={{
+                width: 16, height: 16, borderRadius: '50%',
+                background: '#E0E0D8', color: '#666',
+                fontSize: 11, fontWeight: 700,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}>?</span>
+            )}
+          </span>
+          {tipOpen && tip && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 8px)',
+              left: 0,
+              right: 'auto',
+              background: '#F0EFE9', color: '#444',
+              padding: '12px 16px', borderRadius: 10,
+              fontSize: 13, lineHeight: 1.55,
+              width: 'min(320px, calc(100vw - 60px))',
+              zIndex: 50,
+              boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+              border: '1px solid #E0E0D8',
+              textTransform: 'none', letterSpacing: 0, fontWeight: 400,
+              whiteSpace: 'normal',
+            }}>
+              {tip}
+              <div style={{
+                position: 'absolute',
+                top: -7, left: 16,
+                width: 12, height: 12,
+                background: '#F0EFE9',
+                borderLeft: '1px solid #E0E0D8',
+                borderTop: '1px solid #E0E0D8',
+                transform: 'rotate(45deg)',
+              }} />
+            </div>
           )}
         </div>
       )}
