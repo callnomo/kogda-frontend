@@ -107,7 +107,7 @@ function TelegramConnectModal({ telegramLink, onClose }) {
           {[
             'Открой бота kogDA',
             'Нажми START',
-            'Вернись сюда — статус обновится сам',
+            'Вернись сюда — статус обновится автоматически',
           ].map((step, idx) => (
             <div key={idx} style={{
               display: 'flex', gap: 10, alignItems: 'flex-start',
