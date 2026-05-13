@@ -387,7 +387,7 @@ export default function Services() {
         {!isMobile && addButtonDesktop}
       </div>
 
-      {hiddenCount > 0 && (
+      {meetings.length > 0 && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
           {[{ key: 'all', label: 'Все' }, { key: 'hidden', label: 'Скрытые' }].map(f => (
             <button key={f.key} onClick={() => setFilter(f.key)} style={{
