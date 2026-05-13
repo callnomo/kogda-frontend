@@ -114,7 +114,7 @@ const ITEM_H = 36
 const VISIBLE = 5 // строк сверху/снизу от центра (для высоты колеса 5*2+1 = но используем 5 строк всего видно)
 const VISIBLE_HEIGHT_ROWS = 5 // итоговая высота колеса 5 строк
 
-const Wheel = ({ values, value, onChange, format, width = 60 }) => {
+const Wheel = ({ values, value, onChange, format, width = 60, onConfirm }) => {
   const ref = useRef(null)
   const lastSentRef = useRef(value)
   const scrollEndTimer = useRef(null)
@@ -163,13 +163,18 @@ const Wheel = ({ values, value, onChange, format, width = 60 }) => {
         {values.map((v) => {
           const active = v === value
           return (
-            <div key={v} style={{
-              height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, fontWeight: active ? 700 : 400,
-              color: active ? C.text : C.muted,
-              scrollSnapAlign: 'center',
-              fontVariantNumeric: 'tabular-nums',
-            }}>
+            <div
+              key={v}
+              onClick={active && onConfirm ? onConfirm : undefined}
+              style={{
+                height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, fontWeight: active ? 700 : 400,
+                color: active ? C.text : C.muted,
+                scrollSnapAlign: 'center',
+                fontVariantNumeric: 'tabular-nums',
+                cursor: active && onConfirm ? 'pointer' : 'default',
+              }}
+            >
               {format ? format(v) : v}
             </div>
           )
@@ -261,6 +266,24 @@ const RollerField = ({ open, setOpen, label, preview, children }) => {
             }} />
             {children}
           </div>
+          <button
+            onClick={() => setOpen(false)}
+            style={{
+              marginTop: 12,
+              width: '100%',
+              background: C.text,
+              color: '#fff',
+              border: 'none',
+              padding: '11px',
+              borderRadius: 9,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            Готово
+          </button>
         </div>
       )}
     </div>
@@ -328,10 +351,10 @@ const HourMinRoller = ({ open, setOpen, label, value, onChange, hoursRange = HOU
   return (
     <RollerField open={open} setOpen={setOpen} label={label} preview={preview}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-        <Wheel values={hoursRange} value={h} onChange={setH} width={50} />
+        <Wheel values={hoursRange} value={h} onChange={setH} width={50} onConfirm={() => setOpen(false)} />
         <div style={{ fontSize: 13, color: C.muted, padding: '0 6px', zIndex: 1 }}>ч</div>
         <Wheel values={MINUTES} value={m} onChange={setM}
-          format={v => String(v).padStart(2, '0')} width={50} />
+          format={v => String(v).padStart(2, '0')} width={50} onConfirm={() => setOpen(false)} />
         <div style={{ fontSize: 13, color: C.muted, padding: '0 6px', zIndex: 1 }}>мин</div>
       </div>
     </RollerField>
@@ -343,7 +366,7 @@ const DaysRoller = ({ open, setOpen, label, value, onChange, preview }) => {
   return (
     <RollerField open={open} setOpen={setOpen} label={label} preview={preview}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-        <Wheel values={DAY_VALUES} value={value} onChange={onChange} width={70} />
+        <Wheel values={DAY_VALUES} value={value} onChange={onChange} width={70} onConfirm={() => setOpen(false)} />
         <div style={{ fontSize: 13, color: C.muted, padding: '0 6px', zIndex: 1 }}>дней</div>
       </div>
     </RollerField>
@@ -356,7 +379,7 @@ const CountRoller = ({ open, setOpen, label, value, onChange, preview }) => {
     <RollerField open={open} setOpen={setOpen} label={label} preview={preview}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
         <Wheel values={COUNT_VALUES} value={value} onChange={onChange} width={70}
-          format={v => v === 0 ? '∞' : String(v)} />
+          format={v => v === 0 ? '∞' : String(v)} onConfirm={() => setOpen(false)} />
       </div>
     </RollerField>
   )
