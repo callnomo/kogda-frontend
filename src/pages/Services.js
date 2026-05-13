@@ -50,6 +50,7 @@ const hideArrows = `
   }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes scaleIn { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 `
 
 function SortableCard({ id, isHovered, disabled, children }) {
@@ -104,6 +105,58 @@ const menuSoonBadgeStyle = {
   textTransform: 'uppercase', letterSpacing: 0.5
 }
 
+// Окно «Нельзя удалить — есть записи» с предложением скрыть
+function CantDeleteDialog({ meeting, bookingsCount, onClose, onHide }) {
+  if (!meeting) return null
+  const isHidden = !meeting.is_active
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      animation: 'fadeIn 0.2s ease-out', padding: 20
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: '#fff', borderRadius: 16, padding: '28px 28px 24px',
+        maxWidth: 440, width: '100%',
+        border: '1px solid #E8E7E0',
+        animation: 'scaleIn 0.2s ease-out',
+        fontFamily: 'Inter, sans-serif'
+      }}>
+        <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10, color: '#111' }}>
+          Нельзя удалить услугу
+        </div>
+        <div style={{ fontSize: 14, color: '#555', lineHeight: 1.55, marginBottom: 22 }}>
+          На услуге <b>«{meeting.title}»</b> {bookingsCount}{' '}
+          {bookingsCount === 1 ? 'запись' : (bookingsCount >= 2 && bookingsCount <= 4 ? 'записи' : 'записей')}.
+          История записей не может быть удалена.
+          {!isHidden && ' Можешь скрыть услугу — она исчезнет с публичной страницы, но записи останутся.'}
+        </div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{
+            background: 'transparent', border: '1.5px solid #E0E0D8',
+            padding: '10px 20px', borderRadius: 100,
+            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            fontFamily: 'Inter, sans-serif', color: '#111'
+          }}>
+            Понятно
+          </button>
+          {!isHidden && (
+            <button onClick={onHide} style={{
+              background: '#111', color: '#fff', border: 'none',
+              padding: '10px 22px', borderRadius: 100,
+              fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif'
+            }}>
+              Скрыть услугу
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Services() {
   const [meetings, setMeetings] = useState([])
   const [bookings, setBookings] = useState([])
@@ -114,6 +167,7 @@ export default function Services() {
   const [copiedId, setCopiedId] = useState(null)
   const [hoveredId, setHoveredId] = useState(null)
   const [filter, setFilter] = useState('all')
+  const [cantDeleteDialog, setCantDeleteDialog] = useState(null) // { meeting, bookingsCount }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -133,10 +187,10 @@ export default function Services() {
   }, [])
 
   useEffect(() => {
-    if (openSheetId !== null) document.body.style.overflow = 'hidden'
+    if (openSheetId !== null || cantDeleteDialog !== null) document.body.style.overflow = 'hidden'
     else document.body.style.overflow = ''
     return () => { document.body.style.overflow = '' }
-  }, [openSheetId])
+  }, [openSheetId, cantDeleteDialog])
 
   const loadMeetings = async () => {
     const token = localStorage.getItem('token')
@@ -169,6 +223,7 @@ export default function Services() {
     setMeetings(prev => prev.map(m => m.id === updated.id ? updated : m))
   }
 
+  // Удаление с проверкой 409 от бэкенда
   const deleteMeeting = async (id) => {
     if (!window.confirm('Удалить эту услугу?')) return
     const token = localStorage.getItem('token')
@@ -176,7 +231,17 @@ export default function Services() {
       await axios.delete(`${API}/meetings/${id}`, { headers: { Authorization: `Bearer ${token}` } })
       if (editingId === id) setEditingId(null)
       loadMeetings()
-    } catch (err) { console.error(err) }
+    } catch (err) {
+      // 409 — есть записи, показываем диалог
+      if (err.response?.status === 409 && err.response?.data?.error === 'has_bookings') {
+        const meeting = meetings.find(m => m.id === id)
+        const bookingsCount = err.response.data.bookings_count || 0
+        setCantDeleteDialog({ meeting, bookingsCount })
+        return
+      }
+      console.error('[deleteMeeting]', err)
+      alert('Не удалось удалить услугу. Попробуй ещё раз.')
+    }
   }
 
   const toggleVisibility = async (id) => {
@@ -185,6 +250,14 @@ export default function Services() {
       await axios.patch(`${API}/meetings/${id}/visibility`, {}, { headers: { Authorization: `Bearer ${token}` } })
       loadMeetings()
     } catch (err) { console.error(err) }
+  }
+
+  // Из диалога "Нельзя удалить" — скрыть услугу
+  const hideMeetingFromDialog = async () => {
+    if (!cantDeleteDialog?.meeting) return
+    const id = cantDeleteDialog.meeting.id
+    setCantDeleteDialog(null)
+    await toggleVisibility(id)
   }
 
   if (!user) return null
@@ -502,7 +575,6 @@ export default function Services() {
                       )}
                     </div>
 
-                    {/* Хедер "Редактирование услуги" + chevron-кнопка свернуть */}
                     {isExpanded && (
                       <>
                         <div
@@ -525,10 +597,7 @@ export default function Services() {
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleEdit() }}
                             title="Свернуть"
-                            style={{
-                              ...iconBtnStyle,
-                              cursor: 'pointer',
-                            }}
+                            style={{ ...iconBtnStyle, cursor: 'pointer' }}
                             onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
                             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
                           >
@@ -536,7 +605,6 @@ export default function Services() {
                           </button>
                         </div>
 
-                        {/* Форма */}
                         <div style={{
                           background: '#fff',
                           border: '1px solid #E8FF47',
@@ -631,7 +699,10 @@ export default function Services() {
                   <span style={menuSoonBadgeStyle}>Скоро</span>
                 </button>
                 <div style={{ borderTop: '1px solid #F0EFE9', margin: '8px 0' }} />
-                <button onClick={() => { deleteMeeting(sheetMeeting.id); setOpenSheetId(null) }}
+                <button onClick={() => {
+                    setOpenSheetId(null)
+                    deleteMeeting(sheetMeeting.id)
+                  }}
                   style={{ ...sheetItemStyle, color: '#DC2626' }}>
                   <Trash2 size={18} />Удалить
                 </button>
@@ -640,6 +711,16 @@ export default function Services() {
           </div>
         )
       })()}
+
+      {/* Диалог "Нельзя удалить — есть записи" */}
+      {cantDeleteDialog && (
+        <CantDeleteDialog
+          meeting={cantDeleteDialog.meeting}
+          bookingsCount={cantDeleteDialog.bookingsCount}
+          onClose={() => setCantDeleteDialog(null)}
+          onHide={hideMeetingFromDialog}
+        />
+      )}
     </AppLayout>
   )
 }
