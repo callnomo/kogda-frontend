@@ -11,8 +11,41 @@ const DAYS_FULL = ['Воскресенье','Понедельник','Вторн
 
 const NOTES_MAX = 200
 
+// === Формат цены с учётом price_mode (нового) и fallback на старое hide_price ===
+// Возвращает строку для отображения или null если не показывать
+function formatPrice(m) {
+  if (!m) return null
+
+  // Новая логика по price_mode
+  if (m.price_mode) {
+    if (m.price_mode === 'hidden') return null
+    if (m.price_mode === 'free') return 'Бесплатно'
+    if (m.price_mode === 'on_request') return 'По запросу'
+    if (m.price_mode === 'amount') {
+      return m.price > 0 ? `${Number(m.price).toLocaleString('ru-RU')} ₽` : 'Бесплатно'
+    }
+  }
+
+  // Старая логика (для услуг без price_mode — fallback)
+  if (m.hide_price) return null
+  if (m.price > 0) return `${Number(m.price).toLocaleString('ru-RU')} ₽`
+  return 'Бесплатно'
+}
+
+// === Тип встречи с учётом location_type ===
+function formatLocation(m) {
+  if (!m) return { icon: '📹', label: 'Видеозвонок' }
+
+  switch (m.location_type) {
+    case 'phone': return { icon: '📞', label: 'Телефон' }
+    case 'in_person': return { icon: '📍', label: 'Лично' }
+    case 'client_chooses': return { icon: '💬', label: 'Клиент выберет' }
+    case 'video':
+    default: return { icon: '📹', label: 'Видеозвонок' }
+  }
+}
+
 export default function BookingPage() {
-  // Берём параметры из URL через React Router
   const { slug, serviceSlug } = useParams()
 
   const [profile, setProfile] = useState(null)
@@ -33,14 +66,12 @@ export default function BookingPage() {
   const loadProfile = async () => {
     try {
       if (serviceSlug) {
-        // Прямая ссылка на услугу — загружаем одну услугу и сразу шаг 2
         const res = await axios.get(`${API}/meetings/public/${slug}/${serviceSlug}`)
         setProfile(res.data.user)
         setMeetings([res.data.meeting])
         setSelectedMeeting(res.data.meeting)
         setStep(2)
       } else {
-        // Обычная ссылка на профиль — список услуг
         const res = await axios.get(`${API}/meetings/public/${slug}`)
         setProfile(res.data.user)
         setMeetings(res.data.meetings)
@@ -131,44 +162,48 @@ export default function BookingPage() {
   const notesLength = form.notes.length
   const counterColor = notesLength >= NOTES_MAX ? '#DC2626' : notesLength >= 180 ? '#D97706' : '#aaa'
 
-  // Если прямая ссылка на услугу — нельзя вернуться на step 1 (выбор услуги), только закрыть страницу
   const canGoBack = !serviceSlug
 
-  const Sidebar = ({ showBack, onBack, backLabel }) => (
-    <div style={{ background: '#fff', borderRadius: 20, padding: '24px', border: '1px solid #E8E7E0', height: 'fit-content' }}>
-      {profile.avatar ? (
-        <img
-          src={profile.avatar}
-          alt={profile.name}
-          style={{ width: 48, height: 48, borderRadius: 24, objectFit: 'cover', marginBottom: 12, display: 'block' }}
-        />
-      ) : (
-        <div style={{ width: 48, height: 48, borderRadius: 24, background: '#E8FF47', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, marginBottom: 12, color: '#111' }}>
-          {profile.name.charAt(0)}
-        </div>
-      )}
-      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: profile.bio ? 4 : 16 }}>{profile.name}</div>
-      {profile.bio && <div style={{ fontSize: 13, color: '#888', marginBottom: 16, lineHeight: 1.5 }}>{profile.bio}</div>}
-      {selectedMeeting && (
-        <div style={{ background: '#F7F6F1', borderRadius: 12, padding: '14px' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{selectedMeeting.title}</div>
-          <div style={{ fontSize: 12, color: '#888', marginBottom: 3 }}>⏱ {selectedMeeting.duration} мин · 📹 Видеозвонок</div>
-          {selectedMeeting.price > 0 && <div style={{ fontSize: 15, fontWeight: 800, marginTop: 6 }}>{selectedMeeting.price.toLocaleString('ru-RU')} ₽</div>}
-          {selectedDate && selectedSlot && (
-            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #E8E7E0' }}>
-              <div style={{ fontSize: 11, color: '#aaa', marginBottom: 3 }}>{DAYS_FULL[selectedDate.getDay()]}</div>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>{selectedDate.getDate()} {MONTHS_GEN[selectedDate.getMonth()]} · {selectedSlot}</div>
-            </div>
-          )}
-        </div>
-      )}
-      {showBack && (
-        <button onClick={onBack} style={{ marginTop: 12, width: '100%', background: 'transparent', border: '1.5px solid #E8E7E0', padding: '10px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#888' }}>
-          ← {backLabel || 'Назад'}
-        </button>
-      )}
-    </div>
-  )
+  const Sidebar = ({ showBack, onBack, backLabel }) => {
+    const priceLabel = formatPrice(selectedMeeting)
+    const location = formatLocation(selectedMeeting)
+
+    return (
+      <div style={{ background: '#fff', borderRadius: 20, padding: '24px', border: '1px solid #E8E7E0', height: 'fit-content' }}>
+        {profile.avatar ? (
+          <img
+            src={profile.avatar}
+            alt={profile.name}
+            style={{ width: 48, height: 48, borderRadius: 24, objectFit: 'cover', marginBottom: 12, display: 'block' }}
+          />
+        ) : (
+          <div style={{ width: 48, height: 48, borderRadius: 24, background: '#E8FF47', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, marginBottom: 12, color: '#111' }}>
+            {profile.name.charAt(0)}
+          </div>
+        )}
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: profile.bio ? 4 : 16 }}>{profile.name}</div>
+        {profile.bio && <div style={{ fontSize: 13, color: '#888', marginBottom: 16, lineHeight: 1.5 }}>{profile.bio}</div>}
+        {selectedMeeting && (
+          <div style={{ background: '#F7F6F1', borderRadius: 12, padding: '14px' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{selectedMeeting.title}</div>
+            <div style={{ fontSize: 12, color: '#888', marginBottom: 3 }}>⏱ {selectedMeeting.duration} мин · {location.icon} {location.label}</div>
+            {priceLabel && <div style={{ fontSize: 15, fontWeight: 800, marginTop: 6 }}>{priceLabel}</div>}
+            {selectedDate && selectedSlot && (
+              <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #E8E7E0' }}>
+                <div style={{ fontSize: 11, color: '#aaa', marginBottom: 3 }}>{DAYS_FULL[selectedDate.getDay()]}</div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{selectedDate.getDate()} {MONTHS_GEN[selectedDate.getMonth()]} · {selectedSlot}</div>
+              </div>
+            )}
+          </div>
+        )}
+        {showBack && (
+          <button onClick={onBack} style={{ marginTop: 12, width: '100%', background: 'transparent', border: '1.5px solid #E8E7E0', padding: '10px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#888' }}>
+            ← {backLabel || 'Назад'}
+          </button>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#F7F6F1', fontFamily: 'Inter, sans-serif' }}>
@@ -182,7 +217,6 @@ export default function BookingPage() {
 
         {step < 4 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0, marginBottom: 32 }}>
-            {/* Если прямая ссылка на услугу — степпер из 2 шагов вместо 3 */}
             {(serviceSlug ? ['Дата и время', 'Контакты'] : ['Тип встречи', 'Дата и время', 'Контакты']).map((s, i) => {
               const stepNumber = serviceSlug ? i + 2 : i + 1
               const totalSteps = serviceSlug ? 2 : 3
@@ -221,24 +255,40 @@ export default function BookingPage() {
             </div>
             <p style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1.5, textAlign: 'center', marginBottom: 14 }}>Выберите тип встречи</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {meetings.map(m => (
-                <div key={m.id} onClick={() => { setSelectedMeeting(m); setStep(2) }}
-                  style={{ background: '#fff', borderRadius: 16, padding: '18px 22px', border: '1.5px solid #E8E7E0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#111'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#E8E7E0'; e.currentTarget.style.transform = 'translateY(0)' }}>
-                  <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>{m.title}</div>
-                    {m.description && <div style={{ fontSize: 13, color: '#888', marginBottom: 8 }}>{m.description}</div>}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>⏱ {m.duration} мин</span>
-                      <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>📹 Видеозвонок</span>
-                      {!m.hide_price && m.price > 0 && <span style={{ fontSize: 13, fontWeight: 800, color: '#111' }}>{m.price.toLocaleString('ru-RU')} ₽</span>}
-                      {!m.hide_price && m.price === 0 && <span style={{ fontSize: 12, color: '#22C55E', fontWeight: 700, background: '#DCFCE7', padding: '3px 10px', borderRadius: 20 }}>Бесплатно</span>}
+              {meetings.map(m => {
+                const priceLabel = formatPrice(m)
+                const location = formatLocation(m)
+                // На главной странице (список услуг) — цену скрываем (паттерн hide_price для главной)
+                // На прямой ссылке — цена видна (через sidebar)
+                // Решение: в списке услуг показываем priceLabel только если есть и НЕ hidden
+                const showPriceInList = priceLabel !== null
+
+                return (
+                  <div key={m.id} onClick={() => { setSelectedMeeting(m); setStep(2) }}
+                    style={{ background: '#fff', borderRadius: 16, padding: '18px 22px', border: '1.5px solid #E8E7E0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, transition: 'all 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#111'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#E8E7E0'; e.currentTarget.style.transform = 'translateY(0)' }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>{m.title}</div>
+                      {m.description && <div style={{ fontSize: 13, color: '#888', marginBottom: 8 }}>{m.description}</div>}
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>⏱ {m.duration} мин</span>
+                        <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>{location.icon} {location.label}</span>
+                        {showPriceInList && priceLabel === 'Бесплатно' && (
+                          <span style={{ fontSize: 12, color: '#22C55E', fontWeight: 700, background: '#DCFCE7', padding: '3px 10px', borderRadius: 20 }}>Бесплатно</span>
+                        )}
+                        {showPriceInList && priceLabel === 'По запросу' && (
+                          <span style={{ fontSize: 12, color: '#888', fontWeight: 600, background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>По запросу</span>
+                        )}
+                        {showPriceInList && priceLabel !== 'Бесплатно' && priceLabel !== 'По запросу' && (
+                          <span style={{ fontSize: 13, fontWeight: 800, color: '#111' }}>{priceLabel}</span>
+                        )}
+                      </div>
                     </div>
+                    <div style={{ width: 30, height: 30, borderRadius: 15, background: '#F7F6F1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>→</div>
                   </div>
-                  <div style={{ width: 30, height: 30, borderRadius: 15, background: '#F7F6F1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>→</div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
@@ -358,7 +408,9 @@ export default function BookingPage() {
         )}
 
         {/* STEP 4 */}
-        {step === 4 && (
+        {step === 4 && (() => {
+          const location = formatLocation(selectedMeeting)
+          return (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
             <div style={{ background: '#fff', borderRadius: 24, padding: '52px 44px', border: '1px solid #E8E7E0', textAlign: 'center', maxWidth: 440, width: '100%' }}>
               <div style={{ width: 68, height: 68, borderRadius: 34, background: '#E8FF47', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, margin: '0 auto 20px' }}>✓</div>
@@ -373,7 +425,7 @@ export default function BookingPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><span>📅</span><span style={{ fontSize: 13, fontWeight: 600 }}>{selectedMeeting?.title}</span></div>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><span>🗓</span><span style={{ fontSize: 13, color: '#555' }}>{selectedDate?.getDate()} {MONTHS_GEN[selectedDate?.getMonth()]} · {selectedSlot}</span></div>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><span>📹</span><span style={{ fontSize: 13, color: '#555' }}>{selectedMeeting?.require_confirm ? 'Ссылка придёт после подтверждения' : 'Ссылка придёт на email'}</span></div>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><span>{location.icon}</span><span style={{ fontSize: 13, color: '#555' }}>{selectedMeeting?.require_confirm ? `${location.label} · ссылка придёт после подтверждения` : `${location.label} · детали придут на email`}</span></div>
                 </div>
               </div>
               <p style={{ fontSize: 12, color: '#aaa', margin: '18px 0 0' }}>
@@ -381,7 +433,8 @@ export default function BookingPage() {
               </p>
             </div>
           </div>
-        )}
+          )
+        })()}
       </div>
 
       <div style={{ textAlign: 'center', padding: '28px', borderTop: '1px solid #E8E7E0', marginTop: 32 }}>
