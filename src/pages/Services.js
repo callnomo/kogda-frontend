@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Plus, Trash2, Pencil, Copy, Eye, EyeOff, Code2, ExternalLink, Check, Layers, GripVertical, ChevronUp } from 'lucide-react'
+import { Plus, Trash2, Pencil, Copy, Eye, EyeOff, Code2, ExternalLink, Check, Layers, GripVertical, ChevronUp, ArrowLeft } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -50,6 +50,7 @@ const hideArrows = `
   }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
   @keyframes scaleIn { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 `
 
@@ -105,7 +106,6 @@ const menuSoonBadgeStyle = {
   textTransform: 'uppercase', letterSpacing: 0.5
 }
 
-// Окно «Нельзя удалить — есть записи» с предложением скрыть
 function CantDeleteDialog({ meeting, bookingsCount, onClose, onHide }) {
   if (!meeting) return null
   const isHidden = !meeting.is_active
@@ -167,7 +167,7 @@ export default function Services() {
   const [copiedId, setCopiedId] = useState(null)
   const [hoveredId, setHoveredId] = useState(null)
   const [filter, setFilter] = useState('all')
-  const [cantDeleteDialog, setCantDeleteDialog] = useState(null) // { meeting, bookingsCount }
+  const [cantDeleteDialog, setCantDeleteDialog] = useState(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -187,10 +187,14 @@ export default function Services() {
   }, [])
 
   useEffect(() => {
-    if (openSheetId !== null || cantDeleteDialog !== null) document.body.style.overflow = 'hidden'
-    else document.body.style.overflow = ''
+    const mobileEditOpen = isMobile && editingId !== null
+    if (openSheetId !== null || cantDeleteDialog !== null || mobileEditOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
     return () => { document.body.style.overflow = '' }
-  }, [openSheetId, cantDeleteDialog])
+  }, [openSheetId, cantDeleteDialog, isMobile, editingId])
 
   const loadMeetings = async () => {
     const token = localStorage.getItem('token')
@@ -223,7 +227,6 @@ export default function Services() {
     setMeetings(prev => prev.map(m => m.id === updated.id ? updated : m))
   }
 
-  // Удаление с проверкой 409 от бэкенда
   const deleteMeeting = async (id) => {
     if (!window.confirm('Удалить эту услугу?')) return
     const token = localStorage.getItem('token')
@@ -232,7 +235,6 @@ export default function Services() {
       if (editingId === id) setEditingId(null)
       loadMeetings()
     } catch (err) {
-      // 409 — есть записи, показываем диалог
       if (err.response?.status === 409 && err.response?.data?.error === 'has_bookings') {
         const meeting = meetings.find(m => m.id === id)
         const bookingsCount = err.response.data.bookings_count || 0
@@ -252,7 +254,6 @@ export default function Services() {
     } catch (err) { console.error(err) }
   }
 
-  // Из диалога "Нельзя удалить" — скрыть услугу
   const hideMeetingFromDialog = async () => {
     if (!cantDeleteDialog?.meeting) return
     const id = cantDeleteDialog.meeting.id
@@ -370,6 +371,10 @@ export default function Services() {
     </button>
   )
 
+  const mobileEditingMeeting = (isMobile && editingId !== null)
+    ? meetings.find(m => m.id === editingId)
+    : null
+
   return (
     <AppLayout rightColumn={rightColumn}>
       <style>{hideArrows}</style>
@@ -417,10 +422,11 @@ export default function Services() {
                 ].filter(Boolean).join(' · ')
 
                 const serviceLink = m.slug ? `https://app.kogda.app/${user.slug}/${m.slug}` : bookingLink
-                const isExpanded = editingId === m.id
+                // На мобайле inline-форму НЕ показываем — есть fullscreen-оверлей
+                const isExpanded = !isMobile && editingId === m.id
 
                 const toggleEdit = () => {
-                  setEditingId(isExpanded ? null : m.id)
+                  setEditingId(editingId === m.id ? null : m.id)
                 }
 
                 const isHovered = hoveredId === m.id
@@ -712,7 +718,53 @@ export default function Services() {
         )
       })()}
 
-      {/* Диалог "Нельзя удалить — есть записи" */}
+      {/* Fullscreen-редактирование на мобайле */}
+      {mobileEditingMeeting && (
+        <div style={{
+          position: 'fixed', inset: 0, background: '#F7F6F1', zIndex: 200,
+          display: 'flex', flexDirection: 'column',
+          animation: 'slideInRight 0.25s ease-out',
+          fontFamily: 'Inter, sans-serif',
+        }}>
+          {/* Хедер с кнопкой назад */}
+          <div style={{
+            background: '#fff',
+            borderBottom: '1px solid #E8E7E0',
+            padding: '14px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={() => setEditingId(null)}
+              style={{
+                background: 'transparent', border: 'none',
+                padding: 4, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 4,
+                color: '#111', fontSize: 15, fontWeight: 500,
+                fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              <ArrowLeft size={20} />
+              <span>Услуги</span>
+            </button>
+            <div style={{
+              flex: 1, textAlign: 'center', fontSize: 15, fontWeight: 700,
+              color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              paddingRight: 60,
+            }}>
+              {mobileEditingMeeting.title}
+            </div>
+          </div>
+
+          {/* Контент со скроллом */}
+          <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <ServiceModal meetingId={mobileEditingMeeting.id} onUpdate={handleMeetingUpdate} />
+          </div>
+        </div>
+      )}
+
       {cantDeleteDialog && (
         <CantDeleteDialog
           meeting={cantDeleteDialog.meeting}
