@@ -11,31 +11,18 @@ const DAYS_FULL = ['Воскресенье','Понедельник','Вторн
 
 const NOTES_MAX = 200
 
-// === Формат цены с учётом price_mode (нового) и fallback на старое hide_price ===
-// Возвращает строку для отображения или null если не показывать
+// Жёсткая логика: если hidden/hide_price — скрываем без исключений
 function formatPrice(m) {
   if (!m) return null
-
-  // Новая логика по price_mode
-  if (m.price_mode) {
-    if (m.price_mode === 'hidden') return null
-    if (m.price_mode === 'free') return 'Бесплатно'
-    if (m.price_mode === 'on_request') return 'По запросу'
-    if (m.price_mode === 'amount') {
-      return m.price > 0 ? `${Number(m.price).toLocaleString('ru-RU')} ₽` : 'Бесплатно'
-    }
-  }
-
-  // Старая логика (для услуг без price_mode — fallback)
-  if (m.hide_price) return null
-  if (m.price > 0) return `${Number(m.price).toLocaleString('ru-RU')} ₽`
-  return 'Бесплатно'
+  if (m.price_mode === 'hidden') return null
+  if (m.hide_price === true) return null
+  if (m.price_mode === 'free') return 'Бесплатно'
+  if (m.price_mode === 'on_request') return 'По запросу'
+  return m.price > 0 ? `${Number(m.price).toLocaleString('ru-RU')} ₽` : 'Бесплатно'
 }
 
-// === Тип встречи с учётом location_type ===
 function formatLocation(m) {
   if (!m) return { icon: '📹', label: 'Видеозвонок' }
-
   switch (m.location_type) {
     case 'phone': return { icon: '📞', label: 'Телефон' }
     case 'in_person': return { icon: '📍', label: 'Лично' }
@@ -171,11 +158,8 @@ export default function BookingPage() {
     return (
       <div style={{ background: '#fff', borderRadius: 20, padding: '24px', border: '1px solid #E8E7E0', height: 'fit-content' }}>
         {profile.avatar ? (
-          <img
-            src={profile.avatar}
-            alt={profile.name}
-            style={{ width: 48, height: 48, borderRadius: 24, objectFit: 'cover', marginBottom: 12, display: 'block' }}
-          />
+          <img src={profile.avatar} alt={profile.name}
+            style={{ width: 48, height: 48, borderRadius: 24, objectFit: 'cover', marginBottom: 12, display: 'block' }} />
         ) : (
           <div style={{ width: 48, height: 48, borderRadius: 24, background: '#E8FF47', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, marginBottom: 12, color: '#111' }}>
             {profile.name.charAt(0)}
@@ -240,11 +224,8 @@ export default function BookingPage() {
           <div style={{ maxWidth: 520, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 28 }}>
               {profile.avatar ? (
-                <img
-                  src={profile.avatar}
-                  alt={profile.name}
-                  style={{ width: 72, height: 72, borderRadius: 36, objectFit: 'cover', margin: '0 auto 14px', display: 'block' }}
-                />
+                <img src={profile.avatar} alt={profile.name}
+                  style={{ width: 72, height: 72, borderRadius: 36, objectFit: 'cover', margin: '0 auto 14px', display: 'block' }} />
               ) : (
                 <div style={{ width: 72, height: 72, borderRadius: 36, background: '#E8FF47', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 800, margin: '0 auto 14px', color: '#111' }}>
                   {profile.name.charAt(0)}
@@ -258,10 +239,6 @@ export default function BookingPage() {
               {meetings.map(m => {
                 const priceLabel = formatPrice(m)
                 const location = formatLocation(m)
-                // На главной странице (список услуг) — цену скрываем (паттерн hide_price для главной)
-                // На прямой ссылке — цена видна (через sidebar)
-                // Решение: в списке услуг показываем priceLabel только если есть и НЕ hidden
-                const showPriceInList = priceLabel !== null
 
                 return (
                   <div key={m.id} onClick={() => { setSelectedMeeting(m); setStep(2) }}
@@ -274,13 +251,13 @@ export default function BookingPage() {
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                         <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>⏱ {m.duration} мин</span>
                         <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>{location.icon} {location.label}</span>
-                        {showPriceInList && priceLabel === 'Бесплатно' && (
+                        {priceLabel === 'Бесплатно' && (
                           <span style={{ fontSize: 12, color: '#22C55E', fontWeight: 700, background: '#DCFCE7', padding: '3px 10px', borderRadius: 20 }}>Бесплатно</span>
                         )}
-                        {showPriceInList && priceLabel === 'По запросу' && (
+                        {priceLabel === 'По запросу' && (
                           <span style={{ fontSize: 12, color: '#888', fontWeight: 600, background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>По запросу</span>
                         )}
-                        {showPriceInList && priceLabel !== 'Бесплатно' && priceLabel !== 'По запросу' && (
+                        {priceLabel && priceLabel !== 'Бесплатно' && priceLabel !== 'По запросу' && (
                           <span style={{ fontSize: 13, fontWeight: 800, color: '#111' }}>{priceLabel}</span>
                         )}
                       </div>
