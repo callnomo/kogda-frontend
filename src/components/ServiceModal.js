@@ -37,7 +37,6 @@ const MAX_DAYS = [7, 14, 30, 60, 90, 180, 365]
 const MAX_PER_DAY = [0, 1, 2, 3, 4, 5, 6, 8, 10]
 const STEP_MINUTES = [5, 10, 15, 20, 30, 45, 60]
 
-// Дефолтные значения для новой услуги
 const DEFAULT_NEW_SERVICE = {
   title: 'Новая услуга',
   description: '',
@@ -58,8 +57,6 @@ const DEFAULT_NEW_SERVICE = {
   enabled_banks: null,
 }
 
-// ============ СТИЛИ ============
-
 const C = {
   bg: '#F7F6F1',
   card: '#FFFFFF',
@@ -73,9 +70,28 @@ const C = {
   toggleOff: '#E8E7E0',
 }
 
+// CSS-анимации
+const sheetCss = `
+@keyframes sheetSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes sheetSlideDown {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes overlayFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+`
+
 // ============ ОБЩИЕ КОМПОНЕНТЫ ============
 
-// Тумблер он/офф
 const Toggle = ({ on, onClick }) => (
   <div onClick={onClick} style={{
     width: 36, height: 22, borderRadius: 999,
@@ -91,7 +107,6 @@ const Toggle = ({ on, onClick }) => (
   </div>
 )
 
-// Группа iOS-стиля с заголовком UPPERCASE
 const Group = ({ label, children, style }) => (
   <div style={{ marginBottom: 18, ...style }}>
     {label && (
@@ -108,7 +123,6 @@ const Group = ({ label, children, style }) => (
   </div>
 )
 
-// Строка iOS-списка
 const Row = ({ left, right, onClick, last, gap }) => (
   <div onClick={onClick} style={{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -122,7 +136,6 @@ const Row = ({ left, right, onClick, last, gap }) => (
   </div>
 )
 
-// Лейбл-инпут связка
 const Field = ({ label, children, style }) => (
   <div style={{ marginBottom: 18, ...style }}>
     {label && (
@@ -132,7 +145,6 @@ const Field = ({ label, children, style }) => (
   </div>
 )
 
-// Базовый стиль input
 const inputStyle = {
   width: '100%',
   background: C.card,
@@ -154,6 +166,7 @@ export default function ServiceModal({ meetingId, onClose }) {
   const [loading, setLoading] = useState(true)
   const [isNarrow, setIsNarrow] = useState(window.innerWidth < 900)
   const [mobileShowDetail, setMobileShowDetail] = useState(false)
+  const [closing, setClosing] = useState(false)
 
   useEffect(() => {
     const onResize = () => setIsNarrow(window.innerWidth < 900)
@@ -161,20 +174,24 @@ export default function ServiceModal({ meetingId, onClose }) {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
+  // Закрытие с анимацией
+  const handleClose = () => {
+    setClosing(true)
+    setTimeout(() => onClose(), 300) // ждём пока анимация закроется
+  }
+
   // Загрузка существующей услуги
   useEffect(() => {
     const load = async () => {
       const token = localStorage.getItem('token')
       try {
         if (meetingId) {
-          // Редактирование существующей
           const res = await axios.get(`${API}/meetings`, {
             headers: { Authorization: `Bearer ${token}` }
           })
           const found = res.data.find(m => m.id === meetingId)
           if (found) setMeeting(found)
         } else {
-          // Создание новой — сразу POST в БД
           const res = await axios.post(
             `${API}/meetings`,
             DEFAULT_NEW_SERVICE,
@@ -191,11 +208,11 @@ export default function ServiceModal({ meetingId, onClose }) {
     load()
   }, [meetingId])
 
-  // Локальный optimistic update + сохранение на сервер
   const update = async (changes) => {
     if (!meeting) return
+    const prev = meeting
     const next = { ...meeting, ...changes }
-    setMeeting(next) // Optimistic UI
+    setMeeting(next)
     const token = localStorage.getItem('token')
     try {
       const res = await axios.patch(
@@ -203,27 +220,29 @@ export default function ServiceModal({ meetingId, onClose }) {
         changes,
         { headers: { Authorization: `Bearer ${token}` } }
       )
-      // Применяем ответ сервера (он может нормализовать значения)
       setMeeting(res.data)
     } catch (err) {
       console.error('[ServiceModal update]', err)
-      // Rollback
-      setMeeting(meeting)
+      setMeeting(prev)
       alert('Не удалось сохранить, попробуй ещё раз')
     }
   }
 
   if (loading || !meeting) {
     return (
-      <div style={overlayStyle}>
-        <div style={{ ...modalStyle, minHeight: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ color: C.muted, fontSize: 14 }}>Загружаю...</div>
+      <>
+        <style>{sheetCss}</style>
+        <div style={overlayStyle(closing)} onClick={handleClose} />
+        <div style={sheetStyle(closing, isNarrow)}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            height: '100%', color: C.muted, fontSize: 14,
+          }}>Загружаю...</div>
         </div>
-      </div>
+      </>
     )
   }
 
-  // Превью для левого меню — короткое значение каждого раздела
   const previews = {
     basic: `${meeting.duration} мин`,
     price: pricePreview(meeting),
@@ -234,7 +253,6 @@ export default function ServiceModal({ meetingId, onClose }) {
     extra: '—',
   }
 
-  // Содержимое активного раздела
   const renderSection = () => {
     switch (section) {
       case 'basic': return <BasicSection meeting={meeting} update={update} />
@@ -248,15 +266,20 @@ export default function ServiceModal({ meetingId, onClose }) {
     }
   }
 
-  // ============ Mobile mode ============
+  // ============ Mobile ============
   if (isNarrow) {
     return (
-      <div style={overlayStyle}>
-        <div style={{ ...modalStyle, width: '100%', height: '100%', borderRadius: 0, maxWidth: 'none' }}>
+      <>
+        <style>{sheetCss}</style>
+        <div style={overlayStyle(closing)} onClick={handleClose} />
+        <div style={sheetStyle(closing, true)}>
+          {/* Полоска свайпа */}
+          <div style={{ width: 40, height: 4, background: '#E0E0D8', borderRadius: 2, margin: '8px auto 12px' }} />
+
           {/* Шапка */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            padding: '16px 20px', borderBottom: `1px solid ${C.border}`,
+            padding: '8px 20px 16px', borderBottom: `1px solid ${C.border}`,
           }}>
             {mobileShowDetail ? (
               <>
@@ -270,7 +293,7 @@ export default function ServiceModal({ meetingId, onClose }) {
               </>
             ) : (
               <>
-                <div onClick={onClose} style={closeBtnStyle}>×</div>
+                <div onClick={handleClose} style={closeBtnStyle}>×</div>
                 <div style={{ fontSize: 16, fontWeight: 600 }}>
                   {meetingId ? 'Редактировать услугу' : 'Новая услуга'}
                 </div>
@@ -308,29 +331,30 @@ export default function ServiceModal({ meetingId, onClose }) {
             )}
           </div>
         </div>
-      </div>
+      </>
     )
   }
 
-  // ============ Desktop mode ============
+  // ============ Desktop ============
   return (
-    <div style={overlayStyle}>
-      <div style={modalStyle}>
+    <>
+      <style>{sheetCss}</style>
+      <div style={overlayStyle(closing)} onClick={handleClose} />
+      <div style={sheetStyle(closing, false)}>
         {/* Шапка */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '16px 22px', borderBottom: `1px solid ${C.border}`,
         }}>
-          <div onClick={onClose} style={closeBtnStyle}>×</div>
+          <div onClick={handleClose} style={closeBtnStyle}>×</div>
           <div style={{ fontSize: 16, fontWeight: 600 }}>
             {meetingId ? 'Редактировать услугу' : 'Новая услуга'}
           </div>
         </div>
 
         {/* Master-detail */}
-        <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: 500 }}>
-          {/* Левая колонка — меню разделов */}
-          <div style={{ background: C.sidebarBg, padding: '10px 8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', flex: 1, overflow: 'hidden' }}>
+          <div style={{ background: C.sidebarBg, padding: '10px 8px', overflow: 'auto' }}>
             {SECTIONS.map(s => {
               const active = section === s.key
               return (
@@ -354,8 +378,7 @@ export default function ServiceModal({ meetingId, onClose }) {
             })}
           </div>
 
-          {/* Правая колонка — контент раздела */}
-          <div style={{ padding: '22px 26px', borderLeft: `1px solid ${C.border}` }}>
+          <div style={{ padding: '22px 26px', borderLeft: `1px solid ${C.border}`, overflow: 'auto' }}>
             <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>
               {SECTIONS.find(s => s.key === section)?.label}
             </div>
@@ -363,11 +386,11 @@ export default function ServiceModal({ meetingId, onClose }) {
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 
-// ============ ПРЕВЬЮ ДЛЯ ЛЕВОГО МЕНЮ ============
+// ============ ПРЕВЬЮ ДЛЯ МЕНЮ ============
 
 function pricePreview(m) {
   switch (m.price_mode) {
@@ -407,7 +430,6 @@ const BasicSection = ({ meeting, update }) => {
   const [localTitle, setLocalTitle] = useState(meeting.title)
   const [localDesc, setLocalDesc] = useState(meeting.description || '')
 
-  // Обновляем локальные значения если внешние изменились
   useEffect(() => { setLocalTitle(meeting.title) }, [meeting.title])
   useEffect(() => { setLocalDesc(meeting.description || '') }, [meeting.description])
 
@@ -509,7 +531,6 @@ const LocationSection = ({ meeting, update }) => (
 // ============ РАЗДЕЛ ДОСТУПНОСТЬ ============
 
 const AvailabilitySection = ({ meeting, update }) => {
-  // Inline-dropdown row — клик показывает select
   const DropRow = ({ label, value, onChange, options, formatFn, last }) => (
     <Row
       last={last}
@@ -585,8 +606,6 @@ const AvailabilitySection = ({ meeting, update }) => {
 
 // ============ РАЗДЕЛ СПОСОБЫ ОПЛАТЫ ============
 
-// Заглушка пока — раздел зависит от настроек коуча в Settings → Оплата.
-// Когда дойдём до интеграции Settings — допишем чтение реальных способов.
 const PaymentsSection = ({ meeting, update }) => (
   <div style={{
     padding: '60px 20px', textAlign: 'center',
@@ -647,7 +666,7 @@ const ConfirmationSection = ({ meeting, update }) => {
   )
 }
 
-// ============ РАЗДЕЛ ДОПОЛНИТЕЛЬНО — ЗАГЛУШКА ============
+// ============ РАЗДЕЛ ДОПОЛНИТЕЛЬНО ============
 
 const ExtraSection = () => (
   <div style={{
@@ -661,20 +680,36 @@ const ExtraSection = () => (
 
 // ============ СТИЛИ ОБЁРТКИ ============
 
-const overlayStyle = {
+// Оверлей затемнения сверху от sheet
+const overlayStyle = (closing) => ({
   position: 'fixed', inset: 0,
   background: 'rgba(0, 0, 0, 0.4)',
-  zIndex: 1000,
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-}
+  zIndex: 999,
+  animation: closing ? 'overlayFadeOut 0.3s ease-out forwards' : 'overlayFadeIn 0.3s ease-out',
+})
 
-const modalStyle = {
-  background: C.card, borderRadius: 16,
-  width: '100%', maxWidth: 900, maxHeight: '90vh',
-  overflow: 'hidden',
-  display: 'flex', flexDirection: 'column',
+// Sheet выезжает снизу. На десктопе: широкий, прижат к низу.
+// На мобайле: на весь экран по ширине.
+const sheetStyle = (closing, isNarrow) => ({
+  position: 'fixed',
+  left: isNarrow ? 0 : '50%',
+  right: isNarrow ? 0 : 'auto',
+  bottom: 0,
+  transform: isNarrow ? undefined : 'translateX(-50%)',
+  width: isNarrow ? '100%' : 'min(1100px, 92vw)',
+  height: isNarrow ? '92vh' : '88vh',
+  background: C.card,
+  borderRadius: '20px 20px 0 0',
   border: `1px solid ${C.border}`,
-}
+  borderBottom: 'none',
+  zIndex: 1000,
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  animation: closing ? 'sheetSlideDown 0.3s cubic-bezier(0.4, 0, 1, 1) forwards' : 'sheetSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+  // Если desktop — translate для центрирования по X сохраняется через transform
+  ...(isNarrow ? {} : { transformOrigin: 'center bottom' }),
+})
 
 const closeBtnStyle = {
   width: 28, height: 28, borderRadius: '50%',
