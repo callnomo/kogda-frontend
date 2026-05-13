@@ -13,6 +13,8 @@ const SECTIONS = [
   { key: 'extra', label: 'Дополнительно' },
 ]
 
+const DURATIONS = [15, 20, 25, 30, 45, 50, 60, 90, 120, 180]
+
 const PRICE_MODES = [
   { value: 'amount', label: 'Указать цену' },
   { value: 'hidden', label: 'Не показывать' },
@@ -27,8 +29,14 @@ const LOCATION_TYPES = [
   { value: 'client_chooses', label: 'Клиент выберет' },
 ]
 
-const DAY_VALUES = Array.from({ length: 365 }, (_, i) => i + 1) // 1..365
-const COUNT_VALUES = Array.from({ length: 21 }, (_, i) => i)    // 0..20
+const BUFFERS = [0, 5, 10, 15, 20, 30, 45, 60, 90, 120]
+const MIN_NOTICES = [0, 1, 2, 4, 8, 12, 24, 48, 72, 168] // часы; 168 = 7 дней
+const MAX_DAYS = [7, 14, 30, 60, 90, 180, 365]
+const MAX_PER_DAY = [0, 1, 2, 3, 4, 5, 6, 8, 10]
+const STEP_MINUTES = [5, 10, 15, 20, 30, 45, 60]
+
+const DAY_VALUES = Array.from({ length: 365 }, (_, i) => i + 1)
+const COUNT_VALUES = Array.from({ length: 21 }, (_, i) => i)
 
 const C = {
   card: '#FFFFFF',
@@ -106,7 +114,7 @@ const inputStyle = {
   color: C.text,
 }
 
-// ============ DRAG WHEEL ============
+// ============ DRAG WHEEL (только для мобайла) ============
 
 const ITEM_H = 36
 const VISIBLE_ROWS = 5
@@ -117,23 +125,15 @@ const Wheel = ({ values, value, onChange, format, width = 60 }) => {
   const [translateY, setTranslateY] = useState(0)
   const [animate, setAnimate] = useState(true)
 
-  // Найти индекс выбранного значения
   const currentIdx = values.indexOf(value) >= 0 ? values.indexOf(value) : 0
-
-  // Базовое смещение track: центр выбранного значения попадает в подсветку
-  // Подсветка в позиции (VISIBLE_ROWS/2)*ITEM_H от верха обёртки.
-  // Track сверху имеет padding в (VISIBLE_ROWS/2) пустых строк.
-  // baseTranslate = -(currentIdx * ITEM_H)
   const baseTranslate = -(currentIdx * ITEM_H)
 
-  // Состояние drag
   const dragRef = useRef({
     active: false,
     startY: 0,
     startTranslate: 0,
   })
 
-  // Сохраняем последнее onChange чтобы не вызывать без нужды
   const lastSentRef = useRef(value)
 
   const handleStart = useCallback((clientY) => {
@@ -147,7 +147,6 @@ const Wheel = ({ values, value, onChange, format, width = 60 }) => {
     if (!dragRef.current.active) return
     const dy = clientY - dragRef.current.startY
     const newTranslate = dragRef.current.startTranslate + dy
-    // Ограничиваем: чтобы нельзя было выкрутить дальше первого/последнего значения
     const min = -(values.length - 1) * ITEM_H - baseTranslate
     const max = -baseTranslate
     const clamped = Math.max(min, Math.min(max, newTranslate))
@@ -157,13 +156,12 @@ const Wheel = ({ values, value, onChange, format, width = 60 }) => {
   const handleEnd = useCallback(() => {
     if (!dragRef.current.active) return
     dragRef.current.active = false
-    // Сколько строк сдвинули
     const moved = Math.round(-translateY / ITEM_H)
     const newIdx = Math.max(0, Math.min(values.length - 1, currentIdx + moved))
     const newValue = values[newIdx]
 
     setAnimate(true)
-    setTranslateY(0) // visual reset — фактический сдвиг переедет через смену currentIdx (новый baseTranslate)
+    setTranslateY(0)
 
     if (newValue !== lastSentRef.current) {
       lastSentRef.current = newValue
@@ -171,7 +169,6 @@ const Wheel = ({ values, value, onChange, format, width = 60 }) => {
     }
   }, [translateY, currentIdx, values, onChange])
 
-  // События мыши и тача
   useEffect(() => {
     const onMouseMove = (e) => {
       if (dragRef.current.active) handleMove(e.clientY)
@@ -199,7 +196,6 @@ const Wheel = ({ values, value, onChange, format, width = 60 }) => {
     }
   }, [handleMove, handleEnd])
 
-  // Сброс translateY когда меняется value снаружи
   useEffect(() => {
     setTranslateY(0)
     lastSentRef.current = value
@@ -256,7 +252,6 @@ const Wheel = ({ values, value, onChange, format, width = 60 }) => {
   )
 }
 
-// Общая обёртка раскрывающегося поля
 const RollerField = ({ open, setOpen, label, preview, children }) => {
   const wrapRef = useRef(null)
   const borderColor = open ? C.lime : C.border
@@ -390,15 +385,14 @@ function pluralDays(n) {
   return 'дней'
 }
 
-// ============ ROLLER TYPES ============
+// ============ MOBILE ROLLER TYPES ============
 
-const HOURS_FULL = Array.from({ length: 25 }, (_, i) => i)  // 0..24 (для длительности)
-const HOURS_SHORT = Array.from({ length: 13 }, (_, i) => i) // 0..12 (для буферов/шага)
-const HOURS_24 = Array.from({ length: 24 }, (_, i) => i)    // 0..23 (для мин.до записи)
-const DAYS_30 = Array.from({ length: 31 }, (_, i) => i)     // 0..30 (для мин.до записи)
-const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5) // 0,5,...,55
+const HOURS_FULL = Array.from({ length: 25 }, (_, i) => i)
+const HOURS_SHORT = Array.from({ length: 13 }, (_, i) => i)
+const HOURS_24 = Array.from({ length: 24 }, (_, i) => i)
+const DAYS_30 = Array.from({ length: 31 }, (_, i) => i)
+const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5)
 
-// Тип 1: часы + минуты (длительность, буферы, шаг слотов)
 const HourMinRoller = ({ open, setOpen, label, value, onChange, hoursRange = HOURS_FULL, minTotal = 0, preview }) => {
   const h = Math.floor(value / 60)
   const mRaw = value % 60
@@ -428,8 +422,6 @@ const HourMinRoller = ({ open, setOpen, label, value, onChange, hoursRange = HOU
   )
 }
 
-// Тип 1b: дни + часы (минимум до записи)
-// value — общее число часов в БД
 const DayHourRoller = ({ open, setOpen, label, value, onChange, preview }) => {
   const d = Math.floor(value / 24)
   const h = value % 24
@@ -449,7 +441,6 @@ const DayHourRoller = ({ open, setOpen, label, value, onChange, preview }) => {
   )
 }
 
-// Тип 2: дни (одно колесо)
 const DaysRoller = ({ open, setOpen, label, value, onChange, preview }) => {
   return (
     <RollerField open={open} setOpen={setOpen} label={label} preview={preview}>
@@ -461,7 +452,6 @@ const DaysRoller = ({ open, setOpen, label, value, onChange, preview }) => {
   )
 }
 
-// Тип 3: число
 const CountRoller = ({ open, setOpen, label, value, onChange, preview }) => {
   return (
     <RollerField open={open} setOpen={setOpen} label={label} preview={preview}>
@@ -473,8 +463,7 @@ const CountRoller = ({ open, setOpen, label, value, onChange, preview }) => {
   )
 }
 
-// Длительность — обёртка над HourMinRoller с внешним управлением
-const DurationField = ({ value, onChange, open, setOpen }) => {
+const DurationRoller = ({ value, onChange, open, setOpen }) => {
   return (
     <HourMinRoller
       open={open}
@@ -566,10 +555,10 @@ export default function ServiceModal({ meetingId, onUpdate }) {
 
   const renderSection = () => {
     switch (section) {
-      case 'basic': return <BasicSection meeting={meeting} update={update} />
+      case 'basic': return <BasicSection meeting={meeting} update={update} isNarrow={isNarrow} />
       case 'price': return <PriceSection meeting={meeting} update={update} />
       case 'location': return <LocationSection meeting={meeting} update={update} />
-      case 'availability': return <AvailabilitySection meeting={meeting} update={update} />
+      case 'availability': return <AvailabilitySection meeting={meeting} update={update} isNarrow={isNarrow} />
       case 'payments': return <PaymentsSection meeting={meeting} update={update} />
       case 'confirmation': return <ConfirmationSection meeting={meeting} update={update} />
       case 'extra': return <ExtraSection />
@@ -682,7 +671,9 @@ function paymentsPreview(m) {
   return 'Не настроены'
 }
 
-const BasicSection = ({ meeting, update }) => {
+// ============ SECTIONS ============
+
+const BasicSection = ({ meeting, update, isNarrow }) => {
   const [localTitle, setLocalTitle] = useState(meeting.title)
   const [localDesc, setLocalDesc] = useState(meeting.description || '')
   const [durationOpen, setDurationOpen] = useState(false)
@@ -702,12 +693,25 @@ const BasicSection = ({ meeting, update }) => {
       </Field>
 
       <Field label="Длительность">
-        <DurationField
-          value={meeting.duration}
-          onChange={(total) => update({ duration: total })}
-          open={durationOpen}
-          setOpen={setDurationOpen}
-        />
+        {isNarrow ? (
+          <DurationRoller
+            value={meeting.duration}
+            onChange={(total) => update({ duration: total })}
+            open={durationOpen}
+            setOpen={setDurationOpen}
+          />
+        ) : (
+          <select
+            value={DURATIONS.includes(meeting.duration) ? meeting.duration : ''}
+            onChange={e => update({ duration: Number(e.target.value) })}
+            style={{ ...inputStyle, cursor: 'pointer', appearance: 'none' }}
+          >
+            {!DURATIONS.includes(meeting.duration) && (
+              <option value={meeting.duration}>{formatDuration(meeting.duration)}</option>
+            )}
+            {DURATIONS.map(d => <option key={d} value={d}>{formatDuration(d)}</option>)}
+          </select>
+        )}
       </Field>
 
       <Field label="Описание">
@@ -789,7 +793,32 @@ const LocationSection = ({ meeting, update }) => (
   </Group>
 )
 
-const AvailabilitySection = ({ meeting, update }) => {
+// Десктоп — селекты внутри обёртки группы
+const DesktopDropRow = ({ label, value, onChange, options, formatFn, last }) => (
+  <Row
+    last={last}
+    left={label}
+    gap={8}
+    right={
+      <select
+        value={options.includes(value) ? value : ''}
+        onChange={e => onChange(Number(e.target.value))}
+        style={{
+          border: 'none', background: 'transparent', color: C.muted,
+          fontSize: 15, cursor: 'pointer', appearance: 'none',
+          textAlign: 'right', paddingRight: 18, fontFamily: 'Inter, sans-serif',
+          backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23C8C7BF\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><polyline points=\'9,18 15,12 9,6\'/></svg>")',
+          backgroundRepeat: 'no-repeat', backgroundPosition: 'right center',
+        }}
+      >
+        {!options.includes(value) && <option value={value}>{formatFn(value)}</option>}
+        {options.map(o => <option key={o} value={o}>{formatFn(o)}</option>)}
+      </select>
+    }
+  />
+)
+
+const AvailabilitySection = ({ meeting, update, isNarrow }) => {
   const [openKey, setOpenKey] = useState(null)
   const makeSetOpen = (key) => (next) => {
     setOpenKey(prev => {
@@ -799,67 +828,117 @@ const AvailabilitySection = ({ meeting, update }) => {
     })
   }
 
+  // ===== Мобайл: роллеры =====
+  if (isNarrow) {
+    return (
+      <>
+        <Group label="Буферы">
+          <HourMinRoller
+            open={openKey === 'buffer_before'}
+            setOpen={makeSetOpen('buffer_before')}
+            label="До встречи"
+            value={meeting.buffer_before || 0}
+            onChange={v => update({ buffer_before: v })}
+            hoursRange={HOURS_SHORT}
+            preview={formatBuffer(meeting.buffer_before || 0)}
+          />
+          <HourMinRoller
+            open={openKey === 'buffer_after'}
+            setOpen={makeSetOpen('buffer_after')}
+            label="После встречи"
+            value={meeting.buffer_after || 0}
+            onChange={v => update({ buffer_after: v })}
+            hoursRange={HOURS_SHORT}
+            preview={formatBuffer(meeting.buffer_after || 0)}
+          />
+        </Group>
+
+        <Group label="Окно записи">
+          <DayHourRoller
+            open={openKey === 'min_notice'}
+            setOpen={makeSetOpen('min_notice')}
+            label="Минимум до записи"
+            value={meeting.min_notice || 0}
+            onChange={v => update({ min_notice: v })}
+            preview={formatMinNotice(meeting.min_notice || 0)}
+          />
+          <DaysRoller
+            open={openKey === 'max_days_ahead'}
+            setOpen={makeSetOpen('max_days_ahead')}
+            label="На сколько вперёд"
+            value={meeting.max_days_ahead || 30}
+            onChange={v => update({ max_days_ahead: v })}
+            preview={formatDays(meeting.max_days_ahead || 30)}
+          />
+        </Group>
+
+        <Group label="Слоты">
+          <HourMinRoller
+            open={openKey === 'step_minutes'}
+            setOpen={makeSetOpen('step_minutes')}
+            label="Шаг слотов"
+            value={meeting.step_minutes || 30}
+            onChange={v => update({ step_minutes: Math.max(5, v) })}
+            hoursRange={HOURS_SHORT}
+            minTotal={5}
+            preview={formatStep(meeting.step_minutes || 30)}
+          />
+          <CountRoller
+            open={openKey === 'max_per_day'}
+            setOpen={makeSetOpen('max_per_day')}
+            label="Макс. встреч в день"
+            value={meeting.max_per_day || 0}
+            onChange={v => update({ max_per_day: v })}
+            preview={formatCount(meeting.max_per_day || 0)}
+          />
+        </Group>
+      </>
+    )
+  }
+
+  // ===== Десктоп: старые селекты =====
   return (
     <>
       <Group label="Буферы">
-        <HourMinRoller
-          open={openKey === 'buffer_before'}
-          setOpen={makeSetOpen('buffer_before')}
-          label="До встречи"
-          value={meeting.buffer_before || 0}
-          onChange={v => update({ buffer_before: v })}
-          hoursRange={HOURS_SHORT}
-          preview={formatBuffer(meeting.buffer_before || 0)}
-        />
-        <HourMinRoller
-          open={openKey === 'buffer_after'}
-          setOpen={makeSetOpen('buffer_after')}
-          label="После встречи"
-          value={meeting.buffer_after || 0}
-          onChange={v => update({ buffer_after: v })}
-          hoursRange={HOURS_SHORT}
-          preview={formatBuffer(meeting.buffer_after || 0)}
-        />
+        <div style={{
+          background: C.card, border: `1px solid ${C.border}`,
+          borderRadius: 12, overflow: 'hidden',
+        }}>
+          <DesktopDropRow label="До встречи" value={meeting.buffer_before || 0}
+            onChange={v => update({ buffer_before: v })}
+            options={BUFFERS} formatFn={v => v === 0 ? 'Нет' : `${v} мин`} />
+          <DesktopDropRow last label="После встречи" value={meeting.buffer_after || 0}
+            onChange={v => update({ buffer_after: v })}
+            options={BUFFERS} formatFn={v => v === 0 ? 'Нет' : `${v} мин`} />
+        </div>
       </Group>
-
       <Group label="Окно записи">
-        <DayHourRoller
-          open={openKey === 'min_notice'}
-          setOpen={makeSetOpen('min_notice')}
-          label="Минимум до записи"
-          value={meeting.min_notice || 0}
-          onChange={v => update({ min_notice: v })}
-          preview={formatMinNotice(meeting.min_notice || 0)}
-        />
-        <DaysRoller
-          open={openKey === 'max_days_ahead'}
-          setOpen={makeSetOpen('max_days_ahead')}
-          label="На сколько вперёд"
-          value={meeting.max_days_ahead || 30}
-          onChange={v => update({ max_days_ahead: v })}
-          preview={formatDays(meeting.max_days_ahead || 30)}
-        />
+        <div style={{
+          background: C.card, border: `1px solid ${C.border}`,
+          borderRadius: 12, overflow: 'hidden',
+        }}>
+          <DesktopDropRow label="Минимум до записи" value={meeting.min_notice || 0}
+            onChange={v => update({ min_notice: v })}
+            options={MIN_NOTICES}
+            formatFn={v => v === 0 ? 'Сразу' : v >= 24 ? `${Math.floor(v / 24)} дн` : `${v} ч`} />
+          <DesktopDropRow last label="На сколько вперёд" value={meeting.max_days_ahead || 30}
+            onChange={v => update({ max_days_ahead: v })}
+            options={MAX_DAYS} formatFn={v => `${v} дней`} />
+        </div>
       </Group>
-
       <Group label="Слоты">
-        <HourMinRoller
-          open={openKey === 'step_minutes'}
-          setOpen={makeSetOpen('step_minutes')}
-          label="Шаг слотов"
-          value={meeting.step_minutes || 30}
-          onChange={v => update({ step_minutes: Math.max(5, v) })}
-          hoursRange={HOURS_SHORT}
-          minTotal={5}
-          preview={formatStep(meeting.step_minutes || 30)}
-        />
-        <CountRoller
-          open={openKey === 'max_per_day'}
-          setOpen={makeSetOpen('max_per_day')}
-          label="Макс. встреч в день"
-          value={meeting.max_per_day || 0}
-          onChange={v => update({ max_per_day: v })}
-          preview={formatCount(meeting.max_per_day || 0)}
-        />
+        <div style={{
+          background: C.card, border: `1px solid ${C.border}`,
+          borderRadius: 12, overflow: 'hidden',
+        }}>
+          <DesktopDropRow label="Шаг слотов" value={meeting.step_minutes || 30}
+            onChange={v => update({ step_minutes: v })}
+            options={STEP_MINUTES} formatFn={v => `${v} мин`} />
+          <DesktopDropRow last label="Макс. встреч в день" value={meeting.max_per_day || 0}
+            onChange={v => update({ max_per_day: v })}
+            options={MAX_PER_DAY}
+            formatFn={v => v === 0 ? 'Без лимита' : `${v}`} />
+        </div>
       </Group>
     </>
   )
