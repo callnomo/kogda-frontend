@@ -545,10 +545,14 @@ export default function Settings() {
   const [pwdSaved, setPwdSaved] = useState(false)
   const [pwdError, setPwdError] = useState('')
   const [pwdLoading, setPwdLoading] = useState(false)
+
+  // Состояния для удаления аккаунта
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteError, setDeleteError] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
+  // Когда бэк вернул 409 has_future_bookings — показываем дополнительный шаг
+  const [bookingsWarning, setBookingsWarning] = useState(null) // { count }
 
   useEffect(() => {
     loadSettings()
@@ -691,22 +695,40 @@ export default function Settings() {
     setPwdLoading(false)
   }
 
-  const deleteAccount = async () => {
+  // Удаление аккаунта
+  // confirmWithBookings=true — юзер подтвердил что согласен отменить записи
+  const deleteAccount = async (confirmWithBookings = false) => {
     setDeleteError('')
     setDeleteLoading(true)
     const token = localStorage.getItem('token')
     try {
       await axios.delete(`${API}/auth/delete-account`, {
         headers: { Authorization: `Bearer ${token}` },
-        data: { password: deletePassword }
+        data: {
+          password: deletePassword,
+          confirm_with_bookings: confirmWithBookings
+        }
       })
       localStorage.clear()
       alert('Аккаунт помечен на удаление. У тебя 30 дней чтобы передумать — просто войди снова.')
       window.location.href = '/login'
     } catch (err) {
+      // Бэк вернул 409 — есть будущие записи
+      if (err.response?.status === 409 && err.response?.data?.error === 'has_future_bookings') {
+        setBookingsWarning({ count: err.response.data.bookings_count || 0 })
+        setDeleteLoading(false)
+        return
+      }
       setDeleteError(err.response?.data?.error || 'Ошибка удаления')
     }
     setDeleteLoading(false)
+  }
+
+  const closeDeleteFlow = () => {
+    setShowDeleteModal(false)
+    setDeletePassword('')
+    setDeleteError('')
+    setBookingsWarning(null)
   }
 
   const renderSection = (key) => {
@@ -794,65 +816,119 @@ export default function Settings() {
         </div>
       )}
 
+      {/* Модалка удаления аккаунта */}
       {showDeleteModal && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 100, padding: 20
-        }} onClick={() => setShowDeleteModal(false)}>
+        }} onClick={closeDeleteFlow}>
           <div
             onClick={e => e.stopPropagation()}
             style={{
               background: '#fff', borderRadius: 16, padding: 32,
-              maxWidth: 420, width: '100%'
+              maxWidth: 460, width: '100%'
             }}
           >
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Удалить аккаунт?</h3>
-            <p style={{ color: '#666', fontSize: 14, marginBottom: 20, lineHeight: 1.6 }}>
-              Аккаунт будет помечен на удаление. У тебя <b style={{ color: '#111' }}>30 дней</b> чтобы передумать —
-              просто войди снова, и он восстановится. Через 30 дней все данные сотрутся навсегда.
-            </p>
+            {/* Шаг 1: ввод пароля. Шаг 2 (bookingsWarning): подтверждение с записями */}
+            {!bookingsWarning ? (
+              <>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Удалить аккаунт?</h3>
+                <p style={{ color: '#666', fontSize: 14, marginBottom: 20, lineHeight: 1.6 }}>
+                  Аккаунт будет помечен на удаление. У тебя <b style={{ color: '#111' }}>30 дней</b> чтобы передумать —
+                  просто войди снова, и он восстановится. Через 30 дней все данные сотрутся навсегда.
+                </p>
 
-            {deleteError && (
-              <div style={{
-                background: '#FEE2E2', color: '#DC2626', padding: '10px 14px',
-                borderRadius: 8, marginBottom: 12, fontSize: 13
-              }}>{deleteError}</div>
+                {deleteError && (
+                  <div style={{
+                    background: '#FEE2E2', color: '#DC2626', padding: '10px 14px',
+                    borderRadius: 8, marginBottom: 12, fontSize: 13
+                  }}>{deleteError}</div>
+                )}
+
+                <label style={{ ...labelStyle, marginBottom: 6 }}>Введи пароль для подтверждения</label>
+                <input
+                  type="password"
+                  value={deletePassword}
+                  onChange={e => setDeletePassword(e.target.value)}
+                  autoComplete="current-password"
+                  autoFocus
+                  style={inp}
+                />
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+                  <button
+                    onClick={closeDeleteFlow}
+                    style={{
+                      flex: 1, background: 'transparent', border: '1.5px solid #E0E0D8',
+                      padding: '11px', borderRadius: 9, fontSize: 14, fontWeight: 600, cursor: 'pointer'
+                    }}
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    onClick={() => deleteAccount(false)}
+                    disabled={!deletePassword || deleteLoading}
+                    style={{
+                      flex: 1, background: '#DC2626', color: '#fff', border: 'none',
+                      padding: '11px', borderRadius: 9, fontSize: 14, fontWeight: 700,
+                      cursor: (deletePassword && !deleteLoading) ? 'pointer' : 'not-allowed',
+                      opacity: (deletePassword && !deleteLoading) ? 1 : 0.5
+                    }}
+                  >
+                    {deleteLoading ? 'Удаляем...' : 'Удалить'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
+                  У тебя {bookingsWarning.count}{' '}
+                  {bookingsWarning.count === 1 ? 'будущая запись' :
+                   (bookingsWarning.count >= 2 && bookingsWarning.count <= 4 ? 'будущих записи' : 'будущих записей')}
+                </h3>
+                <p style={{ color: '#666', fontSize: 14, marginBottom: 16, lineHeight: 1.6 }}>
+                  Если удалишь аккаунт сейчас:
+                </p>
+                <ul style={{ color: '#666', fontSize: 14, marginBottom: 20, lineHeight: 1.8, paddingLeft: 20 }}>
+                  <li>Все будущие встречи будут <b style={{ color: '#111' }}>отменены</b></li>
+                  <li>Клиенты получат email с уведомлением об отмене</li>
+                  <li>Твоя публичная страница станет недоступна</li>
+                  <li>У тебя 30 дней чтобы передумать (войди снова)</li>
+                </ul>
+
+                {deleteError && (
+                  <div style={{
+                    background: '#FEE2E2', color: '#DC2626', padding: '10px 14px',
+                    borderRadius: 8, marginBottom: 12, fontSize: 13
+                  }}>{deleteError}</div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+                  <button
+                    onClick={closeDeleteFlow}
+                    style={{
+                      flex: 1, background: 'transparent', border: '1.5px solid #E0E0D8',
+                      padding: '11px', borderRadius: 9, fontSize: 14, fontWeight: 600, cursor: 'pointer'
+                    }}
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    onClick={() => deleteAccount(true)}
+                    disabled={deleteLoading}
+                    style={{
+                      flex: 1, background: '#DC2626', color: '#fff', border: 'none',
+                      padding: '11px', borderRadius: 9, fontSize: 14, fontWeight: 700,
+                      cursor: deleteLoading ? 'wait' : 'pointer',
+                      opacity: deleteLoading ? 0.6 : 1
+                    }}
+                  >
+                    {deleteLoading ? 'Удаляем...' : 'Удалить всё равно'}
+                  </button>
+                </div>
+              </>
             )}
-
-            <label style={{ ...labelStyle, marginBottom: 6 }}>Введи пароль для подтверждения</label>
-            <input
-              type="password"
-              value={deletePassword}
-              onChange={e => setDeletePassword(e.target.value)}
-              autoComplete="current-password"
-              autoFocus
-              style={inp}
-            />
-
-            <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-              <button
-                onClick={() => { setShowDeleteModal(false); setDeletePassword(''); setDeleteError('') }}
-                style={{
-                  flex: 1, background: 'transparent', border: '1.5px solid #E0E0D8',
-                  padding: '11px', borderRadius: 9, fontSize: 14, fontWeight: 600, cursor: 'pointer'
-                }}
-              >
-                Отмена
-              </button>
-              <button
-                onClick={deleteAccount}
-                disabled={!deletePassword || deleteLoading}
-                style={{
-                  flex: 1, background: '#DC2626', color: '#fff', border: 'none',
-                  padding: '11px', borderRadius: 9, fontSize: 14, fontWeight: 700,
-                  cursor: (deletePassword && !deleteLoading) ? 'pointer' : 'not-allowed',
-                  opacity: (deletePassword && !deleteLoading) ? 1 : 0.5
-                }}
-              >
-                {deleteLoading ? 'Удаляем...' : 'Удалить'}
-              </button>
-            </div>
           </div>
         </div>
       )}
