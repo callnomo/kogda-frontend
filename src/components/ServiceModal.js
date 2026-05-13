@@ -27,7 +27,7 @@ const LOCATION_TYPES = [
   { value: 'client_chooses', label: 'Клиент выберет' },
 ]
 
-const DAY_VALUES = [1, 7, 14, 30, 60, 90, 180, 365]
+const DAY_VALUES = Array.from({ length: 365 }, (_, i) => i + 1) // 1..365
 const COUNT_VALUES = Array.from({ length: 21 }, (_, i) => i) // 0..20
 
 const C = {
@@ -182,11 +182,43 @@ const Wheel = ({ values, value, onChange, format, width = 60 }) => {
 
 // Общая обёртка раскрывающегося поля
 const RollerField = ({ open, setOpen, label, preview, children }) => {
+  const wrapRef = useRef(null)
   const borderColor = open ? C.lime : C.border
   const borderWidth = open ? 1.5 : 1
 
+  // Закрытие по клику мимо + Enter + Esc
+  useEffect(() => {
+    if (!open) return
+
+    const onDocClick = (e) => {
+      if (!wrapRef.current) return
+      if (!wrapRef.current.contains(e.target)) {
+        setOpen(false)
+      }
+    }
+    const onKey = (e) => {
+      if (e.key === 'Escape' || e.key === 'Enter') {
+        e.preventDefault()
+        setOpen(false)
+      }
+    }
+    // Откладываем, чтобы тот же клик который открыл, сразу не закрыл
+    const t = setTimeout(() => {
+      document.addEventListener('mousedown', onDocClick)
+      document.addEventListener('touchstart', onDocClick)
+      document.addEventListener('keydown', onKey)
+    }, 0)
+
+    return () => {
+      clearTimeout(t)
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('touchstart', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open, setOpen])
+
   return (
-    <div style={{
+    <div ref={wrapRef} style={{
       background: C.card,
       border: `${borderWidth}px solid ${borderColor}`,
       borderRadius: 10,
@@ -330,9 +362,8 @@ const CountRoller = ({ open, setOpen, label, value, onChange, preview }) => {
   )
 }
 
-// Тип 0: длительность (как было)
-const DurationField = ({ value, onChange }) => {
-  const [open, setOpen] = useState(false)
+// Тип 0: длительность (использует HourMinRoller с управлением извне)
+const DurationField = ({ value, onChange, open, setOpen }) => {
   return (
     <HourMinRoller
       open={open}
@@ -543,6 +574,7 @@ function paymentsPreview(m) {
 const BasicSection = ({ meeting, update }) => {
   const [localTitle, setLocalTitle] = useState(meeting.title)
   const [localDesc, setLocalDesc] = useState(meeting.description || '')
+  const [durationOpen, setDurationOpen] = useState(false)
 
   useEffect(() => { setLocalTitle(meeting.title) }, [meeting.title])
   useEffect(() => { setLocalDesc(meeting.description || '') }, [meeting.description])
@@ -562,6 +594,8 @@ const BasicSection = ({ meeting, update }) => {
         <DurationField
           value={meeting.duration}
           onChange={(total) => update({ duration: total })}
+          open={durationOpen}
+          setOpen={setDurationOpen}
         />
       </Field>
 
