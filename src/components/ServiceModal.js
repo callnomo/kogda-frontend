@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
@@ -12,8 +12,6 @@ const SECTIONS = [
   { key: 'confirmation', label: 'Подтверждение' },
   { key: 'extra', label: 'Дополнительно' },
 ]
-
-const DURATIONS = [15, 20, 25, 30, 45, 50, 60, 90, 120]
 
 const PRICE_MODES = [
   { value: 'amount', label: 'Указать цену' },
@@ -45,6 +43,8 @@ const C = {
   mutedLight: '#B4B2A9',
   lime: '#E8FF47',
   toggleOff: '#E8E7E0',
+  fieldBg: '#F7F6F1',
+  fieldBorder: '#E0E0D8',
 }
 
 const Toggle = ({ on, onClick }) => (
@@ -113,6 +113,143 @@ const inputStyle = {
   color: C.text,
 }
 
+// ============ DURATION PICKER ============
+
+const formatDuration = (minutes) => {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h === 0) return `${m} мин`
+  if (m === 0) return `${h} ч`
+  return `${h} ч ${m} мин`
+}
+
+const HOURS = Array.from({ length: 25 }, (_, i) => i)            // 0..24
+const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5)      // 0,5,...,55
+
+const ITEM_H = 40 // высота строки роллера
+
+const Wheel = ({ values, value, onChange, format }) => {
+  const ref = useRef(null)
+  const lastSentRef = useRef(value)
+
+  useEffect(() => {
+    if (!ref.current) return
+    const idx = values.indexOf(value)
+    if (idx >= 0) {
+      ref.current.scrollTop = idx * ITEM_H
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleScroll = () => {
+    if (!ref.current) return
+    const idx = Math.round(ref.current.scrollTop / ITEM_H)
+    const next = values[Math.max(0, Math.min(values.length - 1, idx))]
+    if (next !== lastSentRef.current) {
+      lastSentRef.current = next
+      onChange(next)
+    }
+  }
+
+  return (
+    <div style={{ position: 'relative', height: ITEM_H * 5, flex: 1 }}>
+      <div style={{
+        position: 'absolute', left: 0, right: 0, top: ITEM_H * 2,
+        height: ITEM_H, background: C.fieldBg, borderRadius: 8,
+        pointerEvents: 'none',
+      }} />
+
+      <div
+        ref={ref}
+        onScroll={handleScroll}
+        className="kogda-wheel-scroll"
+        style={{
+          height: '100%', overflowY: 'scroll', scrollSnapType: 'y mandatory',
+          scrollbarWidth: 'none', msOverflowStyle: 'none',
+        }}
+      >
+        <style>{`.kogda-wheel-scroll::-webkit-scrollbar{display:none}`}</style>
+
+        <div style={{ height: ITEM_H * 2 }} />
+        {values.map((v) => (
+          <div key={v} style={{
+            height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, fontWeight: v === value ? 700 : 400,
+            color: v === value ? C.text : C.muted,
+            scrollSnapAlign: 'center',
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            {format ? format(v) : v}
+          </div>
+        ))}
+        <div style={{ height: ITEM_H * 2 }} />
+      </div>
+    </div>
+  )
+}
+
+const DurationPicker = ({ value, onClose, onConfirm }) => {
+  const initH = Math.floor(value / 60)
+  const initM = value % 60
+  const initMSnap = Math.round(initM / 5) * 5
+
+  const [h, setH] = useState(initH)
+  const [m, setM] = useState(initMSnap > 55 ? 0 : initMSnap)
+
+  const total = h * 60 + m
+  const canConfirm = total >= 5
+
+  const overlay = {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+    display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+    zIndex: 200,
+  }
+  const sheet = {
+    background: '#FFF', borderTopLeftRadius: 16, borderTopRightRadius: 16,
+    padding: 16, width: '100%', maxWidth: 480,
+    animation: 'kogda-sheet-up 0.2s ease-out',
+  }
+
+  return (
+    <div style={overlay} onClick={onClose}>
+      <style>{`@keyframes kogda-sheet-up{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
+      <div style={sheet} onClick={e => e.stopPropagation()}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '4px 4px 14px',
+        }}>
+          <span onClick={onClose} style={{ fontSize: 15, color: C.muted, cursor: 'pointer' }}>Отмена</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: C.text }}>Длительность</span>
+          <span
+            onClick={() => canConfirm && onConfirm(total)}
+            style={{
+              fontSize: 15, fontWeight: 700,
+              color: canConfirm ? C.text : C.mutedLight,
+              cursor: canConfirm ? 'pointer' : 'default',
+            }}
+          >Готово</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Wheel values={HOURS} value={h} onChange={setH} />
+          <div style={{ fontSize: 14, color: C.muted, padding: '0 4px' }}>ч</div>
+          <Wheel values={MINUTES} value={m} onChange={setM}
+            format={v => String(v).padStart(2, '0')} />
+          <div style={{ fontSize: 14, color: C.muted, padding: '0 4px' }}>мин</div>
+        </div>
+
+        {!canConfirm && (
+          <div style={{
+            fontSize: 12, color: C.muted, textAlign: 'center', marginTop: 10,
+          }}>Минимум 5 минут</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ============ MAIN ============
+
 export default function ServiceModal({ meetingId, onUpdate }) {
   const [meeting, setMeeting] = useState(null)
   const [section, setSection] = useState('basic')
@@ -177,7 +314,7 @@ export default function ServiceModal({ meetingId, onUpdate }) {
   }
 
   const previews = {
-    basic: `${meeting.duration} мин`,
+    basic: formatDuration(meeting.duration),
     price: pricePreview(meeting),
     location: locationPreview(meeting.location_type),
     availability: availabilityPreview(meeting),
@@ -199,7 +336,7 @@ export default function ServiceModal({ meetingId, onUpdate }) {
     }
   }
 
-  // Mobile: вертикальный режим
+  // Mobile
   if (isNarrow) {
     return (
       <div style={{ padding: '14px 16px' }}>
@@ -235,7 +372,7 @@ export default function ServiceModal({ meetingId, onUpdate }) {
     )
   }
 
-  // Desktop: master-detail
+  // Desktop
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: 460 }}>
       <div style={{ background: C.sidebarBg, padding: '10px 8px' }}>
@@ -307,6 +444,7 @@ function paymentsPreview(m) {
 const BasicSection = ({ meeting, update }) => {
   const [localTitle, setLocalTitle] = useState(meeting.title)
   const [localDesc, setLocalDesc] = useState(meeting.description || '')
+  const [showPicker, setShowPicker] = useState(false)
 
   useEffect(() => { setLocalTitle(meeting.title) }, [meeting.title])
   useEffect(() => { setLocalDesc(meeting.description || '') }, [meeting.description])
@@ -321,15 +459,25 @@ const BasicSection = ({ meeting, update }) => {
           style={inputStyle}
         />
       </Field>
+
       <Field label="Длительность">
-        <select
-          value={meeting.duration}
-          onChange={e => update({ duration: Number(e.target.value) })}
-          style={{ ...inputStyle, cursor: 'pointer', appearance: 'none' }}
+        <div
+          onClick={() => setShowPicker(true)}
+          style={{
+            ...inputStyle,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
-          {DURATIONS.map(d => <option key={d} value={d}>{d} мин</option>)}
-        </select>
+          <span>{formatDuration(meeting.duration)}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
       </Field>
+
       <Field label="Описание">
         <textarea
           value={localDesc}
@@ -339,6 +487,17 @@ const BasicSection = ({ meeting, update }) => {
           style={{ ...inputStyle, minHeight: 80, resize: 'vertical', fontFamily: 'Inter, sans-serif' }}
         />
       </Field>
+
+      {showPicker && (
+        <DurationPicker
+          value={meeting.duration}
+          onClose={() => setShowPicker(false)}
+          onConfirm={(total) => {
+            setShowPicker(false)
+            if (total !== meeting.duration) update({ duration: total })
+          }}
+        />
+      )}
     </>
   )
 }
