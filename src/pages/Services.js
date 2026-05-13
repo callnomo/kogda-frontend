@@ -569,10 +569,11 @@ export default function Services() {
                             title={copiedId === m.id ? 'Скопировано' : 'Копировать ссылку на услугу'}
                             style={{
                               ...iconBtnStyle,
-                              background: copiedId === m.id ? '#16A34A' : '#111',
-                              borderColor: copiedId === m.id ? '#16A34A' : '#111',
-                              color: '#fff', cursor: 'pointer',
-                              transition: 'background 0.2s, border-color 0.2s'
+                              background: '#111',
+                              borderColor: '#111',
+                              color: copiedId === m.id ? '#E8FF47' : '#fff',
+                              cursor: 'pointer',
+                              transition: 'color 0.2s'
                             }}>
                             {copiedId === m.id ? <Check size={16} /> : <Copy size={16} />}
                           </button>
@@ -686,7 +687,7 @@ export default function Services() {
                   setCopiedId(sheetMeeting.id)
                   setTimeout(() => { setCopiedId(null); setOpenSheetId(null) }, 800)
                 }} style={sheetItemStyle}>
-                  {copiedId === sheetMeeting.id ? <Check size={18} color="#16A34A" /> : <Copy size={18} />}
+                  {copiedId === sheetMeeting.id ? <Check size={18} color="#E8FF47" /> : <Copy size={18} />}
                   {copiedId === sheetMeeting.id ? 'Скопировано' : 'Копировать ссылку'}
                 </button>
                 <button onClick={startEditFromSheet} style={sheetItemStyle}>
