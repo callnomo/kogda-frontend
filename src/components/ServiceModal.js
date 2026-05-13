@@ -27,11 +27,8 @@ const LOCATION_TYPES = [
   { value: 'client_chooses', label: 'Клиент выберет' },
 ]
 
-const BUFFERS = [0, 5, 10, 15, 20, 30, 45, 60]
-const MIN_NOTICES = [0, 1, 2, 4, 8, 12, 24, 48, 72]
-const MAX_DAYS = [7, 14, 30, 60, 90, 180, 365]
-const MAX_PER_DAY = [0, 1, 2, 3, 4, 5, 6, 8, 10]
-const STEP_MINUTES = [5, 10, 15, 20, 30, 45, 60]
+const DAY_VALUES = [1, 7, 14, 30, 60, 90, 180, 365]
+const COUNT_VALUES = Array.from({ length: 21 }, (_, i) => i) // 0..20
 
 const C = {
   card: '#FFFFFF',
@@ -44,7 +41,8 @@ const C = {
   lime: '#E8FF47',
   toggleOff: '#E8E7E0',
   fieldBg: '#F7F6F1',
-  fieldBorder: '#E0E0D8',
+  wheelFade2: '#d8d8d8',
+  wheelFade1: '#a0a0a0',
 }
 
 const Toggle = ({ on, onClick }) => (
@@ -71,10 +69,7 @@ const Group = ({ label, children, style }) => (
         marginBottom: 6, padding: '0 4px',
       }}>{label}</div>
     )}
-    <div style={{
-      background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 12, overflow: 'hidden',
-    }}>{children}</div>
+    <div>{children}</div>
   </div>
 )
 
@@ -113,22 +108,13 @@ const inputStyle = {
   color: C.text,
 }
 
-// ============ DURATION INLINE PICKER ============
-
-const formatDuration = (minutes) => {
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  if (h === 0) return `${m} мин`
-  if (m === 0) return `${h} ч`
-  return `${h} ч ${m} мин`
-}
-
-const HOURS = Array.from({ length: 25 }, (_, i) => i)
-const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5)
+// ============ WHEEL CORE ============
 
 const ITEM_H = 36
+const VISIBLE = 5 // строк сверху/снизу от центра (для высоты колеса 5*2+1 = но используем 5 строк всего видно)
+const VISIBLE_HEIGHT_ROWS = 5 // итоговая высота колеса 5 строк
 
-const Wheel = ({ values, value, onChange, format }) => {
+const Wheel = ({ values, value, onChange, format, width = 60 }) => {
   const ref = useRef(null)
   const lastSentRef = useRef(value)
   const scrollEndTimer = useRef(null)
@@ -144,77 +130,58 @@ const Wheel = ({ values, value, onChange, format }) => {
 
   const handleScroll = () => {
     if (!ref.current) return
-    // Debounce: ждём конца прокрутки, потом отдаём значение
     clearTimeout(scrollEndTimer.current)
     scrollEndTimer.current = setTimeout(() => {
       if (!ref.current) return
       const idx = Math.round(ref.current.scrollTop / ITEM_H)
       const clampedIdx = Math.max(0, Math.min(values.length - 1, idx))
       const next = values[clampedIdx]
-      // Подравниваем визуально к snap-позиции
       ref.current.scrollTo({ top: clampedIdx * ITEM_H, behavior: 'smooth' })
       if (next !== lastSentRef.current) {
         lastSentRef.current = next
         onChange(next)
       }
-    }, 120)
+    }, 130)
   }
 
-  return (
-    <div style={{ position: 'relative', height: ITEM_H * 5, flex: 1 }}>
-      <div style={{
-        position: 'absolute', left: 0, right: 0, top: ITEM_H * 2,
-        height: ITEM_H, background: C.fieldBg, borderRadius: 8,
-        pointerEvents: 'none',
-      }} />
+  const padCount = Math.floor(VISIBLE_HEIGHT_ROWS / 2)
 
+  return (
+    <div style={{ position: 'relative', height: ITEM_H * VISIBLE_HEIGHT_ROWS, minWidth: width }}>
       <div
         ref={ref}
         onScroll={handleScroll}
         className="kogda-wheel-scroll"
         style={{
-          height: '100%', overflowY: 'scroll', scrollSnapType: 'y mandatory',
+          height: '100%', overflowY: 'scroll',
+          scrollSnapType: 'y mandatory',
           scrollbarWidth: 'none', msOverflowStyle: 'none',
         }}
       >
         <style>{`.kogda-wheel-scroll::-webkit-scrollbar{display:none}`}</style>
-
-        <div style={{ height: ITEM_H * 2 }} />
-        {values.map((v) => (
-          <div key={v} style={{
-            height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18, fontWeight: v === value ? 700 : 400,
-            color: v === value ? C.text : C.muted,
-            scrollSnapAlign: 'center',
-            fontVariantNumeric: 'tabular-nums',
-          }}>
-            {format ? format(v) : v}
-          </div>
-        ))}
-        <div style={{ height: ITEM_H * 2 }} />
+        <div style={{ height: ITEM_H * padCount }} />
+        {values.map((v) => {
+          const active = v === value
+          return (
+            <div key={v} style={{
+              height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18, fontWeight: active ? 700 : 400,
+              color: active ? C.text : C.muted,
+              scrollSnapAlign: 'center',
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {format ? format(v) : v}
+            </div>
+          )
+        })}
+        <div style={{ height: ITEM_H * padCount }} />
       </div>
     </div>
   )
 }
 
-const DurationField = ({ value, onChange }) => {
-  const [open, setOpen] = useState(false)
-  const initH = Math.floor(value / 60)
-  const initM = value % 60
-  const initMSnap = Math.round(initM / 5) * 5
-  const [h, setH] = useState(initH)
-  const [m, setM] = useState(initMSnap > 55 ? 0 : initMSnap)
-
-  // Сохраняем при изменении любого из колёс
-  useEffect(() => {
-    if (!open) return
-    const total = h * 60 + m
-    if (total >= 5 && total !== value) {
-      onChange(total)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [h, m])
-
+// Общая обёртка раскрывающегося поля
+const RollerField = ({ open, setOpen, label, preview, children }) => {
   const borderColor = open ? C.lime : C.border
   const borderWidth = open ? 1.5 : 1
 
@@ -225,41 +192,158 @@ const DurationField = ({ value, onChange }) => {
       borderRadius: 10,
       overflow: 'hidden',
       transition: 'border-color 0.15s',
+      marginBottom: 8,
     }}>
       <div
         onClick={() => setOpen(o => !o)}
         style={{
-          padding: '10px 14px',
-          fontSize: 14,
+          padding: '13px 16px',
+          fontSize: 15,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           cursor: 'pointer',
-          fontWeight: open ? 500 : 400,
         }}
       >
-        <span>{formatDuration(value)}</span>
-        <svg
-          width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke={C.muted} strokeWidth="2"
-          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.15s' }}
-        >
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
+        <span>{label}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ color: C.muted, fontWeight: 500 }}>{preview}</span>
+          <svg
+            width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke={C.muted} strokeWidth="2.5"
+            style={{ transform: open ? 'rotate(-90deg)' : 'rotate(0)', transition: 'transform 0.15s' }}
+          >
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </div>
       </div>
 
       {open && (
-        <div style={{ borderTop: `1px solid ${C.border}`, padding: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Wheel values={HOURS} value={h} onChange={setH} />
-            <div style={{ fontSize: 13, color: C.muted, padding: '0 4px' }}>ч</div>
-            <Wheel values={MINUTES} value={m} onChange={setM}
-              format={v => String(v).padStart(2, '0')} />
-            <div style={{ fontSize: 13, color: C.muted, padding: '0 4px' }}>мин</div>
+        <div style={{ borderTop: `1px solid ${C.divider}`, padding: 12, background: C.card }}>
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              position: 'absolute', left: 0, right: 0,
+              top: '50%', transform: 'translateY(-50%)',
+              height: ITEM_H, background: C.fieldBg, borderRadius: 8,
+              pointerEvents: 'none',
+            }} />
+            {children}
           </div>
         </div>
       )}
     </div>
+  )
+}
+
+// ============ FORMATTERS ============
+
+const formatDuration = (minutes) => {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h === 0 && m === 0) return '0 мин'
+  if (h === 0) return `${m} мин`
+  if (m === 0) return `${h} ч`
+  return `${h} ч ${m} мин`
+}
+
+const formatBuffer = (minutes) => minutes === 0 ? 'Нет' : formatDuration(minutes)
+const formatMinNotice = (minutes) => minutes === 0 ? 'Сразу' : formatDuration(minutes)
+const formatStep = (minutes) => formatDuration(minutes) // 0 здесь не бывает
+const formatDays = (d) => `${d} ${pluralDays(d)}`
+const formatCount = (n) => n === 0 ? 'Без лимита' : `${n}`
+
+function pluralDays(n) {
+  const last = n % 10
+  const lastTwo = n % 100
+  if (lastTwo >= 11 && lastTwo <= 14) return 'дней'
+  if (last === 1) return 'день'
+  if (last >= 2 && last <= 4) return 'дня'
+  return 'дней'
+}
+
+// ============ ROLLER TYPES ============
+
+const HOURS_FULL = Array.from({ length: 25 }, (_, i) => i)  // 0..24
+const HOURS_SHORT = Array.from({ length: 13 }, (_, i) => i) // 0..12 — для буферов
+const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5) // 0,5,...,55
+
+// Тип 1: ч + мин
+// minHours/maxHours — диапазон часов
+// minTotal — минимально допустимое значение в минутах (для шага слотов = 5)
+const HourMinRoller = ({ open, setOpen, label, value, onChange, hoursRange = HOURS_FULL, minTotal = 0, preview }) => {
+  const initH = Math.floor(value / 60)
+  const initM = value % 60
+  const initMSnap = Math.round(initM / 5) * 5
+  const [h, setH] = useState(initH)
+  const [m, setM] = useState(initMSnap > 55 ? 0 : initMSnap)
+
+  useEffect(() => {
+    if (!open) return
+    let total = h * 60 + m
+    if (total < minTotal) total = minTotal
+    if (total !== value) onChange(total)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [h, m])
+
+  // Когда value снаружи изменилось — обновим колёса
+  useEffect(() => {
+    setH(Math.floor(value / 60))
+    const mm = value % 60
+    setM(Math.round(mm / 5) * 5 > 55 ? 0 : Math.round(mm / 5) * 5)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+
+  return (
+    <RollerField open={open} setOpen={setOpen} label={label} preview={preview}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        <Wheel values={hoursRange} value={h} onChange={setH} width={50} />
+        <div style={{ fontSize: 13, color: C.muted, padding: '0 6px', zIndex: 1 }}>ч</div>
+        <Wheel values={MINUTES} value={m} onChange={setM}
+          format={v => String(v).padStart(2, '0')} width={50} />
+        <div style={{ fontSize: 13, color: C.muted, padding: '0 6px', zIndex: 1 }}>мин</div>
+      </div>
+    </RollerField>
+  )
+}
+
+// Тип 2: дни (одно колесо)
+const DaysRoller = ({ open, setOpen, label, value, onChange, preview }) => {
+  return (
+    <RollerField open={open} setOpen={setOpen} label={label} preview={preview}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        <Wheel values={DAY_VALUES} value={value} onChange={onChange} width={70} />
+        <div style={{ fontSize: 13, color: C.muted, padding: '0 6px', zIndex: 1 }}>дней</div>
+      </div>
+    </RollerField>
+  )
+}
+
+// Тип 3: число
+const CountRoller = ({ open, setOpen, label, value, onChange, preview }) => {
+  return (
+    <RollerField open={open} setOpen={setOpen} label={label} preview={preview}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        <Wheel values={COUNT_VALUES} value={value} onChange={onChange} width={70}
+          format={v => v === 0 ? '∞' : String(v)} />
+      </div>
+    </RollerField>
+  )
+}
+
+// Тип 0: длительность (как было)
+const DurationField = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false)
+  return (
+    <HourMinRoller
+      open={open}
+      setOpen={setOpen}
+      label="Длительность"
+      value={value}
+      onChange={onChange}
+      hoursRange={HOURS_FULL}
+      minTotal={5}
+      preview={formatDuration(value)}
+    />
   )
 }
 
@@ -351,7 +435,6 @@ export default function ServiceModal({ meetingId, onUpdate }) {
     }
   }
 
-  // Mobile
   if (isNarrow) {
     return (
       <div style={{ padding: '14px 16px' }}>
@@ -387,7 +470,6 @@ export default function ServiceModal({ meetingId, onUpdate }) {
     )
   }
 
-  // Desktop
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: 460 }}>
       <div style={{ background: C.sidebarBg, padding: '10px 8px' }}>
@@ -445,8 +527,10 @@ function locationPreview(type) {
 }
 
 function availabilityPreview(m) {
-  if (m.buffer_before > 0 || m.buffer_after > 0) return `Буфер ${m.buffer_after || m.buffer_before} мин`
-  return `Шаг ${m.step_minutes} мин`
+  if (m.buffer_before > 0 || m.buffer_after > 0) {
+    return `Буфер ${formatDuration(m.buffer_after || m.buffer_before)}`
+  }
+  return `Шаг ${formatDuration(m.step_minutes)}`
 }
 
 function paymentsPreview(m) {
@@ -501,18 +585,23 @@ const PriceSection = ({ meeting, update }) => {
   return (
     <>
       <Group>
-        {PRICE_MODES.map((m, i) => {
-          const active = meeting.price_mode === m.value
-          return (
-            <Row
-              key={m.value}
-              last={i === PRICE_MODES.length - 1}
-              onClick={() => { if (!active) update({ price_mode: m.value }) }}
-              left={m.label}
-              right={<Toggle on={active} onClick={() => { if (!active) update({ price_mode: m.value }) }} />}
-            />
-          )
-        })}
+        <div style={{
+          background: C.card, border: `1px solid ${C.border}`,
+          borderRadius: 12, overflow: 'hidden',
+        }}>
+          {PRICE_MODES.map((m, i) => {
+            const active = meeting.price_mode === m.value
+            return (
+              <Row
+                key={m.value}
+                last={i === PRICE_MODES.length - 1}
+                onClick={() => { if (!active) update({ price_mode: m.value }) }}
+                left={m.label}
+                right={<Toggle on={active} onClick={() => { if (!active) update({ price_mode: m.value }) }} />}
+              />
+            )
+          })}
+        </div>
       </Group>
       {meeting.price_mode === 'amount' && (
         <Field label="Сумма (₽)">
@@ -535,72 +624,100 @@ const PriceSection = ({ meeting, update }) => {
 
 const LocationSection = ({ meeting, update }) => (
   <Group>
-    {LOCATION_TYPES.map((t, i) => {
-      const active = meeting.location_type === t.value
-      return (
-        <Row
-          key={t.value}
-          last={i === LOCATION_TYPES.length - 1}
-          onClick={() => { if (!active) update({ location_type: t.value }) }}
-          left={t.label}
-          right={<Toggle on={active} onClick={() => { if (!active) update({ location_type: t.value }) }} />}
-        />
-      )
-    })}
+    <div style={{
+      background: C.card, border: `1px solid ${C.border}`,
+      borderRadius: 12, overflow: 'hidden',
+    }}>
+      {LOCATION_TYPES.map((t, i) => {
+        const active = meeting.location_type === t.value
+        return (
+          <Row
+            key={t.value}
+            last={i === LOCATION_TYPES.length - 1}
+            onClick={() => { if (!active) update({ location_type: t.value }) }}
+            left={t.label}
+            right={<Toggle on={active} onClick={() => { if (!active) update({ location_type: t.value }) }} />}
+          />
+        )
+      })}
+    </div>
   </Group>
 )
 
 const AvailabilitySection = ({ meeting, update }) => {
-  const DropRow = ({ label, value, onChange, options, formatFn, last }) => (
-    <Row
-      last={last}
-      left={label}
-      gap={8}
-      right={
-        <select
-          value={value}
-          onChange={e => onChange(Number(e.target.value))}
-          style={{
-            border: 'none', background: 'transparent', color: C.muted,
-            fontSize: 15, cursor: 'pointer', appearance: 'none',
-            textAlign: 'right', paddingRight: 18, fontFamily: 'Inter, sans-serif',
-            backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23C8C7BF\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><polyline points=\'9,18 15,12 9,6\'/></svg>")',
-            backgroundRepeat: 'no-repeat', backgroundPosition: 'right center',
-          }}
-        >
-          {options.map(o => <option key={o} value={o}>{formatFn(o)}</option>)}
-        </select>
-      }
-    />
-  )
+  // Одно поле открыто за раз — отслеживаем какое
+  const [openKey, setOpenKey] = useState(null)
+  const makeSetOpen = (key) => (next) => {
+    setOpenKey(prev => {
+      const isOpen = prev === key
+      // next может быть функцией (setOpen(o => !o)) или булевым
+      const wantOpen = typeof next === 'function' ? next(isOpen) : next
+      return wantOpen ? key : null
+    })
+  }
 
   return (
     <>
       <Group label="Буферы">
-        <DropRow label="До встречи" value={meeting.buffer_before}
+        <HourMinRoller
+          open={openKey === 'buffer_before'}
+          setOpen={makeSetOpen('buffer_before')}
+          label="До встречи"
+          value={meeting.buffer_before || 0}
           onChange={v => update({ buffer_before: v })}
-          options={BUFFERS} formatFn={v => v === 0 ? 'Нет' : `${v} мин`} />
-        <DropRow last label="После встречи" value={meeting.buffer_after}
+          hoursRange={HOURS_SHORT}
+          preview={formatBuffer(meeting.buffer_before || 0)}
+        />
+        <HourMinRoller
+          open={openKey === 'buffer_after'}
+          setOpen={makeSetOpen('buffer_after')}
+          label="После встречи"
+          value={meeting.buffer_after || 0}
           onChange={v => update({ buffer_after: v })}
-          options={BUFFERS} formatFn={v => v === 0 ? 'Нет' : `${v} мин`} />
+          hoursRange={HOURS_SHORT}
+          preview={formatBuffer(meeting.buffer_after || 0)}
+        />
       </Group>
+
       <Group label="Окно записи">
-        <DropRow label="Минимум до записи" value={meeting.min_notice}
-          onChange={v => update({ min_notice: v })}
-          options={MIN_NOTICES}
-          formatFn={v => v === 0 ? 'Сразу' : v >= 24 ? `${Math.floor(v / 24)} дн` : `${v} ч`} />
-        <DropRow last label="На сколько вперёд" value={meeting.max_days_ahead}
+        <HourMinRoller
+          open={openKey === 'min_notice'}
+          setOpen={makeSetOpen('min_notice')}
+          label="Минимум до записи"
+          value={(meeting.min_notice || 0) * 60} // min_notice в БД в часах → переводим в минуты для UI
+          onChange={v => update({ min_notice: Math.floor(v / 60) })} // обратно в часы
+          hoursRange={HOURS_FULL}
+          preview={formatMinNotice((meeting.min_notice || 0) * 60)}
+        />
+        <DaysRoller
+          open={openKey === 'max_days_ahead'}
+          setOpen={makeSetOpen('max_days_ahead')}
+          label="На сколько вперёд"
+          value={meeting.max_days_ahead || 30}
           onChange={v => update({ max_days_ahead: v })}
-          options={MAX_DAYS} formatFn={v => `${v} дней`} />
+          preview={formatDays(meeting.max_days_ahead || 30)}
+        />
       </Group>
+
       <Group label="Слоты">
-        <DropRow label="Шаг слотов" value={meeting.step_minutes}
-          onChange={v => update({ step_minutes: v })}
-          options={STEP_MINUTES} formatFn={v => `${v} мин`} />
-        <DropRow last label="Макс. встреч в день" value={meeting.max_per_day}
+        <HourMinRoller
+          open={openKey === 'step_minutes'}
+          setOpen={makeSetOpen('step_minutes')}
+          label="Шаг слотов"
+          value={meeting.step_minutes || 30}
+          onChange={v => update({ step_minutes: Math.max(5, v) })}
+          hoursRange={HOURS_SHORT}
+          minTotal={5}
+          preview={formatStep(meeting.step_minutes || 30)}
+        />
+        <CountRoller
+          open={openKey === 'max_per_day'}
+          setOpen={makeSetOpen('max_per_day')}
+          label="Макс. встреч в день"
+          value={meeting.max_per_day || 0}
           onChange={v => update({ max_per_day: v })}
-          options={MAX_PER_DAY}
-          formatFn={v => v === 0 ? 'Без лимита' : `${v}`} />
+          preview={formatCount(meeting.max_per_day || 0)}
+        />
       </Group>
     </>
   )
@@ -630,33 +747,43 @@ const ConfirmationSection = ({ meeting, update }) => {
   return (
     <>
       <Group label="Запрос на запись">
-        <Row last
-          left="Подтверждать вручную"
-          right={
-            <Toggle
-              on={meeting.require_confirm}
-              onClick={() => update({ require_confirm: !meeting.require_confirm })}
-            />
-          }
-        />
+        <div style={{
+          background: C.card, border: `1px solid ${C.border}`,
+          borderRadius: 12, overflow: 'hidden',
+        }}>
+          <Row last
+            left="Подтверждать вручную"
+            right={
+              <Toggle
+                on={meeting.require_confirm}
+                onClick={() => update({ require_confirm: !meeting.require_confirm })}
+              />
+            }
+          />
+        </div>
       </Group>
       <Group label="Отмена">
-        <div style={{ padding: '12px 14px' }}>
-          <textarea
-            value={localCancel}
-            onChange={e => setLocalCancel(e.target.value)}
-            onBlur={() => {
-              if (localCancel !== (meeting.cancellation_policy || '')) {
-                update({ cancellation_policy: localCancel })
-              }
-            }}
-            placeholder="Например: отмена бесплатно за 24 часа"
-            style={{
-              width: '100%', border: 'none', outline: 'none', resize: 'vertical',
-              minHeight: 60, fontSize: 14, fontFamily: 'Inter, sans-serif',
-              background: 'transparent', color: C.text,
-            }}
-          />
+        <div style={{
+          background: C.card, border: `1px solid ${C.border}`,
+          borderRadius: 12, overflow: 'hidden',
+        }}>
+          <div style={{ padding: '12px 14px' }}>
+            <textarea
+              value={localCancel}
+              onChange={e => setLocalCancel(e.target.value)}
+              onBlur={() => {
+                if (localCancel !== (meeting.cancellation_policy || '')) {
+                  update({ cancellation_policy: localCancel })
+                }
+              }}
+              placeholder="Например: отмена бесплатно за 24 часа"
+              style={{
+                width: '100%', border: 'none', outline: 'none', resize: 'vertical',
+                minHeight: 60, fontSize: 14, fontFamily: 'Inter, sans-serif',
+                background: 'transparent', color: C.text,
+              }}
+            />
+          </div>
         </div>
       </Group>
     </>
