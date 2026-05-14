@@ -186,6 +186,10 @@ export default function Settings() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [bookingsWarning, setBookingsWarning] = useState(null)
 
+  // Смена email
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  const [emailChangeSaved, setEmailChangeSaved] = useState(false)
+
   // === EFFECTS ===
   useEffect(() => {
     loadSettings()
@@ -327,6 +331,23 @@ export default function Settings() {
     setBookingsWarning(null)
   }
 
+  // Обновление email после успешной смены
+  const onEmailChanged = (newEmail) => {
+    setUser(u => ({ ...u, email: newEmail }))
+    // Обновляем user в localStorage
+    try {
+      const stored = localStorage.getItem('user')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        parsed.email = newEmail
+        localStorage.setItem('user', JSON.stringify(parsed))
+      }
+    } catch {}
+    setShowEmailModal(false)
+    setEmailChangeSaved(true)
+    setTimeout(() => setEmailChangeSaved(false), 5000)
+  }
+
   // === РЕНДЕР СЕКЦИИ ===
   const renderSection = () => {
     const common = { isMobile }
@@ -365,6 +386,8 @@ export default function Settings() {
           pwdSaved={pwdSaved} pwdError={pwdError} pwdLoading={pwdLoading}
           changePassword={changePassword}
           setShowDeleteModal={setShowDeleteModal}
+          setShowEmailModal={setShowEmailModal}
+          emailChangeSaved={emailChangeSaved}
           {...common}
         />
       default:
@@ -476,6 +499,13 @@ export default function Settings() {
             onClose={closeDeleteFlow}
           />
         )}
+        {showEmailModal && (
+          <EmailChangeModal
+            currentEmail={user.email}
+            onSuccess={onEmailChanged}
+            onClose={() => setShowEmailModal(false)}
+          />
+        )}
       </AppLayout>
     )
   }
@@ -556,6 +586,13 @@ export default function Settings() {
           bookingsWarning={bookingsWarning}
           onSubmit={submitDelete}
           onClose={closeDeleteFlow}
+        />
+      )}
+      {showEmailModal && (
+        <EmailChangeModal
+          currentEmail={user.email}
+          onSuccess={onEmailChanged}
+          onClose={() => setShowEmailModal(false)}
         />
       )}
     </AppLayout>
@@ -1016,6 +1053,8 @@ function SecuritySection({
   showNextPwd, setShowNextPwd,
   pwdSaved, pwdError, pwdLoading, changePassword,
   setShowDeleteModal,
+  setShowEmailModal,
+  emailChangeSaved,
   isMobile,
 }) {
   const inputStyle = {
@@ -1036,6 +1075,16 @@ function SecuritySection({
         Управляй паролем и удалением аккаунта.
       </p>
 
+      {emailChangeSaved && (
+        <div style={{
+          background: '#DCFCE7', color: '#16A34A',
+          padding: '12px 16px', borderRadius: 10,
+          marginBottom: 16, fontSize: 13, fontWeight: 500,
+        }}>
+          ✓ Email изменён. Используй новый адрес для входа.
+        </div>
+      )}
+
       {/* === EMAIL === */}
       <Group label="Аккаунт">
         <Row
@@ -1048,7 +1097,7 @@ function SecuritySection({
           }
           right={
             <button
-              onClick={() => alert('Скоро')}
+              onClick={() => setShowEmailModal(true)}
               style={{
                 background: C.card,
                 border: `1px solid ${C.border}`,
@@ -1477,6 +1526,380 @@ function DeleteAccountModal({
               </button>
             </div>
           </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ============ МОДАЛКА СМЕНЫ EMAIL ============
+
+function EmailChangeModal({ currentEmail, onSuccess, onClose }) {
+  const [step, setStep] = useState('request') // 'request' | 'verify'
+  const [newEmail, setNewEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [code, setCode] = useState(['', '', '', '', '', ''])
+  const codeRefs = useRef([])
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  // Esc → закрыть (с отменой запроса на бэке если был)
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') handleClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [step])
+
+  // Cooldown тикалка
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const t = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000)
+    return () => clearTimeout(t)
+  }, [resendCooldown])
+
+  const handleClose = async () => {
+    // Если на шаге verify — отменяем запрос на бэке
+    if (step === 'verify') {
+      const token = localStorage.getItem('token')
+      try {
+        await axios.delete(`${API}/auth/cancel-email-change`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      } catch {}
+    }
+    onClose()
+  }
+
+  const requestCode = async (e) => {
+    e?.preventDefault()
+    setError('')
+    setLoading(true)
+    const token = localStorage.getItem('token')
+    try {
+      await axios.post(`${API}/auth/request-email-change`, {
+        newEmail: newEmail.trim().toLowerCase(),
+        currentPassword: password,
+      }, { headers: { Authorization: `Bearer ${token}` } })
+      setStep('verify')
+      setResendCooldown(60)
+      setTimeout(() => codeRefs.current[0]?.focus(), 50)
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка. Попробуй ещё раз.')
+    }
+    setLoading(false)
+  }
+
+  const verifyCode = async (codeStr) => {
+    setError('')
+    setLoading(true)
+    const token = localStorage.getItem('token')
+    try {
+      const res = await axios.post(`${API}/auth/verify-email-change`, {
+        code: codeStr,
+      }, { headers: { Authorization: `Bearer ${token}` } })
+      onSuccess(res.data.new_email)
+    } catch (err) {
+      const data = err.response?.data
+      if (data?.expired) {
+        setError(data.error || 'Запроси код заново')
+        setStep('request')
+        setCode(['', '', '', '', '', ''])
+        setPassword('')
+      } else {
+        setError(data?.error || 'Неверный код')
+        setCode(['', '', '', '', '', ''])
+        setTimeout(() => codeRefs.current[0]?.focus(), 50)
+      }
+    }
+    setLoading(false)
+  }
+
+  const resendCode = async () => {
+    if (resendCooldown > 0) return
+    setError('')
+    setLoading(true)
+    const token = localStorage.getItem('token')
+    try {
+      // На бэке тот же endpoint — но нам нужен пароль которого у нас уже нет
+      // Поэтому возвращаем на первый шаг
+      setStep('request')
+      setCode(['', '', '', '', '', ''])
+      setLoading(false)
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка отправки')
+      setLoading(false)
+    }
+  }
+
+  const handleCodeChange = (index, value) => {
+    const cleaned = value.replace(/\D/g, '').slice(0, 1)
+    const newCode = [...code]
+    newCode[index] = cleaned
+    setCode(newCode)
+    setError('')
+    if (cleaned && index < 5) {
+      codeRefs.current[index + 1]?.focus()
+    }
+    if (newCode.every(c => c) && newCode.join('').length === 6) {
+      verifyCode(newCode.join(''))
+    }
+  }
+
+  const handleCodeKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !code[index] && index > 0) {
+      codeRefs.current[index - 1]?.focus()
+    }
+  }
+
+  const handleCodePaste = (e) => {
+    e.preventDefault()
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    if (pasted.length === 6) {
+      const newCode = pasted.split('')
+      setCode(newCode)
+      verifyCode(pasted)
+    }
+  }
+
+  const inputStyle = {
+    width: '100%',
+    padding: '10px 14px',
+    border: `1px solid ${C.border}`,
+    borderRadius: 8,
+    background: C.card,
+    fontSize: 14,
+    fontFamily: 'Inter, sans-serif',
+    outline: 'none',
+    color: C.text,
+    boxSizing: 'border-box',
+  }
+
+  const codeBoxStyle = (filled) => ({
+    width: 40, height: 50,
+    borderRadius: 8,
+    border: `1.5px solid ${filled ? C.text : C.border}`,
+    fontSize: 22, fontWeight: 700,
+    textAlign: 'center', outline: 'none',
+    background: C.card, fontFamily: 'inherit',
+    color: C.text,
+    boxSizing: 'border-box',
+  })
+
+  return (
+    <div
+      onClick={handleClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 200, padding: 20,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: C.card, borderRadius: 16,
+          padding: '28px 28px 24px', maxWidth: 440, width: '100%',
+          fontFamily: 'Inter, sans-serif',
+        }}
+      >
+        {/* Иконка */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: '50%',
+            background: '#FAF9F3', border: `1px solid ${C.border}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Mail size={26} color={C.text} />
+          </div>
+        </div>
+
+        <div style={{
+          fontSize: 20, fontWeight: 700, textAlign: 'center',
+          marginBottom: 8, color: C.text,
+        }}>
+          {step === 'request' ? 'Сменить email' : 'Введи код'}
+        </div>
+        <div style={{
+          fontSize: 13, color: C.muted, textAlign: 'center',
+          lineHeight: 1.5, marginBottom: 24,
+        }}>
+          {step === 'request' ? (
+            <>Текущий email: <b style={{ color: C.text }}>{currentEmail}</b></>
+          ) : (
+            <>Код отправлен на <b style={{ color: C.text }}>{newEmail}</b></>
+          )}
+        </div>
+
+        {error && (
+          <div style={{
+            background: '#FEE2E2', color: C.danger,
+            padding: '10px 14px', borderRadius: 8,
+            marginBottom: 16, fontSize: 13,
+          }}>{error}</div>
+        )}
+
+        {/* ШАГ 1: запрос кода */}
+        {step === 'request' && (
+          <form onSubmit={requestCode}>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 12, color: C.muted, display: 'block', marginBottom: 6 }}>
+                Новый email
+              </label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                required
+                autoFocus
+                autoComplete="email"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck="false"
+                placeholder="новый@email.com"
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 12, color: C.muted, display: 'block', marginBottom: 6 }}>
+                Текущий пароль
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  style={{ ...inputStyle, paddingRight: 44 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(s => !s)}
+                  aria-label={showPassword ? 'Скрыть' : 'Показать'}
+                  style={{
+                    position: 'absolute', right: 8, top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    padding: 8, color: C.muted,
+                    display: 'flex', alignItems: 'center',
+                  }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                type="button"
+                onClick={handleClose}
+                style={{
+                  flex: 1, background: C.card,
+                  border: `1px solid ${C.border}`, borderRadius: 8,
+                  padding: '11px', fontSize: 13, fontWeight: 500,
+                  color: C.text, cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Отмена
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !newEmail || !password}
+                style={{
+                  flex: 1, background: C.text, color: C.card,
+                  border: 'none', borderRadius: 8,
+                  padding: '11px', fontSize: 13, fontWeight: 600,
+                  cursor: (loading || !newEmail || !password) ? 'default' : 'pointer',
+                  opacity: (loading || !newEmail || !password) ? 0.6 : 1,
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                {loading ? 'Отправляем…' : 'Получить код'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ШАГ 2: ввод кода */}
+        {step === 'verify' && (
+          <div>
+            <div style={{
+              display: 'flex', gap: 6, justifyContent: 'space-between',
+              marginBottom: 20,
+            }}>
+              {code.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={el => codeRefs.current[i] = el}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={1}
+                  value={digit}
+                  onChange={e => handleCodeChange(i, e.target.value)}
+                  onKeyDown={e => handleCodeKeyDown(i, e)}
+                  onPaste={i === 0 ? handleCodePaste : undefined}
+                  disabled={loading}
+                  style={codeBoxStyle(!!digit)}
+                />
+              ))}
+            </div>
+
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              {resendCooldown > 0 ? (
+                <p style={{ fontSize: 13, color: C.mutedLight, margin: 0 }}>
+                  Отправить новый код через {resendCooldown}с
+                </p>
+              ) : (
+                <button
+                  onClick={resendCode}
+                  disabled={loading}
+                  style={{
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    fontSize: 13, color: C.text, fontWeight: 600,
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Отправить код заново
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => {
+                  setStep('request')
+                  setCode(['', '', '', '', '', ''])
+                  setError('')
+                }}
+                style={{
+                  flex: 1, background: C.card,
+                  border: `1px solid ${C.border}`, borderRadius: 8,
+                  padding: '11px', fontSize: 13, fontWeight: 500,
+                  color: C.text, cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Изменить email
+              </button>
+              <button
+                onClick={handleClose}
+                style={{
+                  flex: 1, background: 'transparent',
+                  border: 'none',
+                  padding: '11px', fontSize: 13, fontWeight: 500,
+                  color: C.muted, cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
