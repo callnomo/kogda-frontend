@@ -11,7 +11,7 @@ import {
   Laptop, Smartphone, Monitor, Tablet, HelpCircle
 } from 'lucide-react'
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:5000'
+const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
 // ============ ДИЗАЙН-ТОКЕНЫ ============
 const C = {
@@ -1963,8 +1963,9 @@ function EmailChangeModal({ currentEmail, onSuccess, onClose }) {
 function getDeviceIcon(label) {
   if (!label) return HelpCircle
   const l = label.toLowerCase()
-  if (l.includes('iphone') || l.includes('android') && !l.includes('tab')) return Smartphone
+  // Tablet проверяем ДО смартфонов, иначе iPad попадёт в Smartphone
   if (l.includes('ipad') || l.includes('tablet')) return Tablet
+  if (l.includes('iphone') || l.includes('android')) return Smartphone
   if (l.includes('mac')) return Laptop
   if (l.includes('windows') || l.includes('linux')) return Monitor
   return HelpCircle
