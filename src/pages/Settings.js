@@ -530,7 +530,7 @@ export default function Settings() {
               <span style={{ color: C.muted }}>Настройки</span>
             </div>
             <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 20px' }}>
-              {SECTIONS.find(s => s.key === section)?.label}
+              {section === 'payments' ? 'Способы оплаты' : SECTIONS.find(s => s.key === section)?.label}
             </h2>
             {renderSection()}
           </>
@@ -626,7 +626,7 @@ export default function Settings() {
         {/* Контент */}
         <div style={{ padding: '24px 28px' }}>
           <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: C.text }}>
-            {SECTIONS.find(s => s.key === section)?.label}
+            {section === 'payments' ? 'Способы оплаты' : SECTIONS.find(s => s.key === section)?.label}
           </div>
           {renderSection()}
         </div>
@@ -683,11 +683,7 @@ function AccountSection({ user, account, setAccount, isMobile }) {
 
   return (
     <>
-      <p style={{ fontSize: 13, color: C.muted, margin: '0 0 20px' }}>
-        Личные настройки аккаунта. Имя, фото и описание — на странице Профиль.
-      </p>
-
-      <Group label="Основное">
+      <Group>
         {/* Email — инфо */}
         <Row
           left="Email"
@@ -717,7 +713,6 @@ function AccountSection({ user, account, setAccount, isMobile }) {
         {/* Язык */}
         <Row
           left="Язык"
-          sub="Скоро английский"
           right={<span style={{ fontSize: 14, color: C.muted }}>RU</span>}
           disabled
         />
@@ -725,7 +720,6 @@ function AccountSection({ user, account, setAccount, isMobile }) {
         <Row
           last
           left="Валюта"
-          sub="Скоро"
           right={<span style={{ fontSize: 14, color: C.muted }}>₽</span>}
           disabled
         />
@@ -911,76 +905,31 @@ function PaymentsSection({ payments, setPayments, isMobile }) {
 function IntegrationsSection({ telegramConnected, connectTelegram, isMobile }) {
   const iconSize = isMobile ? 28 : 32
 
-  // Иконка-компонент (отрисованные SVG-плашки)
-  const renderIcon = (kind, disabled = false) => {
+  // Оригинальные логотипы через CDN и локальные файлы
+  const renderIcon = (kind) => {
     const s = iconSize
-    if (kind === 'telegram') return (
-      <IconBadge size={s} bg="#2AABEE" border={false}>
-        <svg width={s * 0.55} height={s * 0.55} viewBox="0 0 24 24" fill="#fff">
-          <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/>
-        </svg>
-      </IconBadge>
-    )
-    if (kind === 'gcal') return (
-      <IconBadge size={s} bg={C.card}>
-        <div style={{
-          width: s * 0.65, height: s * 0.6, borderRadius: 3,
-          background: '#4285F4',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: s * 0.28, fontWeight: 700, color: '#fff',
-        }}>31</div>
-      </IconBadge>
-    )
-    if (kind === 'apple') return (
-      <IconBadge size={s} bg={C.card}>
-        <span style={{ fontSize: s * 0.55, color: disabled ? '#AAA' : '#111' }}>􀎫</span>
-      </IconBadge>
-    )
-    if (kind === 'yandex-cal') return (
-      <IconBadge size={s} bg="#FC3F1D" border={false}>
-        <span style={{ fontSize: s * 0.4, fontWeight: 700, color: '#fff' }}>23</span>
-      </IconBadge>
-    )
-    if (kind === 'jitsi') return (
-      <IconBadge size={s} bg={C.card}>
-        <span style={{ fontSize: s * 0.55, fontWeight: 700, color: '#1976D2' }}>J</span>
-      </IconBadge>
-    )
-    if (kind === 'zoom') return (
-      <IconBadge size={s} bg="#2D8CFF" border={false}>
-        <span style={{ fontSize: s * 0.3, fontWeight: 700, color: '#fff', letterSpacing: -0.5 }}>zoom</span>
-      </IconBadge>
-    )
-    if (kind === 'meet') return (
-      <IconBadge size={s} bg={C.card}>
-        <svg width={s * 0.55} height={s * 0.55} viewBox="0 0 24 24">
-          <rect x="3" y="7" width="13" height="10" rx="1.5" fill="#00897B"/>
-          <polygon points="16,9 21,7 21,17 16,15" fill="#FBC02D"/>
-        </svg>
-      </IconBadge>
-    )
-    if (kind === 'telemost') return (
-      <IconBadge size={s} bg="#5C5C5C" border={false}>
-        <svg width={s * 0.55} height={s * 0.55} viewBox="0 0 24 24">
-          <circle cx="9" cy="12" r="4" fill="#fff"/>
-          <circle cx="16" cy="12" r="2" fill="#7CFF00"/>
-        </svg>
-      </IconBadge>
-    )
-    return null
+    const imgStyle = { width: s, height: s, objectFit: 'contain', borderRadius: 6, flexShrink: 0 }
+    const urls = {
+      telegram: 'https://cdn.simpleicons.org/telegram/229ED9',
+      gcal: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg',
+      apple: 'https://cdn.simpleicons.org/apple/000000',
+      'yandex-cal': '/icons/yandex-calendar.png',
+      jitsi: 'https://cdn.simpleicons.org/jitsi/1d76ba',
+      zoom: 'https://cdn.simpleicons.org/zoom/2D8CFF',
+      meet: 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg',
+      telemost: '/icons/yandex-telemost.png',
+    }
+    return <img src={urls[kind]} alt={kind} style={imgStyle} />
   }
 
   // Универсальная строка интеграции
-  const IntegrationRow = ({ icon, label, sub, value, onChange, disabled = false, last = false }) => (
+  const IntegrationRow = ({ icon, label, value, onChange, disabled = false, last = false }) => (
     <Row
       last={last}
       left={
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {icon}
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 500, color: disabled ? C.muted : C.text }}>{label}</div>
-            <div style={{ fontSize: 12, color: C.mutedLight, marginTop: 1 }}>{sub}</div>
-          </div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: disabled ? C.muted : C.text }}>{label}</div>
         </div>
       }
       right={<Toggle on={value} onClick={onChange} disabled={disabled} />}
@@ -989,16 +938,11 @@ function IntegrationsSection({ telegramConnected, connectTelegram, isMobile }) {
 
   return (
     <>
-      <p style={{ fontSize: 13, color: C.muted, margin: '0 0 20px' }}>
-        Подключи внешние сервисы для уведомлений, календарей и видеовстреч.
-      </p>
-
       <Group label="Уведомления">
         <IntegrationRow
           last
           icon={renderIcon('telegram')}
           label="Telegram бот"
-          sub="Уведомления о новых записях"
           value={telegramConnected}
           onChange={() => { if (!telegramConnected) connectTelegram() }}
         />
@@ -1008,14 +952,12 @@ function IntegrationsSection({ telegramConnected, connectTelegram, isMobile }) {
         <IntegrationRow
           icon={renderIcon('gcal', true)}
           label="Google Calendar"
-          sub="Синхронизация встреч · Скоро"
           value={false}
           disabled
         />
         <IntegrationRow
           icon={renderIcon('apple', true)}
           label="Apple Calendar"
-          sub="Синхронизация встреч · Скоро"
           value={false}
           disabled
         />
@@ -1023,7 +965,6 @@ function IntegrationsSection({ telegramConnected, connectTelegram, isMobile }) {
           last
           icon={renderIcon('yandex-cal', true)}
           label="Яндекс Календарь"
-          sub="Синхронизация встреч · Скоро"
           value={false}
           disabled
         />
@@ -1033,21 +974,18 @@ function IntegrationsSection({ telegramConnected, connectTelegram, isMobile }) {
         <IntegrationRow
           icon={renderIcon('jitsi')}
           label="Jitsi"
-          sub="Автоматические ссылки — используется"
           value={true}
           onChange={() => {}}
         />
         <IntegrationRow
           icon={renderIcon('zoom', true)}
           label="Zoom"
-          sub="Автоматические ссылки · Скоро"
           value={false}
           disabled
         />
         <IntegrationRow
           icon={renderIcon('meet', true)}
           label="Google Meet"
-          sub="Автоматические ссылки · Скоро"
           value={false}
           disabled
         />
@@ -1055,7 +993,6 @@ function IntegrationsSection({ telegramConnected, connectTelegram, isMobile }) {
           last
           icon={renderIcon('telemost', true)}
           label="Яндекс Телемост"
-          sub="Автоматические ссылки · Скоро"
           value={false}
           disabled
         />
@@ -1068,9 +1005,9 @@ function SubscriptionSection({ isMobile }) {
   const currentTier = 'free'
 
   const tiers = [
-    { key: 'free',    label: 'Free',    sub: 'Базовый функционал' },
-    { key: 'pro',     label: 'Pro',     sub: 'Свой никнейм · 990 ₽/мес' },
-    { key: 'premium', label: 'Premium', sub: 'Свой домен · 2990 ₽/мес' },
+    { key: 'free',    label: 'Free' },
+    { key: 'pro',     label: 'Pro' },
+    { key: 'premium', label: 'Premium' },
   ]
 
   const onSelect = (key) => {
@@ -1079,40 +1016,26 @@ function SubscriptionSection({ isMobile }) {
   }
 
   return (
-    <>
-      <p style={{ fontSize: 13, color: C.muted, margin: '0 0 20px' }}>
-        Выбери план kogDA. Тарифы пока в разработке — функционал может меняться.
-      </p>
-
-      <Group label="Текущий тариф">
-        {tiers.map((t, i) => {
-          const active = t.key === currentTier
-          return (
-            <Row
-              key={t.key}
-              last={i === tiers.length - 1}
-              onClick={() => onSelect(t.key)}
-              left={
-                <div>
-                  <div style={{
-                    fontSize: 14,
-                    fontWeight: active ? 600 : 500,
-                    color: C.text,
-                  }}>{t.label}</div>
-                  <div style={{ fontSize: 12, color: C.mutedLight, marginTop: 1 }}>{t.sub}</div>
-                </div>
-              }
-              right={<Toggle on={active} onClick={() => onSelect(t.key)} />}
-            />
-          )
-        })}
-      </Group>
-
-      <div style={{ fontSize: 12, color: C.muted, paddingLeft: 4, lineHeight: 1.6 }}>
-        Сейчас включён <span style={{ color: C.text, fontWeight: 600 }}>Free</span>.
-        Тап на другой тариф откроет страницу выбора плана.
-      </div>
-    </>
+    <Group>
+      {tiers.map((t, i) => {
+        const active = t.key === currentTier
+        return (
+          <Row
+            key={t.key}
+            last={i === tiers.length - 1}
+            onClick={() => onSelect(t.key)}
+            left={
+              <div style={{
+                fontSize: 14,
+                fontWeight: active ? 600 : 500,
+                color: C.text,
+              }}>{t.label}</div>
+            }
+            right={<Toggle on={active} onClick={() => onSelect(t.key)} />}
+          />
+        )
+      })}
+    </Group>
   )
 }
 function SecuritySection({
@@ -1143,10 +1066,6 @@ function SecuritySection({
 
   return (
     <>
-      <p style={{ fontSize: 13, color: C.muted, margin: '0 0 20px' }}>
-        Управляй паролем и удалением аккаунта.
-      </p>
-
       {emailChangeSaved && (
         <div style={{
           background: '#DCFCE7', color: '#16A34A',
