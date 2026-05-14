@@ -7,7 +7,8 @@ import axios from 'axios'
 import AppLayout from '../components/AppLayout'
 import {
   User, Bell, CreditCard, Plug, Star, Lock,
-  Mail, MessageCircle, Trash2, Eye, EyeOff, ChevronRight, ChevronLeft, X
+  Mail, MessageCircle, Trash2, Eye, EyeOff, ChevronRight, ChevronLeft, X,
+  Laptop, Smartphone, Monitor, Tablet, HelpCircle
 } from 'lucide-react'
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5000'
@@ -190,6 +191,12 @@ export default function Settings() {
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [emailChangeSaved, setEmailChangeSaved] = useState(false)
 
+  // Активные устройства
+  const [devices, setDevices] = useState([])
+  const [devicesLoading, setDevicesLoading] = useState(false)
+  const [deviceRevokeTarget, setDeviceRevokeTarget] = useState(null) // null | { type: 'single', device } | { type: 'all', count }
+  const [devicesRevokedToast, setDevicesRevokedToast] = useState('')
+
   // === EFFECTS ===
   useEffect(() => {
     loadSettings()
@@ -348,6 +355,50 @@ export default function Settings() {
     setTimeout(() => setEmailChangeSaved(false), 5000)
   }
 
+  // Загрузка активных устройств
+  const loadDevices = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+    setDevicesLoading(true)
+    try {
+      const res = await axios.get(`${API}/auth/devices`, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      })
+      setDevices(res.data.devices || [])
+    } catch (err) {
+      console.error('Load devices error:', err)
+    }
+    setDevicesLoading(false)
+  }
+
+  // Загружаем устройства при первом открытии секции "Безопасность"
+  useEffect(() => {
+    if (section === 'security') loadDevices()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section])
+
+  // Колбэк после успешного удаления устройства(в)
+  const onDevicesRevoked = (result) => {
+    setDeviceRevokeTarget(null)
+    // Если удалили текущее — нас выкидывает
+    if (result.was_current) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      window.location.href = '/login'
+      return
+    }
+    // Обновляем список
+    loadDevices()
+    // Показываем тост
+    if (result.revoked_count !== undefined) {
+      setDevicesRevokedToast(`Выход выполнен с ${result.revoked_count} устройств`)
+    } else {
+      setDevicesRevokedToast('Устройство удалено')
+    }
+    setTimeout(() => setDevicesRevokedToast(''), 4000)
+  }
+
   // === РЕНДЕР СЕКЦИИ ===
   const renderSection = () => {
     const common = { isMobile }
@@ -388,6 +439,10 @@ export default function Settings() {
           setShowDeleteModal={setShowDeleteModal}
           setShowEmailModal={setShowEmailModal}
           emailChangeSaved={emailChangeSaved}
+          devices={devices}
+          devicesLoading={devicesLoading}
+          setDeviceRevokeTarget={setDeviceRevokeTarget}
+          devicesRevokedToast={devicesRevokedToast}
           {...common}
         />
       default:
@@ -506,6 +561,13 @@ export default function Settings() {
             onClose={() => setShowEmailModal(false)}
           />
         )}
+        {deviceRevokeTarget && (
+          <DeviceRevokeModal
+            target={deviceRevokeTarget}
+            onSuccess={onDevicesRevoked}
+            onClose={() => setDeviceRevokeTarget(null)}
+          />
+        )}
       </AppLayout>
     )
   }
@@ -593,6 +655,13 @@ export default function Settings() {
           currentEmail={user.email}
           onSuccess={onEmailChanged}
           onClose={() => setShowEmailModal(false)}
+        />
+      )}
+      {deviceRevokeTarget && (
+        <DeviceRevokeModal
+          target={deviceRevokeTarget}
+          onSuccess={onDevicesRevoked}
+          onClose={() => setDeviceRevokeTarget(null)}
         />
       )}
     </AppLayout>
@@ -1055,6 +1124,9 @@ function SecuritySection({
   setShowDeleteModal,
   setShowEmailModal,
   emailChangeSaved,
+  devices, devicesLoading,
+  setDeviceRevokeTarget,
+  devicesRevokedToast,
   isMobile,
 }) {
   const inputStyle = {
@@ -1113,6 +1185,68 @@ function SecuritySection({
           }
         />
       </Group>
+
+      {/* === АКТИВНЫЕ УСТРОЙСТВА === */}
+      {devicesRevokedToast && (
+        <div style={{
+          background: '#DCFCE7', color: '#16A34A',
+          padding: '12px 16px', borderRadius: 10,
+          marginBottom: 16, fontSize: 13, fontWeight: 500,
+        }}>
+          ✓ {devicesRevokedToast}
+        </div>
+      )}
+
+      <div style={{ fontSize: 12, color: C.muted, marginBottom: 8, marginTop: 24 }}>
+        Активные устройства
+      </div>
+      <div style={{
+        background: C.cardSoft,
+        border: `1px solid ${C.border}`,
+        borderRadius: 12,
+        overflow: 'hidden',
+        marginBottom: 12,
+      }}>
+        {devicesLoading && devices.length === 0 ? (
+          <div style={{ padding: '20px', textAlign: 'center', fontSize: 13, color: C.muted }}>
+            Загрузка…
+          </div>
+        ) : devices.length === 0 ? (
+          <div style={{ padding: '20px', textAlign: 'center', fontSize: 13, color: C.muted }}>
+            Нет активных устройств
+          </div>
+        ) : (
+          devices.map((d, i) => (
+            <DeviceRow
+              key={d.id}
+              device={d}
+              last={i === devices.length - 1}
+              onRevoke={() => setDeviceRevokeTarget({ type: 'single', device: d })}
+            />
+          ))
+        )}
+      </div>
+
+      {devices.filter(d => !d.is_current).length > 0 && (
+        <div style={{ textAlign: 'right', marginBottom: 24 }}>
+          <button
+            onClick={() => setDeviceRevokeTarget({
+              type: 'all',
+              count: devices.filter(d => !d.is_current).length,
+            })}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              fontSize: 13, fontWeight: 500, color: C.danger,
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            Выйти со всех других устройств
+          </button>
+        </div>
+      )}
 
       {/* === ПАРОЛЬ === */}
       <Group label="Пароль">
@@ -1901,6 +2035,285 @@ function EmailChangeModal({ currentEmail, onSuccess, onClose }) {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ============ DEVICE ROW (карточка устройства) ============
+
+function getDeviceIcon(label) {
+  if (!label) return HelpCircle
+  const l = label.toLowerCase()
+  if (l.includes('iphone') || l.includes('android') && !l.includes('tab')) return Smartphone
+  if (l.includes('ipad') || l.includes('tablet')) return Tablet
+  if (l.includes('mac')) return Laptop
+  if (l.includes('windows') || l.includes('linux')) return Monitor
+  return HelpCircle
+}
+
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMin = Math.floor(diffMs / 60000)
+  const diffHr = Math.floor(diffMs / 3600000)
+  const diffDay = Math.floor(diffMs / 86400000)
+
+  if (diffMin < 1) return 'только что'
+  if (diffMin < 60) return `${diffMin} мин назад`
+  if (diffHr < 24) return `${diffHr} ч назад`
+  if (diffDay === 1) return 'вчера'
+  if (diffDay < 7) return `${diffDay} дн назад`
+  if (diffDay < 30) {
+    const weeks = Math.floor(diffDay / 7)
+    return `${weeks} нед назад`
+  }
+  const months = Math.floor(diffDay / 30)
+  return `${months} мес назад`
+}
+
+function DeviceRow({ device, last, onRevoke }) {
+  const Icon = getDeviceIcon(device.device_label)
+  const locationStr = device.last_city
+    ? `${device.last_city}${device.last_country ? ', ' + device.last_country : ''}`
+    : 'Локация неизвестна'
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 14,
+      padding: '14px 16px',
+      borderBottom: last ? 'none' : `1px solid ${C.border}`,
+    }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: 8,
+        background: C.card, border: `1px solid ${C.border}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Icon size={18} color={C.text} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 14, color: C.text }}>
+            {device.device_label || 'Неизвестное устройство'}
+          </span>
+          {device.is_current && (
+            <span style={{
+              fontSize: 11, fontWeight: 500,
+              color: '#555',
+              background: C.lime,
+              padding: '2px 8px',
+              borderRadius: 4,
+            }}>
+              Этот девайс
+            </span>
+          )}
+        </div>
+        <div style={{ fontSize: 12, color: C.muted }}>
+          {locationStr} · {formatRelativeTime(device.last_used_at)}
+        </div>
+      </div>
+      {!device.is_current && (
+        <button
+          onClick={onRevoke}
+          style={{
+            background: C.card,
+            border: `1px solid ${C.border}`,
+            borderRadius: 8,
+            padding: '8px 16px',
+            fontSize: 13, fontWeight: 500, color: C.text,
+            cursor: 'pointer',
+            flexShrink: 0,
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          Выйти
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ============ DEVICE REVOKE MODAL ============
+
+function DeviceRevokeModal({ target, onSuccess, onClose }) {
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const isAll = target.type === 'all'
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault()
+    setError('')
+    setLoading(true)
+    const token = localStorage.getItem('token')
+    try {
+      let res
+      if (isAll) {
+        res = await axios.delete(`${API}/auth/devices`, {
+          headers: { Authorization: `Bearer ${token}` },
+          data: { password },
+          withCredentials: true,
+        })
+      } else {
+        res = await axios.delete(`${API}/auth/devices/${target.device.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          data: { password },
+          withCredentials: true,
+        })
+      }
+      onSuccess(res.data)
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка. Попробуй ещё раз.')
+    }
+    setLoading(false)
+  }
+
+  const inputStyle = {
+    width: '100%',
+    padding: '10px 14px',
+    border: `1px solid ${C.border}`,
+    borderRadius: 8,
+    background: C.card,
+    fontSize: 14,
+    fontFamily: 'Inter, sans-serif',
+    outline: 'none',
+    color: C.text,
+    boxSizing: 'border-box',
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 200, padding: 20,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: C.card, borderRadius: 16,
+          padding: '28px 28px 24px', maxWidth: 420, width: '100%',
+          fontFamily: 'Inter, sans-serif',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: '50%',
+            background: '#FAF9F3', border: `1px solid ${C.border}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Lock size={26} color={C.text} />
+          </div>
+        </div>
+
+        <div style={{
+          fontSize: 20, fontWeight: 700, textAlign: 'center',
+          marginBottom: 8, color: C.text,
+        }}>
+          {isAll ? 'Выйти со всех устройств?' : 'Выйти из устройства?'}
+        </div>
+        <div style={{
+          fontSize: 13, color: C.muted, textAlign: 'center',
+          lineHeight: 1.5, marginBottom: 24,
+        }}>
+          {isAll ? (
+            <>Выйдем с <b style={{ color: C.text }}>{target.count}</b> {target.count === 1 ? 'устройства' : 'устройств'} кроме текущего.</>
+          ) : (
+            <>
+              <b style={{ color: C.text }}>{target.device.device_label}</b>
+              <br />
+              {target.device.last_city
+                ? `${target.device.last_city}${target.device.last_country ? ', ' + target.device.last_country : ''}`
+                : 'Локация неизвестна'}
+            </>
+          )}
+        </div>
+
+        {error && (
+          <div style={{
+            background: '#FEE2E2', color: C.danger,
+            padding: '10px 14px', borderRadius: 8,
+            marginBottom: 16, fontSize: 13,
+          }}>{error}</div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 12, color: C.muted, display: 'block', marginBottom: 6 }}>
+              Подтверди паролем
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                autoFocus
+                autoComplete="current-password"
+                style={{ ...inputStyle, paddingRight: 44 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(s => !s)}
+                aria-label={showPassword ? 'Скрыть' : 'Показать'}
+                style={{
+                  position: 'absolute', right: 8, top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  padding: 8, color: C.muted,
+                  display: 'flex', alignItems: 'center',
+                }}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                flex: 1, background: C.card,
+                border: `1px solid ${C.border}`, borderRadius: 8,
+                padding: '11px', fontSize: 13, fontWeight: 500,
+                color: C.text, cursor: 'pointer',
+                fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !password}
+              style={{
+                flex: 1, background: C.danger, color: '#fff',
+                border: 'none', borderRadius: 8,
+                padding: '11px', fontSize: 13, fontWeight: 600,
+                cursor: (loading || !password) ? 'default' : 'pointer',
+                opacity: (loading || !password) ? 0.6 : 1,
+                fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              {loading ? 'Выходим…' : 'Выйти'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
