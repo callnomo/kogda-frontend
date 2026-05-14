@@ -30,13 +30,23 @@ const LOCATION_TYPES = [
 ]
 
 const BUFFERS = [0, 5, 10, 15, 20, 30, 45, 60, 90, 120]
-const MIN_NOTICES = [0, 1, 2, 4, 8, 12, 24, 48, 72, 168] // часы; 168 = 7 дней
+const MIN_NOTICES = [0, 1, 2, 4, 8, 12, 24, 48, 72, 168]
 const MAX_DAYS = [7, 14, 30, 60, 90, 180, 365]
 const MAX_PER_DAY = [0, 1, 2, 3, 4, 5, 6, 8, 10]
 const STEP_MINUTES = [5, 10, 15, 20, 30, 45, 60]
 
 const DAY_VALUES = Array.from({ length: 365 }, (_, i) => i + 1)
 const COUNT_VALUES = Array.from({ length: 21 }, (_, i) => i)
+
+// Способы оплаты — ключи соответствуют Settings → Оплата
+const PAYMENT_METHODS = [
+  { key: 'payment_sbp', label: 'СБП' },
+  { key: 'payment_tinkoff', label: 'Российская карта / банк' },
+  { key: 'payment_paypal', label: 'PayPal' },
+  { key: 'payment_wise', label: 'Wise' },
+  { key: 'payment_bank', label: 'Банковский перевод' },
+  { key: 'payment_usdt', label: 'USDT' },
+]
 
 const C = {
   card: '#FFFFFF',
@@ -458,6 +468,15 @@ function pluralDays(n) {
   return 'дней'
 }
 
+function pluralPayments(n) {
+  const last = n % 10
+  const lastTwo = n % 100
+  if (lastTwo >= 11 && lastTwo <= 14) return 'способов'
+  if (last === 1) return 'способ'
+  if (last >= 2 && last <= 4) return 'способа'
+  return 'способов'
+}
+
 // ============ MOBILE ROLLER TYPES ============
 
 const HOURS_FULL = Array.from({ length: 25 }, (_, i) => i)
@@ -560,10 +579,38 @@ export default function ServiceModal({ meetingId, onUpdate }) {
   const [isNarrow, setIsNarrow] = useState(window.innerWidth < 900)
   const [mobileShowDetail, setMobileShowDetail] = useState(false)
 
+  // Настройки юзера — нужны для PaymentsSection чтобы знать какие способы включены глобально
+  const [userPayments, setUserPayments] = useState(null) // null = ещё не загружено
+
   useEffect(() => {
     const onResize = () => setIsNarrow(window.innerWidth < 900)
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  // Загрузка способов оплаты из настроек юзера (один раз)
+  useEffect(() => {
+    const loadUserPayments = async () => {
+      const token = localStorage.getItem('token')
+      try {
+        const res = await axios.get(`${API}/settings`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setUserPayments({
+          payment_sbp: !!res.data.payment_sbp,
+          payment_tinkoff: !!res.data.payment_tinkoff,
+          payment_paypal: !!res.data.payment_paypal,
+          payment_wise: !!res.data.payment_wise,
+          payment_bank: !!res.data.payment_bank,
+          payment_usdt: !!res.data.payment_usdt,
+          payment_other: typeof res.data.payment_other === 'string' ? res.data.payment_other : '',
+        })
+      } catch (err) {
+        console.error('[ServiceModal load userPayments]', err)
+        setUserPayments({})
+      }
+    }
+    loadUserPayments()
   }, [])
 
   useEffect(() => {
@@ -621,7 +668,7 @@ export default function ServiceModal({ meetingId, onUpdate }) {
     price: pricePreview(meeting),
     location: locationPreview(meeting.location_type),
     availability: availabilityPreview(meeting),
-    payments: paymentsPreview(meeting),
+    payments: paymentsPreview(meeting, userPayments),
     confirmation: meeting.require_confirm ? 'Вручную' : 'Автоматически',
     extra: '—',
   }
@@ -632,7 +679,7 @@ export default function ServiceModal({ meetingId, onUpdate }) {
       case 'price': return <PriceSection meeting={meeting} update={update} />
       case 'location': return <LocationSection meeting={meeting} update={update} />
       case 'availability': return <AvailabilitySection meeting={meeting} update={update} isNarrow={isNarrow} />
-      case 'payments': return <PaymentsSection meeting={meeting} update={update} />
+      case 'payments': return <PaymentsSection meeting={meeting} update={update} userPayments={userPayments} />
       case 'confirmation': return <ConfirmationSection meeting={meeting} update={update} />
       case 'extra': return <ExtraSection />
       default: return null
@@ -737,11 +784,24 @@ function availabilityPreview(m) {
   return `Шаг ${formatDuration(m.step_minutes)}`
 }
 
-function paymentsPreview(m) {
+// Превью для сайдбара. userPayments может быть null если ещё не загружено.
+function paymentsPreview(m, userPayments) {
   const ep = m.enabled_payments
-  if (!ep) return 'Все из настроек'
-  if (Array.isArray(ep) && ep.length > 0) return `${ep.length} включено`
-  return 'Не настроены'
+  // Индивидуальный режим
+  if (Array.isArray(ep)) {
+    if (ep.length === 0) return 'Не выбрано'
+    return `${ep.length} ${pluralPayments(ep.length)}`
+  }
+  // По умолчанию — считаем глобальные
+  if (userPayments) {
+    const count = Object.entries(userPayments).filter(([k, v]) =>
+      k.startsWith('payment_') && k !== 'payment_other' && v === true
+    ).length
+    const hasOther = !!userPayments.payment_other
+    const total = count + (hasOther ? 1 : 0)
+    if (total === 0) return 'Не настроены'
+  }
+  return 'Все из настроек'
 }
 
 // ============ SECTIONS ============
@@ -1017,22 +1077,150 @@ const AvailabilitySection = ({ meeting, update, isNarrow }) => {
   )
 }
 
-const PaymentsSection = ({ meeting, update }) => (
-  <div style={{
-    padding: '60px 20px', textAlign: 'center',
-    background: C.card, borderRadius: 12, border: `1px solid ${C.border}`,
-  }}>
-    <div style={{ fontSize: 15, color: C.muted, lineHeight: 1.6, marginBottom: 14 }}>
-      Сначала включи способы оплаты в&nbsp;
-      <a href="/settings?tab=payments" style={{ color: C.text, textDecoration: 'underline' }}>
-        Настройках → Оплата
-      </a>
-    </div>
-    <div style={{ fontSize: 13, color: C.mutedLight }}>
-      Здесь появятся способы которые ты включил
-    </div>
-  </div>
-)
+// ============ PAYMENTS SECTION ============
+
+const PaymentsSection = ({ meeting, update, userPayments }) => {
+  // Пока настройки не загружены
+  if (!userPayments) {
+    return (
+      <div style={{
+        padding: '60px 20px', textAlign: 'center',
+        color: C.muted, fontSize: 14,
+      }}>
+        Загружаю…
+      </div>
+    )
+  }
+
+  // Список включённых в Настройках способов (ключ + label)
+  const enabledGlobal = PAYMENT_METHODS.filter(m => userPayments[m.key])
+  // Свой способ
+  const hasOther = !!userPayments.payment_other
+  const otherLabel = userPayments.payment_other || ''
+
+  // Полный список доступных в этой услуге = глобальные + 'other' если задан
+  const availableList = [
+    ...enabledGlobal,
+    ...(hasOther ? [{ key: 'payment_other', label: otherLabel }] : [])
+  ]
+
+  // === Состояние 1: в настройках ничего не включено ===
+  if (availableList.length === 0) {
+    return (
+      <div style={{
+        background: C.card,
+        border: `1px solid ${C.border}`,
+        borderRadius: 12,
+        padding: '40px 24px',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 16, fontWeight: 600, color: C.text, marginBottom: 8 }}>
+          Способы оплаты пока не настроены
+        </div>
+        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.5, marginBottom: 20 }}>
+          Добавь способы оплаты в разделе «Настройки → Оплата»,<br />
+          и они появятся здесь.
+        </div>
+        <a
+          href="/settings?section=payments"
+          style={{
+            display: 'inline-block',
+            background: C.text, color: '#fff',
+            padding: '10px 20px', borderRadius: 8,
+            fontSize: 13, fontWeight: 600,
+            textDecoration: 'none',
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          Открыть настройки оплаты
+        </a>
+      </div>
+    )
+  }
+
+  // === Режим: array → индивидуально, null/undefined → по умолчанию ===
+  const isIndividual = Array.isArray(meeting.enabled_payments)
+  const selected = isIndividual ? meeting.enabled_payments : []
+
+  const setMode = (mode) => {
+    if (mode === 'default' && isIndividual) {
+      update({ enabled_payments: null })
+    } else if (mode === 'individual' && !isIndividual) {
+      // Переходя в индивидуальный — копируем глобальные как стартовое
+      const initial = availableList.map(m => m.key)
+      update({ enabled_payments: initial })
+    }
+  }
+
+  const toggleMethod = (key) => {
+    const next = selected.includes(key)
+      ? selected.filter(k => k !== key)
+      : [...selected, key]
+    update({ enabled_payments: next })
+  }
+
+  // Список включённых для подсказки под «По умолчанию»
+  const enabledSummary = availableList.map(m => m.label).join(', ')
+
+  return (
+    <>
+      {/* 2 режима */}
+      <Group>
+        <div style={{
+          background: C.card, border: `1px solid ${C.border}`,
+          borderRadius: 12, overflow: 'hidden',
+        }}>
+          <Row
+            onClick={() => setMode('default')}
+            left={
+              <div>
+                <div style={{ fontSize: 15, color: C.text, marginBottom: 2 }}>По умолчанию</div>
+                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.4 }}>{enabledSummary}</div>
+              </div>
+            }
+            right={<Toggle on={!isIndividual} onClick={() => setMode('default')} />}
+          />
+          <Row
+            last
+            onClick={() => setMode('individual')}
+            left={
+              <div>
+                <div style={{ fontSize: 15, color: C.text, marginBottom: 2 }}>Индивидуально для услуги</div>
+                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.4 }}>Выбрать способы для этой услуги</div>
+              </div>
+            }
+            right={<Toggle on={isIndividual} onClick={() => setMode('individual')} />}
+          />
+        </div>
+      </Group>
+
+      {/* Чекбоксы способов появляются только если режим "индивидуально" */}
+      {isIndividual && (
+        <Group>
+          <div style={{
+            background: C.card, border: `1px solid ${C.border}`,
+            borderRadius: 12, overflow: 'hidden',
+          }}>
+            {availableList.map((m, i) => (
+              <Row
+                key={m.key}
+                last={i === availableList.length - 1}
+                onClick={() => toggleMethod(m.key)}
+                left={m.label}
+                right={
+                  <Toggle
+                    on={selected.includes(m.key)}
+                    onClick={() => toggleMethod(m.key)}
+                  />
+                }
+              />
+            ))}
+          </div>
+        </Group>
+      )}
+    </>
+  )
+}
 
 const ConfirmationSection = ({ meeting, update }) => {
   const [localCancel, setLocalCancel] = useState(meeting.cancellation_policy || '')

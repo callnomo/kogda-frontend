@@ -144,8 +144,21 @@ function ActionRow({ children, isMobile }) {
 
 export default function Settings() {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768)
-  const [section, setSection] = useState('account')
-  const [mobileShowDetail, setMobileShowDetail] = useState(false)
+  // Начальная секция: либо из ?section= в URL, либо 'account' по умолчанию
+  const getInitialSection = () => {
+    if (typeof window === 'undefined') return 'account'
+    const params = new URLSearchParams(window.location.search)
+    const fromUrl = params.get('section')
+    const valid = SECTIONS.some(s => s.key === fromUrl)
+    return valid ? fromUrl : 'account'
+  }
+  const [section, setSection] = useState(getInitialSection)
+  const [mobileShowDetail, setMobileShowDetail] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const params = new URLSearchParams(window.location.search)
+    const fromUrl = params.get('section')
+    return SECTIONS.some(s => s.key === fromUrl)
+  })
 
   // === STATE ВСЕХ ФОРМ ===
   const [user, setUser] = useState({ name: '', email: '', avatar: '' })
