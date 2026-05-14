@@ -529,7 +529,7 @@ export default function Settings() {
               <ChevronLeft size={18} />
               <span style={{ color: C.muted }}>Настройки</span>
             </div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 20px' }}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 24px' }}>
               {section === 'payments' ? 'Способы оплаты' : SECTIONS.find(s => s.key === section)?.label}
             </h2>
             {renderSection()}
@@ -625,7 +625,7 @@ export default function Settings() {
 
         {/* Контент */}
         <div style={{ padding: '24px 28px' }}>
-          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: C.text }}>
+          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 24, color: C.text }}>
             {section === 'payments' ? 'Способы оплаты' : SECTIONS.find(s => s.key === section)?.label}
           </div>
           {renderSection()}
