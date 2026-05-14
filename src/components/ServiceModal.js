@@ -1159,8 +1159,8 @@ const PaymentsSection = ({ meeting, update, userPayments }) => {
     update({ enabled_payments: next })
   }
 
-  // Список включённых для подсказки под «По умолчанию»
-  const enabledSummary = availableList.map(m => m.label).join(', ')
+  // Список включённых способов больше не показываем в подписи —
+  // используем фиксированный текст как в мокапе
 
   return (
     <>
@@ -1175,7 +1175,7 @@ const PaymentsSection = ({ meeting, update, userPayments }) => {
             left={
               <div>
                 <div style={{ fontSize: 15, color: C.text, marginBottom: 2 }}>По умолчанию</div>
-                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.4 }}>{enabledSummary}</div>
+                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.4 }}>Использовать все способы из настроек</div>
               </div>
             }
             right={<Toggle on={!isIndividual} onClick={() => setMode('default')} />}
