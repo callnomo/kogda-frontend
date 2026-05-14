@@ -37,8 +37,6 @@ const SECTIONS = [
   { key: 'security',      label: 'Безопасность',  icon: Lock },
 ]
 
-const BANKS = ['Сбербанк', 'Т-Банк', 'Альфа-Банк', 'ВТБ', 'Райффайзен', 'Газпромбанк']
-
 // ============ ОБЩИЕ КОМПОНЕНТЫ (iOS-style) ============
 
 // Группа: серый подзаголовок снаружи + бежевая карточка
@@ -168,11 +166,11 @@ export default function Settings() {
   const [telegramLink, setTelegramLink] = useState(null)
 
   const [payments, setPayments] = useState({
-    payment_sbp: false, payment_tinkoff: false, payment_sber: false,
-    payment_kaspi: false, payment_paypal: false, payment_wise: false,
-    payment_usdt: false, payment_bank: false, payment_other: '',
+    payment_sbp: false, payment_tinkoff: false,
+    payment_paypal: false, payment_wise: false,
+    payment_usdt: false, payment_bank: false,
+    payment_other: '',
   })
-  const [selectedBanks, setSelectedBanks] = useState([])
 
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '' })
   const [showCurrentPwd, setShowCurrentPwd] = useState(false)
@@ -233,8 +231,6 @@ export default function Settings() {
       setPayments({
         payment_sbp: res.data.payment_sbp ?? false,
         payment_tinkoff: res.data.payment_tinkoff ?? false,
-        payment_sber: res.data.payment_sber ?? false,
-        payment_kaspi: res.data.payment_kaspi ?? false,
         payment_paypal: res.data.payment_paypal ?? false,
         payment_wise: res.data.payment_wise ?? false,
         payment_usdt: res.data.payment_usdt ?? false,
@@ -264,12 +260,6 @@ export default function Settings() {
         headers: { Authorization: `Bearer ${token}` }
       })
     } catch (err) { console.error(err) }
-  }
-
-  const toggleBank = (bank) => {
-    setSelectedBanks(prev =>
-      prev.includes(bank) ? prev.filter(b => b !== bank) : [...prev, bank]
-    )
   }
 
   // Telegram подключение
@@ -355,8 +345,6 @@ export default function Settings() {
         return <PaymentsSection
           payments={payments}
           setPayments={savePayments}
-          selectedBanks={selectedBanks}
-          toggleBank={toggleBank}
           {...common}
         />
       case 'integrations':
@@ -726,7 +714,7 @@ function NotificationsSection({ notifications, setNotifications, telegramConnect
     </>
   )
 }
-function PaymentsSection({ payments, setPayments, selectedBanks, toggleBank, isMobile }) {
+function PaymentsSection({ payments, setPayments, isMobile }) {
   const groups = [
     {
       label: 'Россия',
@@ -740,7 +728,6 @@ function PaymentsSection({ payments, setPayments, selectedBanks, toggleBank, isM
       items: [
         { key: 'payment_paypal', label: 'PayPal' },
         { key: 'payment_wise', label: 'Wise' },
-        { key: 'payment_sber', label: 'Revolut' },
         { key: 'payment_bank', label: 'Банковский перевод', sub: 'IBAN / SWIFT' },
       ],
     },
@@ -794,39 +781,6 @@ function PaymentsSection({ payments, setPayments, selectedBanks, toggleBank, isM
           ))}
         </Group>
       ))}
-
-      {/* Подгруппа банков — появляется когда выбрана "Российская карта / банк" */}
-      {payments.payment_tinkoff && (
-        <Group label="Уточни банк, если хочешь">
-          <div style={{ padding: '14px 16px' }}>
-            <div style={{ fontSize: 12, color: C.mutedLight, marginBottom: 12 }}>
-              Это поможет клиенту понять, удобно ли ему оплатить.
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {BANKS.map(bank => {
-                const sel = selectedBanks.includes(bank)
-                return (
-                  <div
-                    key={bank}
-                    onClick={() => toggleBank(bank)}
-                    style={{
-                      padding: '6px 14px', borderRadius: 100,
-                      cursor: 'pointer', fontSize: 13,
-                      border: `1.5px solid ${sel ? C.text : '#E0E0D8'}`,
-                      background: sel ? C.text : C.card,
-                      color: sel ? C.card : C.text,
-                      fontWeight: sel ? 600 : 400,
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    {bank}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </Group>
-      )}
 
       {/* Свой способ */}
       <Group label="Свой способ">
