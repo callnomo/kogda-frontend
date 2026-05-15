@@ -91,6 +91,77 @@ function Row({ left, right, sub, last = false, onClick, disabled = false, style 
   )
 }
 
+// Лейбл с info-иконкой и тултипом при hover/tap.
+// Триггер — вся строка (слова + иконка).
+function LabelWithTip({ label, tip }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  // Закрытие при клике вне (для мобильного tap)
+  useEffect(() => {
+    if (!open) return
+    const onClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('touchstart', onClick)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('touchstart', onClick)
+    }
+  }, [open])
+
+  return (
+    <div
+      ref={ref}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, position: 'relative' }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onClick={(e) => {
+        e.stopPropagation()
+        setOpen(o => !o)
+      }}
+    >
+      <span style={{ fontSize: 14, color: C.text, cursor: 'help' }}>{label}</span>
+      <span style={{
+        width: 16, height: 16, borderRadius: '50%',
+        background: '#E0E0D8', color: '#666',
+        fontSize: 11, fontWeight: 700, fontStyle: 'italic',
+        fontFamily: 'Georgia, serif',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        lineHeight: 1, cursor: 'help', userSelect: 'none',
+      }}>i</span>
+      {open && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 8px)',
+          left: 0,
+          background: '#F0EFE9', color: '#444',
+          padding: '10px 14px', borderRadius: 10,
+          fontSize: 13, lineHeight: 1.5,
+          width: 'min(280px, calc(100vw - 60px))',
+          zIndex: 50,
+          boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+          border: '1px solid #E0E0D8',
+          textTransform: 'none', letterSpacing: 0, fontWeight: 400,
+          whiteSpace: 'normal',
+        }}>
+          {tip}
+          <div style={{
+            position: 'absolute',
+            top: -7, left: 16,
+            width: 12, height: 12,
+            background: '#F0EFE9',
+            borderLeft: '1px solid #E0E0D8',
+            borderTop: '1px solid #E0E0D8',
+            transform: 'rotate(45deg)',
+          }} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Тумблер iOS (чёрный/серый)
 function Toggle({ on, onClick, disabled = false }) {
   return (
@@ -768,7 +839,7 @@ function AccountSection({ user, account, setAccount, isMobile }) {
             <div ref={triggerRef}>
               <Row
                 last
-                left="Валюта"
+                left={<LabelWithTip label="Валюта" tip="Валюта по умолчанию. У каждой услуги можно выбрать свою." />}
                 onClick={onClick}
                 right={
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

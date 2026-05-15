@@ -124,9 +124,11 @@ const Group = ({ label, tip, children, style }) => {
               <span style={{
                 width: 16, height: 16, borderRadius: '50%',
                 background: '#E0E0D8', color: '#666',
-                fontSize: 11, fontWeight: 700,
+                fontSize: 11, fontWeight: 700, fontStyle: 'italic',
+                fontFamily: 'Georgia, serif',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              }}>?</span>
+                lineHeight: 1,
+              }}>i</span>
             )}
           </span>
           {tipOpen && tip && (
