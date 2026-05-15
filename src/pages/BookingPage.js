@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import axios from 'axios'
+import { getCurrencySymbol, getCurrencyLabel, getCurrencyName, findCurrency } from '../currencies'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
@@ -10,15 +11,122 @@ const DAYS_SHORT = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 const DAYS_FULL = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота']
 
 const NOTES_MAX = 200
+const PREFS_TTL = 30 * 24 * 60 * 60 * 1000 // 30 дней
 
-// Жёсткая логика: если hidden/hide_price — скрываем без исключений
+// Полный список IANA timezone для дропдауна. Сгруппирован по регионам.
+const TIMEZONE_GROUPS = [
+  {
+    label: 'СНГ',
+    zones: [
+      'Europe/Moscow', 'Europe/Kaliningrad', 'Asia/Yekaterinburg', 'Asia/Novosibirsk',
+      'Asia/Krasnoyarsk', 'Asia/Irkutsk', 'Asia/Yakutsk', 'Asia/Vladivostok',
+      'Europe/Kyiv', 'Europe/Minsk', 'Europe/Chisinau',
+      'Asia/Almaty', 'Asia/Bishkek', 'Asia/Tashkent', 'Asia/Dushanbe', 'Asia/Ashgabat',
+      'Asia/Yerevan', 'Asia/Tbilisi', 'Asia/Baku',
+    ],
+  },
+  {
+    label: 'Европа',
+    zones: [
+      'Europe/London', 'Europe/Dublin', 'Europe/Lisbon',
+      'Europe/Paris', 'Europe/Berlin', 'Europe/Amsterdam', 'Europe/Brussels',
+      'Europe/Madrid', 'Europe/Rome', 'Europe/Vienna', 'Europe/Zurich',
+      'Europe/Warsaw', 'Europe/Prague', 'Europe/Budapest', 'Europe/Bucharest',
+      'Europe/Stockholm', 'Europe/Oslo', 'Europe/Copenhagen', 'Europe/Helsinki',
+      'Europe/Athens', 'Europe/Istanbul',
+    ],
+  },
+  {
+    label: 'Азия и Ближний Восток',
+    zones: [
+      'Asia/Dubai', 'Asia/Jerusalem', 'Asia/Riyadh', 'Asia/Tehran',
+      'Asia/Karachi', 'Asia/Kolkata', 'Asia/Dhaka', 'Asia/Bangkok',
+      'Asia/Singapore', 'Asia/Hong_Kong', 'Asia/Shanghai', 'Asia/Tokyo', 'Asia/Seoul',
+      'Asia/Jakarta', 'Asia/Manila', 'Asia/Kuala_Lumpur',
+    ],
+  },
+  {
+    label: 'Америка',
+    zones: [
+      'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+      'America/Toronto', 'America/Mexico_City', 'America/Sao_Paulo',
+      'America/Argentina/Buenos_Aires', 'America/Bogota', 'America/Lima', 'America/Santiago',
+    ],
+  },
+  {
+    label: 'Океания и Африка',
+    zones: [
+      'Australia/Sydney', 'Australia/Perth', 'Pacific/Auckland',
+      'Africa/Cairo', 'Africa/Johannesburg', 'Africa/Lagos', 'Africa/Nairobi',
+    ],
+  },
+  {
+    label: 'Другое',
+    zones: ['UTC'],
+  },
+]
+
+// Получить offset вида "UTC+3" для текущей даты
+function getTzOffset(tz) {
+  try {
+    const date = new Date()
+    const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }))
+    const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }))
+    const offsetMinutes = (tzDate - utcDate) / (1000 * 60)
+    const sign = offsetMinutes >= 0 ? '+' : '-'
+    const hours = Math.floor(Math.abs(offsetMinutes) / 60)
+    const minutes = Math.abs(offsetMinutes) % 60
+    return minutes === 0 ? `UTC${sign}${hours}` : `UTC${sign}${hours}:${String(minutes).padStart(2,'0')}`
+  } catch { return '' }
+}
+
+// Локализованное имя timezone: "Москва" вместо "Europe/Moscow"
+function formatTzName(tz) {
+  const map = {
+    'Europe/Moscow': 'Москва', 'Europe/Kaliningrad': 'Калининград',
+    'Asia/Yekaterinburg': 'Екатеринбург', 'Asia/Novosibirsk': 'Новосибирск',
+    'Asia/Krasnoyarsk': 'Красноярск', 'Asia/Irkutsk': 'Иркутск',
+    'Asia/Yakutsk': 'Якутск', 'Asia/Vladivostok': 'Владивосток',
+    'Europe/Kyiv': 'Киев', 'Europe/Minsk': 'Минск', 'Europe/Chisinau': 'Кишинёв',
+    'Asia/Almaty': 'Алматы', 'Asia/Bishkek': 'Бишкек', 'Asia/Tashkent': 'Ташкент',
+    'Asia/Dushanbe': 'Душанбе', 'Asia/Ashgabat': 'Ашхабад',
+    'Asia/Yerevan': 'Ереван', 'Asia/Tbilisi': 'Тбилиси', 'Asia/Baku': 'Баку',
+    'Europe/London': 'Лондон', 'Europe/Dublin': 'Дублин', 'Europe/Lisbon': 'Лиссабон',
+    'Europe/Paris': 'Париж', 'Europe/Berlin': 'Берлин', 'Europe/Amsterdam': 'Амстердам',
+    'Europe/Brussels': 'Брюссель', 'Europe/Madrid': 'Мадрид', 'Europe/Rome': 'Рим',
+    'Europe/Vienna': 'Вена', 'Europe/Zurich': 'Цюрих', 'Europe/Warsaw': 'Варшава',
+    'Europe/Prague': 'Прага', 'Europe/Budapest': 'Будапешт', 'Europe/Bucharest': 'Бухарест',
+    'Europe/Stockholm': 'Стокгольм', 'Europe/Oslo': 'Осло', 'Europe/Copenhagen': 'Копенгаген',
+    'Europe/Helsinki': 'Хельсинки', 'Europe/Athens': 'Афины', 'Europe/Istanbul': 'Стамбул',
+    'Asia/Dubai': 'Дубай', 'Asia/Jerusalem': 'Иерусалим', 'Asia/Riyadh': 'Эр-Рияд',
+    'Asia/Tehran': 'Тегеран', 'Asia/Karachi': 'Карачи', 'Asia/Kolkata': 'Дели',
+    'Asia/Dhaka': 'Дакка', 'Asia/Bangkok': 'Бангкок', 'Asia/Singapore': 'Сингапур',
+    'Asia/Hong_Kong': 'Гонконг', 'Asia/Shanghai': 'Шанхай', 'Asia/Tokyo': 'Токио',
+    'Asia/Seoul': 'Сеул', 'Asia/Jakarta': 'Джакарта', 'Asia/Manila': 'Манила',
+    'Asia/Kuala_Lumpur': 'Куала-Лумпур',
+    'America/New_York': 'Нью-Йорк', 'America/Chicago': 'Чикаго',
+    'America/Denver': 'Денвер', 'America/Los_Angeles': 'Лос-Анджелес',
+    'America/Toronto': 'Торонто', 'America/Mexico_City': 'Мехико',
+    'America/Sao_Paulo': 'Сан-Паулу', 'America/Argentina/Buenos_Aires': 'Буэнос-Айрес',
+    'America/Bogota': 'Богота', 'America/Lima': 'Лима', 'America/Santiago': 'Сантьяго',
+    'Australia/Sydney': 'Сидней', 'Australia/Perth': 'Перт', 'Pacific/Auckland': 'Окленд',
+    'Africa/Cairo': 'Каир', 'Africa/Johannesburg': 'Йоханнесбург',
+    'Africa/Lagos': 'Лагос', 'Africa/Nairobi': 'Найроби',
+    'UTC': 'UTC',
+  }
+  return map[tz] || tz
+}
+
+// Форматирует цену с символом валюты услуги
 function formatPrice(m) {
   if (!m) return null
   if (m.price_mode === 'hidden') return null
   if (m.hide_price === true) return null
   if (m.price_mode === 'free') return 'Бесплатно'
   if (m.price_mode === 'on_request') return 'По запросу'
-  return m.price > 0 ? `${Number(m.price).toLocaleString('ru-RU')} ₽` : 'Бесплатно'
+  if (!(m.price > 0)) return 'Бесплатно'
+  const symbol = getCurrencySymbol(m.currency || 'USD')
+  return `${Number(m.price).toLocaleString('ru-RU')} ${symbol}`
 }
 
 function formatLocation(m) {
@@ -32,11 +140,179 @@ function formatLocation(m) {
   }
 }
 
+// ============================================================================
+// Onboarding модалка: уточняем timezone + валюту перед показом услуг
+// ============================================================================
+function OnboardingModal({
+  initialTimezone, initialCurrency, availableCurrencies, onConfirm,
+}) {
+  const [tz, setTz] = useState(initialTimezone)
+  const [currency, setCurrency] = useState(initialCurrency)
+  const [tzOpen, setTzOpen] = useState(false)
+
+  const showCurrencyBlock = availableCurrencies && availableCurrencies.length > 1
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 20, zIndex: 1000,
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 20, padding: 32,
+        maxWidth: 420, width: '100%', maxHeight: '90vh', overflow: 'auto',
+        boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+      }}>
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>
+            Уточни данные
+          </div>
+          <div style={{ fontSize: 13, color: '#888', lineHeight: 1.5 }}>
+            Чтобы показать правильные цены и время
+          </div>
+        </div>
+
+        {/* Timezone */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, color: '#999',
+            textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8,
+          }}>Часовой пояс</div>
+
+          <div style={{ position: 'relative' }}>
+            <div
+              onClick={() => setTzOpen(o => !o)}
+              style={{
+                background: '#F7F6F1', border: '1.5px solid #E8E7E0',
+                borderRadius: 12, padding: '13px 16px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                cursor: 'pointer', userSelect: 'none',
+              }}
+            >
+              <span style={{ fontSize: 14 }}>
+                {formatTzName(tz)} ({getTzOffset(tz)})
+              </span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"
+                style={{ transform: tzOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.15s' }}>
+                <polyline points="6,9 12,15 18,9"/>
+              </svg>
+            </div>
+            {tzOpen && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+                background: '#fff', border: '1px solid #E8E7E0', borderRadius: 12,
+                boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
+                maxHeight: 320, overflowY: 'auto', zIndex: 10,
+              }}>
+                {TIMEZONE_GROUPS.map((group, gi) => (
+                  <div key={group.label}>
+                    <div style={{
+                      padding: '8px 14px 4px', fontSize: 10, fontWeight: 700,
+                      color: '#999', textTransform: 'uppercase', letterSpacing: 1,
+                      background: '#FAF9F3',
+                    }}>{group.label}</div>
+                    {group.zones.map((zone, i) => (
+                      <div
+                        key={zone}
+                        onClick={() => { setTz(zone); setTzOpen(false) }}
+                        style={{
+                          padding: '9px 14px', fontSize: 13, cursor: 'pointer',
+                          background: tz === zone ? '#FAF9F3' : '#fff',
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          borderBottom: i === group.zones.length - 1 ? 'none' : '1px solid #F0EFE9',
+                        }}
+                      >
+                        <span>{formatTzName(zone)}</span>
+                        <span style={{ fontSize: 11, color: '#aaa' }}>{getTzOffset(zone)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div style={{ fontSize: 11, color: '#aaa', marginTop: 5 }}>
+            Определили автоматически
+          </div>
+        </div>
+
+        {/* Валюта — только если у коуча >1 валюты */}
+        {showCurrencyBlock && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{
+              fontSize: 11, fontWeight: 700, color: '#999',
+              textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8,
+            }}>Валюта</div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {availableCurrencies.map(code => {
+                const c = findCurrency(code)
+                const active = currency === code
+                return (
+                  <div
+                    key={code}
+                    onClick={() => setCurrency(code)}
+                    style={{
+                      background: '#fff',
+                      border: `1.5px solid ${active ? '#111' : '#E8E7E0'}`,
+                      borderRadius: 12, padding: '12px 16px',
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      cursor: 'pointer', userSelect: 'none',
+                    }}
+                  >
+                    <div style={{
+                      width: 18, height: 18, borderRadius: 9,
+                      border: `2px solid ${active ? '#111' : '#ccc'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      {active && <div style={{ width: 9, height: 9, borderRadius: 5, background: '#111' }}/>}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>
+                        {c ? c.label : code}
+                      </div>
+                      {c && (
+                        <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>
+                          {c.name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ fontSize: 11, color: '#aaa', marginTop: 5 }}>
+              Выбрали по вашей стране
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={() => onConfirm({ timezone: tz, currency })}
+          style={{
+            width: '100%', background: '#E8FF47', color: '#111',
+            border: 'none', padding: 14, borderRadius: 12,
+            fontSize: 14, fontWeight: 700, cursor: 'pointer',
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          Подтвердить
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// BookingPage
+// ============================================================================
 export default function BookingPage() {
   const { slug, serviceSlug } = useParams()
 
   const [profile, setProfile] = useState(null)
   const [meetings, setMeetings] = useState([])
+  const [allMeetings, setAllMeetings] = useState([]) // оригинальный список до фильтра
   const [selectedMeeting, setSelectedMeeting] = useState(null)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(null)
@@ -48,20 +324,90 @@ export default function BookingPage() {
   const [bookingLoading, setBookingLoading] = useState(false)
   const [notFound, setNotFound] = useState(false)
 
+  // Prefs клиента: timezone + currency. Запоминаются в localStorage на 30 дней.
+  const [prefs, setPrefs] = useState(null) // { timezone, currency }
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
+  // Уникальные валюты из услуг коуча (для опросника)
+  const availableCurrencies = useMemo(() => {
+    const set = new Set()
+    for (const m of allMeetings) {
+      if (m.currency) set.add(m.currency)
+    }
+    return Array.from(set)
+  }, [allMeetings])
+
+  // Загружаем prefs из localStorage при монтировании
+  useEffect(() => {
+    if (!slug) return
+    try {
+      const raw = localStorage.getItem(`kogda_prefs_${slug}`)
+      if (!raw) return
+      const parsed = JSON.parse(raw)
+      if (parsed && parsed.expires > Date.now()) {
+        setPrefs({ timezone: parsed.timezone, currency: parsed.currency })
+      }
+    } catch {}
+  }, [slug])
+
   useEffect(() => { loadProfile() }, [])
 
   const loadProfile = async () => {
     try {
       if (serviceSlug) {
+        // Прямая ссылка на услугу: опросник не нужен (юзер уже выбрал)
         const res = await axios.get(`${API}/meetings/public/${slug}/${serviceSlug}`)
         setProfile(res.data.user)
+        setAllMeetings([res.data.meeting])
         setMeetings([res.data.meeting])
         setSelectedMeeting(res.data.meeting)
         setStep(2)
+
+        // Если нет prefs — устанавливаем по client_geo (без модалки)
+        if (!prefs) {
+          const tz = res.data.client_geo?.timezone ||
+            Intl.DateTimeFormat().resolvedOptions().timeZone
+          setPrefs({
+            timezone: tz,
+            currency: res.data.meeting.currency || res.data.client_geo?.currency || 'USD',
+          })
+        }
       } else {
         const res = await axios.get(`${API}/meetings/public/${slug}`)
         setProfile(res.data.user)
-        setMeetings(res.data.meetings)
+        setAllMeetings(res.data.meetings)
+        // Если prefs уже есть в localStorage — применяем фильтр
+        // Если нет — показываем onboarding
+        if (!prefs) {
+          // Авто-определение timezone от Cloudflare или браузера
+          const autoTimezone = res.data.client_geo?.timezone ||
+            Intl.DateTimeFormat().resolvedOptions().timeZone
+
+          // Авто-определение валюты: страна клиента → если есть у коуча → берём её,
+          // иначе берём default_currency коуча
+          const suggested = res.data.client_geo?.currency
+          const userDefault = res.data.user?.default_currency
+          const currencies = new Set(res.data.meetings.map(m => m.currency).filter(Boolean))
+
+          let autoCurrency = 'USD'
+          if (suggested && currencies.has(suggested)) {
+            autoCurrency = suggested
+          } else if (userDefault && currencies.has(userDefault)) {
+            autoCurrency = userDefault
+          } else if (currencies.size > 0) {
+            autoCurrency = Array.from(currencies)[0]
+          }
+
+          // Показываем модалку если есть что выбрать (>1 валюты) ИЛИ если хотим
+          // дать клиенту проверить timezone (всегда показываем модалку при первом заходе)
+          setPrefs({ timezone: autoTimezone, currency: autoCurrency })
+          setShowOnboarding(true)
+          // Меетинги пока не применяем — после Подтверждения
+          setMeetings(res.data.meetings)
+        } else {
+          // Prefs уже есть — применяем фильтр
+          setMeetings(res.data.meetings)
+        }
       }
     } catch (err) {
       setNotFound(true)
@@ -69,11 +415,31 @@ export default function BookingPage() {
     setLoading(false)
   }
 
+  // После Подтверждения в опроснике — сохраняем prefs и закрываем модалку
+  const handleOnboardingConfirm = (newPrefs) => {
+    setPrefs(newPrefs)
+    setShowOnboarding(false)
+    try {
+      localStorage.setItem(`kogda_prefs_${slug}`, JSON.stringify({
+        timezone: newPrefs.timezone,
+        currency: newPrefs.currency,
+        expires: Date.now() + PREFS_TTL,
+      }))
+    } catch {}
+  }
+
+  // Фильтрация услуг по выбранной валюте.
+  // Если у коуча >1 валюты — фильтруем. Если 1 валюта или 0 — показываем все.
+  const filteredMeetings = useMemo(() => {
+    if (!prefs || availableCurrencies.length <= 1) return meetings
+    return meetings.filter(m => (m.currency || 'USD') === prefs.currency)
+  }, [meetings, prefs, availableCurrencies])
+
   const loadSlots = async (date) => {
     try {
       const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
       const meetingId = selectedMeeting?.id || ''
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      const timezone = prefs?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
       const res = await axios.get(`${API}/schedule/slots/${slug}?date=${dateStr}&meeting_type_id=${meetingId}&timezone=${encodeURIComponent(timezone)}`)
       setSlots(res.data.slots || [])
     } catch (err) { setSlots([]) }
@@ -99,7 +465,7 @@ export default function BookingPage() {
     setBookingLoading(true)
     try {
       const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      const timezone = prefs?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
       await axios.post(`${API}/bookings`, {
         meeting_type_id: selectedMeeting.id,
         client_name: form.name,
@@ -151,6 +517,23 @@ export default function BookingPage() {
 
   const canGoBack = !serviceSlug
 
+  // Маленькая полоска с timezone в шапке (для информации клиента)
+  const TimezonePill = prefs?.timezone ? (
+    <div
+      onClick={() => setShowOnboarding(true)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        fontSize: 12, color: '#888', cursor: 'pointer',
+        padding: '4px 10px', borderRadius: 999,
+        background: '#F7F6F1', border: '1px solid #E8E7E0',
+      }}
+      title="Изменить часовой пояс и валюту"
+    >
+      <span>🕐</span>
+      <span>{formatTzName(prefs.timezone)}</span>
+    </div>
+  ) : null
+
   const Sidebar = ({ showBack, onBack, backLabel }) => {
     const priceLabel = formatPrice(selectedMeeting)
     const location = formatLocation(selectedMeeting)
@@ -176,6 +559,11 @@ export default function BookingPage() {
               <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #E8E7E0' }}>
                 <div style={{ fontSize: 11, color: '#aaa', marginBottom: 3 }}>{DAYS_FULL[selectedDate.getDay()]}</div>
                 <div style={{ fontSize: 13, fontWeight: 700 }}>{selectedDate.getDate()} {MONTHS_GEN[selectedDate.getMonth()]} · {selectedSlot}</div>
+                {prefs?.timezone && (
+                  <div style={{ fontSize: 11, color: '#aaa', marginTop: 3 }}>
+                    {formatTzName(prefs.timezone)} · {getTzOffset(prefs.timezone)}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -191,10 +579,15 @@ export default function BookingPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F7F6F1', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ background: '#fff', borderBottom: '1px solid #E8E7E0', padding: '16px 48px' }}>
+      <div style={{
+        background: '#fff', borderBottom: '1px solid #E8E7E0',
+        padding: '16px 48px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
         <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, fontFamily: 'Syne, sans-serif' }}>
           kog<span style={{ background: '#E8FF47', padding: '0 6px', borderRadius: 6 }}>DA</span>
         </h1>
+        {TimezonePill}
       </div>
 
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '40px 24px' }}>
@@ -235,38 +628,60 @@ export default function BookingPage() {
               {profile.bio && <p style={{ fontSize: 14, color: '#888', margin: 0 }}>{profile.bio}</p>}
             </div>
             <p style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1.5, textAlign: 'center', marginBottom: 14 }}>Выберите тип встречи</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {meetings.map(m => {
-                const priceLabel = formatPrice(m)
-                const location = formatLocation(m)
+            {filteredMeetings.length === 0 ? (
+              <div style={{
+                textAlign: 'center', padding: '40px 20px',
+                background: '#fff', borderRadius: 16, border: '1.5px solid #E8E7E0',
+              }}>
+                <div style={{ fontSize: 14, color: '#888', marginBottom: 12 }}>
+                  В этой валюте услуг нет
+                </div>
+                <button
+                  onClick={() => setShowOnboarding(true)}
+                  style={{
+                    background: '#111', color: '#fff', border: 'none',
+                    padding: '10px 20px', borderRadius: 10,
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Сменить валюту
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {filteredMeetings.map(m => {
+                  const priceLabel = formatPrice(m)
+                  const location = formatLocation(m)
 
-                return (
-                  <div key={m.id} onClick={() => { setSelectedMeeting(m); setStep(2) }}
-                    style={{ background: '#fff', borderRadius: 16, padding: '18px 22px', border: '1.5px solid #E8E7E0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#111'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#E8E7E0'; e.currentTarget.style.transform = 'translateY(0)' }}>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>{m.title}</div>
-                      {m.description && <div style={{ fontSize: 13, color: '#888', marginBottom: 8 }}>{m.description}</div>}
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>⏱ {m.duration} мин</span>
-                        <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>{location.icon} {location.label}</span>
-                        {priceLabel === 'Бесплатно' && (
-                          <span style={{ fontSize: 12, color: '#22C55E', fontWeight: 700, background: '#DCFCE7', padding: '3px 10px', borderRadius: 20 }}>Бесплатно</span>
-                        )}
-                        {priceLabel === 'По запросу' && (
-                          <span style={{ fontSize: 12, color: '#888', fontWeight: 600, background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>По запросу</span>
-                        )}
-                        {priceLabel && priceLabel !== 'Бесплатно' && priceLabel !== 'По запросу' && (
-                          <span style={{ fontSize: 13, fontWeight: 800, color: '#111' }}>{priceLabel}</span>
-                        )}
+                  return (
+                    <div key={m.id} onClick={() => { setSelectedMeeting(m); setStep(2) }}
+                      style={{ background: '#fff', borderRadius: 16, padding: '18px 22px', border: '1.5px solid #E8E7E0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, transition: 'all 0.15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#111'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#E8E7E0'; e.currentTarget.style.transform = 'translateY(0)' }}>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>{m.title}</div>
+                        {m.description && <div style={{ fontSize: 13, color: '#888', marginBottom: 8 }}>{m.description}</div>}
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>⏱ {m.duration} мин</span>
+                          <span style={{ fontSize: 12, color: '#888', background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>{location.icon} {location.label}</span>
+                          {priceLabel === 'Бесплатно' && (
+                            <span style={{ fontSize: 12, color: '#22C55E', fontWeight: 700, background: '#DCFCE7', padding: '3px 10px', borderRadius: 20 }}>Бесплатно</span>
+                          )}
+                          {priceLabel === 'По запросу' && (
+                            <span style={{ fontSize: 12, color: '#888', fontWeight: 600, background: '#F7F6F1', padding: '3px 10px', borderRadius: 20 }}>По запросу</span>
+                          )}
+                          {priceLabel && priceLabel !== 'Бесплатно' && priceLabel !== 'По запросу' && (
+                            <span style={{ fontSize: 13, fontWeight: 800, color: '#111' }}>{priceLabel}</span>
+                          )}
+                        </div>
                       </div>
+                      <div style={{ width: 30, height: 30, borderRadius: 15, background: '#F7F6F1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>→</div>
                     </div>
-                    <div style={{ width: 30, height: 30, borderRadius: 15, background: '#F7F6F1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>→</div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -420,6 +835,16 @@ export default function BookingPage() {
           kog<span style={{ background: '#E8FF47', padding: '0 4px', borderRadius: 4 }}>DA</span>
         </a>
       </div>
+
+      {/* Onboarding модалка */}
+      {showOnboarding && prefs && (
+        <OnboardingModal
+          initialTimezone={prefs.timezone}
+          initialCurrency={prefs.currency}
+          availableCurrencies={availableCurrencies}
+          onConfirm={handleOnboardingConfirm}
+        />
+      )}
     </div>
   )
 }
