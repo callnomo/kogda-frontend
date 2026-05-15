@@ -761,7 +761,11 @@ export default function ServiceModal({ meetingId, onUpdate }) {
 
 function pricePreview(m) {
   switch (m.price_mode) {
-    case 'amount': return m.price > 0 ? `${Number(m.price).toLocaleString('ru-RU')} ₽` : '—'
+    case 'amount': {
+      if (!(m.price > 0)) return '—'
+      const symbol = getCurrencySymbol(m.currency || 'USD')
+      return `${Number(m.price).toLocaleString('ru-RU')} ${symbol}`
+    }
     case 'hidden': return 'Скрыта'
     case 'on_request': return 'По запросу'
     case 'free': return 'Бесплатно'
@@ -895,13 +899,14 @@ const PriceSection = ({ meeting, update }) => {
           <Field label={`Сумма (${currencySymbol})`}>
             <input
               type="number"
-              value={localPrice}
+              value={localPrice === 0 || localPrice === '0' ? '' : localPrice}
               onChange={e => setLocalPrice(e.target.value)}
               onBlur={() => {
                 const num = Number(localPrice) || 0
                 if (num !== Number(meeting.price)) update({ price: num })
               }}
               min={0}
+              placeholder="0"
               style={{ ...inputStyle, MozAppearance: 'textfield' }}
             />
           </Field>
