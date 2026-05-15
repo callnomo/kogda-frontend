@@ -69,10 +69,10 @@ export function findCurrency(code) {
   return CURRENCIES.find(c => c.code === code) || null
 }
 
-// Получить символ для отображения цены. Для OTHER кодов (которые не в списке)
-// возвращаем сам код (например, "100 KGS").
+// Получить символ для отображения цены. Для legacy OTHER → USD дефолт.
+// Для custom кодов которые не в списке (KGS, UAH if removed) → возвращаем сам код.
 export function getCurrencySymbol(code) {
-  if (!code) return '$' // дефолт USD
+  if (!code || code === 'OTHER') return '$' // дефолт USD для пустых и legacy OTHER
   const c = findCurrency(code)
   if (c) return c.symbol || c.code
   // Это custom код вроде KGS, MXN — возвращаем как есть
@@ -80,9 +80,9 @@ export function getCurrencySymbol(code) {
 }
 
 // Получить label для отображения в строке/превью.
-// Для известных валют — "₽ RUB", для custom — сам код.
+// Для известных валют — "₽ RUB", для custom — сам код. Для legacy OTHER → "$ USD".
 export function getCurrencyLabel(code) {
-  if (!code) return '$ USD'
+  if (!code || code === 'OTHER') return '$ USD'
   const c = findCurrency(code)
   if (c) return c.label
   return code

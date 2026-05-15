@@ -789,12 +789,6 @@ function AccountSection({ user, account, setAccount, isMobile }) {
                   borderSoft: C.borderSoft,
                 }}
               />
-              <div style={{
-                fontSize: 12, color: C.mutedLight,
-                margin: '12px 16px 0', padding: '0 4px', lineHeight: 1.4,
-              }}>
-                Применяется только к новым услугам. У существующих можно поменять в самой услуге.
-              </div>
             </div>
           )}
         </div>

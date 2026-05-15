@@ -21,9 +21,11 @@ export default function CurrencyPicker({ value, onChange, colors = {}, placehold
   }
 
   const [query, setQuery] = useState('')
-  // Если value не в списке — значит это custom код
+  // value='OTHER' это устаревший код из старой версии — не считаем за custom
+  const isLegacyOther = value === 'OTHER'
+  // Если value не в списке и не OTHER — значит это custom код типа KGS/UAH
   const valueInList = findCurrency(value)
-  const initiallyCustom = !!value && !valueInList
+  const initiallyCustom = !!value && !valueInList && !isLegacyOther
 
   const [showCustomInput, setShowCustomInput] = useState(initiallyCustom)
   const [customCode, setCustomCode] = useState(initiallyCustom ? value : '')
@@ -50,6 +52,32 @@ export default function CurrencyPicker({ value, onChange, colors = {}, placehold
     setShowCustomInput(true)
   }
 
+  // Умный onChange для input "Другая":
+  // 1. Пользователь печатает — мы переводим в UPPERCASE
+  // 2. Если ввёл что-то типа "рубль", "евро", "гривна" — ищем в aliases
+  //    и если нашли — заменяем на стандартный код
+  const handleCustomChange = (rawValue) => {
+    const upper = String(rawValue).toUpperCase()
+    setCustomCode(upper)
+    setCustomError('')
+
+    // Пробуем найти по алиасам (case-insensitive)
+    const lower = String(rawValue).trim().toLowerCase()
+    if (lower.length >= 2) {
+      const match = CURRENCIES.find(c =>
+        c.code.toLowerCase() === lower ||
+        c.aliases.some(a => a.toLowerCase() === lower)
+      )
+      if (match) {
+        // Нашли! Подменяем на стандартный код и сразу применяем
+        setShowCustomInput(false)
+        setCustomCode('')
+        onChange(match.code)
+        return
+      }
+    }
+  }
+
   const handleCustomBlur = () => {
     const normalized = normalizeCustomCurrencyCode(customCode)
     if (!normalized) {
@@ -58,13 +86,13 @@ export default function CurrencyPicker({ value, onChange, colors = {}, placehold
       setCustomError('')
       return
     }
-    if (!isValidCustomCurrencyCode(normalized)) {
-      setCustomError('Код должен быть 2-5 латинских букв (например, UAH)')
-      return
-    }
     // Если совпало с готовой валютой — используем её, не сохраняем как custom
     if (findCurrency(normalized)) {
       handleSelectCurrency(normalized)
+      return
+    }
+    if (!isValidCustomCurrencyCode(normalized)) {
+      setCustomError('Введи 2-5 латинских букв (например, UAH) или по-русски: рубль, евро…')
       return
     }
     setCustomError('')
@@ -204,14 +232,11 @@ export default function CurrencyPicker({ value, onChange, colors = {}, placehold
                 ref={customInputRef}
                 type="text"
                 value={customCode}
-                onChange={e => {
-                  setCustomCode(e.target.value.toUpperCase())
-                  setCustomError('')
-                }}
+                onChange={e => handleCustomChange(e.target.value)}
                 onBlur={handleCustomBlur}
                 onKeyDown={handleCustomKeyDown}
-                placeholder="Введи код: UAH, MXN, KGS..."
-                maxLength={5}
+                placeholder="UAH, MXN, KGS или по-русски..."
+                maxLength={20}
                 style={{
                   width: '100%',
                   padding: '8px 12px',
@@ -221,7 +246,6 @@ export default function CurrencyPicker({ value, onChange, colors = {}, placehold
                   outline: 'none',
                   fontFamily: 'Inter, sans-serif',
                   boxSizing: 'border-box',
-                  textTransform: 'uppercase',
                 }}
               />
               {customError && (
@@ -231,7 +255,7 @@ export default function CurrencyPicker({ value, onChange, colors = {}, placehold
               )}
               {!customError && (
                 <div style={{ fontSize: 12, color: C.mutedLight, marginTop: 6 }}>
-                  3 заглавные буквы из стандарта ISO 4217
+                  Распознаём «рубль», «гривна», «евро» — или вводи код ISO 4217 (UAH, KGS…)
                 </div>
               )}
             </div>
@@ -244,7 +268,7 @@ export default function CurrencyPicker({ value, onChange, colors = {}, placehold
           fontSize: 12, color: C.mutedLight,
           margin: '12px 16px 0', lineHeight: 1.4,
         }}>
-          Можно искать на русском (гривна, евро, бат...) или вводить код.
+          Можно искать на русском (гривна, евро, бат…) или вводить код.
         </div>
       )}
     </div>
