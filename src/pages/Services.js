@@ -30,17 +30,21 @@ const DEFAULT_NEW_SERVICE = {
 }
 
 // ============ ВАЛЮТЫ ============
-// Список валют для фильтра. Поле currency в БД — это код типа 'RUB', 'USD'.
-// Если поле отсутствует (старые услуги) — считаем что валюта RUB (или whatever default).
+// 12 валют для русскоязычной аудитории + опция "Другая"
 const CURRENCIES = [
   { code: 'RUB', symbol: '₽', label: '₽ RUB' },
   { code: 'USD', symbol: '$', label: '$ USD' },
   { code: 'EUR', symbol: '€', label: '€ EUR' },
-  { code: 'THB', symbol: '฿', label: '฿ THB' },
+  { code: 'ILS', symbol: '₪', label: '₪ ILS' },
   { code: 'KZT', symbol: '₸', label: '₸ KZT' },
   { code: 'GEL', symbol: '₾', label: '₾ GEL' },
   { code: 'GBP', symbol: '£', label: '£ GBP' },
+  { code: 'THB', symbol: '฿', label: '฿ THB' },
+  { code: 'TRY', symbol: '₺', label: '₺ TRY' },
   { code: 'AED', symbol: 'AED', label: 'AED' },
+  { code: 'BYN', symbol: 'Br', label: 'Br BYN' },
+  { code: 'AMD', symbol: '֏', label: '֏ AMD' },
+  { code: 'OTHER', symbol: '', label: 'Другая' },
 ]
 
 const PRICE_TYPES = [
@@ -207,17 +211,22 @@ function FilterDropdown({ filters, setFilters, onReset, onClose, isMobile }) {
         open={openGroup === 'status'}
         onToggle={() => toggleGroup('status')}
       >
-        <PillRow>
+        <CheckList>
           {[
             { key: 'all', label: 'Все' },
             { key: 'active', label: 'Активные' },
             { key: 'hidden', label: 'Скрытые' },
-          ].map(it => (
-            <Pill key={it.key} active={filters.status === it.key} onClick={() => setSingle('status', it.key)}>
+          ].map((it, i, arr) => (
+            <CheckItem
+              key={it.key}
+              active={filters.status === it.key}
+              onClick={() => setSingle('status', it.key)}
+              last={i === arr.length - 1}
+            >
               {it.label}
-            </Pill>
+            </CheckItem>
           ))}
-        </PillRow>
+        </CheckList>
       </FilterRow>
 
       {/* Валюта */}
@@ -227,16 +236,24 @@ function FilterDropdown({ filters, setFilters, onReset, onClose, isMobile }) {
         open={openGroup === 'currencies'}
         onToggle={() => toggleGroup('currencies')}
       >
-        <PillRow>
-          <Pill active={filters.currencies.length === 0} onClick={() => setFilters(f => ({ ...f, currencies: [] }))}>
-            Все
-          </Pill>
-          {CURRENCIES.map(c => (
-            <Pill key={c.code} active={filters.currencies.includes(c.code)} onClick={() => toggleMulti('currencies', c.code)}>
+        <CheckList>
+          <CheckItem
+            active={filters.currencies.length === 0}
+            onClick={() => setFilters(f => ({ ...f, currencies: [] }))}
+          >
+            Все валюты
+          </CheckItem>
+          {CURRENCIES.map((c, i, arr) => (
+            <CheckItem
+              key={c.code}
+              active={filters.currencies.includes(c.code)}
+              onClick={() => toggleMulti('currencies', c.code)}
+              last={i === arr.length - 1}
+            >
               {c.label}
-            </Pill>
+            </CheckItem>
           ))}
-        </PillRow>
+        </CheckList>
       </FilterRow>
 
       {/* Тип цены */}
@@ -246,16 +263,24 @@ function FilterDropdown({ filters, setFilters, onReset, onClose, isMobile }) {
         open={openGroup === 'priceTypes'}
         onToggle={() => toggleGroup('priceTypes')}
       >
-        <PillRow>
-          <Pill active={filters.priceTypes.length === 0} onClick={() => setFilters(f => ({ ...f, priceTypes: [] }))}>
+        <CheckList>
+          <CheckItem
+            active={filters.priceTypes.length === 0}
+            onClick={() => setFilters(f => ({ ...f, priceTypes: [] }))}
+          >
             Все
-          </Pill>
-          {PRICE_TYPES.map(p => (
-            <Pill key={p.key} active={filters.priceTypes.includes(p.key)} onClick={() => toggleMulti('priceTypes', p.key)}>
+          </CheckItem>
+          {PRICE_TYPES.map((p, i, arr) => (
+            <CheckItem
+              key={p.key}
+              active={filters.priceTypes.includes(p.key)}
+              onClick={() => toggleMulti('priceTypes', p.key)}
+              last={i === arr.length - 1}
+            >
               {p.label}
-            </Pill>
+            </CheckItem>
           ))}
-        </PillRow>
+        </CheckList>
       </FilterRow>
 
       {/* Сортировка */}
@@ -266,13 +291,18 @@ function FilterDropdown({ filters, setFilters, onReset, onClose, isMobile }) {
         onToggle={() => toggleGroup('sort')}
         isLast
       >
-        <PillRow>
-          {SORTS.map(s => (
-            <Pill key={s.key} active={filters.sort === s.key} onClick={() => setSingle('sort', s.key)}>
+        <CheckList>
+          {SORTS.map((s, i, arr) => (
+            <CheckItem
+              key={s.key}
+              active={filters.sort === s.key}
+              onClick={() => setSingle('sort', s.key)}
+              last={i === arr.length - 1}
+            >
               {s.label}
-            </Pill>
+            </CheckItem>
           ))}
-        </PillRow>
+        </CheckList>
       </FilterRow>
 
       {/* Низ: сброс */}
@@ -363,6 +393,44 @@ function Pill({ active, onClick, children }) {
     >
       {children}
     </span>
+  )
+}
+
+// Список с галочками (iOS Settings style)
+function CheckList({ children }) {
+  return (
+    <div style={{
+      background: '#fff',
+      border: '1px solid #E8E7E0',
+      borderRadius: 10,
+      overflow: 'hidden',
+    }}>
+      {children}
+    </div>
+  )
+}
+
+function CheckItem({ active, onClick, children, last }) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '11px 14px',
+        borderBottom: last ? 'none' : '1px solid #F0EFE9',
+        cursor: 'pointer',
+        userSelect: 'none',
+      }}
+    >
+      <span style={{ fontSize: 14, color: '#111' }}>{children}</span>
+      {active && (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="3">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      )}
+    </div>
   )
 }
 
