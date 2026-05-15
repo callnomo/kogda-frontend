@@ -121,12 +121,16 @@ const Group = ({ label, tip, children, style }) => {
           >
             {label}
             {tip && (
-              <span style={{
-                fontSize: 15,
-                color: '#888',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                lineHeight: 1,
-              }}>ⓘ</span>
+              <svg
+                width="16" height="16" viewBox="0 0 16 16"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ display: 'inline-block', flexShrink: 0 }}
+              >
+                <circle cx="8" cy="8" r="7" fill="none" stroke="#888" strokeWidth="1.3"/>
+                <text x="8" y="11.8" textAnchor="middle"
+                  fontFamily="Georgia, serif" fontStyle="italic"
+                  fontSize="10" fontWeight="600" fill="#888">i</text>
+              </svg>
             )}
           </span>
           {tipOpen && tip && (
