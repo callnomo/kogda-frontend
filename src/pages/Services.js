@@ -1,22 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import axios from 'axios'
-import { Plus, Trash2, Pencil, Copy, Eye, EyeOff, Code2, ExternalLink, Check, Layers, GripVertical, ChevronUp, ArrowLeft } from 'lucide-react'
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+  Plus, Trash2, Pencil, Copy, Eye, EyeOff, Code2, ExternalLink, Check,
+  Layers, ChevronUp, ChevronDown, ArrowLeft, Search, SlidersHorizontal, X
+} from 'lucide-react'
 import AppLayout from '../components/AppLayout'
 import AIHelper from '../components/AIHelper'
 import PromoCard from '../components/PromoCard'
@@ -42,6 +29,42 @@ const DEFAULT_NEW_SERVICE = {
   cancellation_policy: '',
 }
 
+// ============ ВАЛЮТЫ ============
+// Список валют для фильтра. Поле currency в БД — это код типа 'RUB', 'USD'.
+// Если поле отсутствует (старые услуги) — считаем что валюта RUB (или whatever default).
+const CURRENCIES = [
+  { code: 'RUB', symbol: '₽', label: '₽ RUB' },
+  { code: 'USD', symbol: '$', label: '$ USD' },
+  { code: 'EUR', symbol: '€', label: '€ EUR' },
+  { code: 'THB', symbol: '฿', label: '฿ THB' },
+  { code: 'KZT', symbol: '₸', label: '₸ KZT' },
+  { code: 'GEL', symbol: '₾', label: '₾ GEL' },
+  { code: 'GBP', symbol: '£', label: '£ GBP' },
+  { code: 'AED', symbol: 'AED', label: 'AED' },
+]
+
+const PRICE_TYPES = [
+  { key: 'amount', label: 'С фиксированной ценой' },
+  { key: 'free', label: 'Бесплатные' },
+  { key: 'on_request', label: 'Цена по запросу' },
+  { key: 'hidden', label: 'Цена скрыта' },
+]
+
+const SORTS = [
+  { key: 'newest', label: 'Новые сверху' },
+  { key: 'oldest', label: 'Старые сверху' },
+  { key: 'price_asc', label: 'Сначала дешевле' },
+  { key: 'price_desc', label: 'Сначала дороже' },
+  { key: 'duration', label: 'По длительности' },
+]
+
+const DEFAULT_FILTERS = {
+  status: 'all',          // 'all' | 'active' | 'hidden'
+  currencies: [],         // массив codes, [] = все
+  priceTypes: [],         // массив keys, [] = все
+  sort: 'newest',
+}
+
 const hideArrows = `
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button {
@@ -53,35 +76,6 @@ const hideArrows = `
   @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
   @keyframes scaleIn { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 `
-
-function SortableCard({ id, isHovered, disabled, children }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled })
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    position: 'relative',
-    zIndex: isDragging ? 10 : 1,
-    boxShadow: isDragging ? '0 8px 24px rgba(0,0,0,0.12)' : 'none',
-    opacity: isDragging ? 0.95 : 1
-  }
-  const handleVisible = isHovered && !disabled
-  return (
-    <div ref={setNodeRef} style={style}>
-      {!disabled && (
-        <div {...attributes} {...listeners} style={{
-          position: 'absolute', left: -6, top: '50%', transform: 'translateY(-50%)',
-          width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: isDragging ? 'grabbing' : 'grab',
-          opacity: handleVisible || isDragging ? 0.6 : 0,
-          transition: 'opacity 0.15s', color: '#888', zIndex: 2, touchAction: 'none'
-        }}>
-          <GripVertical size={18} />
-        </div>
-      )}
-      {children}
-    </div>
-  )
-}
 
 const iconBtnStyle = {
   width: 36, height: 36, borderRadius: 8,
@@ -105,6 +99,274 @@ const menuSoonBadgeStyle = {
   background: '#F7F6F1', padding: '3px 8px', borderRadius: 100,
   textTransform: 'uppercase', letterSpacing: 0.5
 }
+
+// ============ FILTER DROPDOWN ============
+
+function FilterDropdown({ filters, setFilters, onReset, onClose, isMobile }) {
+  const wrapRef = useRef(null)
+  const [openGroup, setOpenGroup] = useState(null) // 'status' | 'currencies' | 'priceTypes' | 'sort' | null
+
+  // Клик вне → закрыть
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!wrapRef.current) return
+      if (!wrapRef.current.contains(e.target)) onClose()
+    }
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    const t = setTimeout(() => {
+      document.addEventListener('mousedown', onDocClick)
+      document.addEventListener('touchstart', onDocClick)
+      document.addEventListener('keydown', onKey)
+    }, 0)
+    return () => {
+      clearTimeout(t)
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('touchstart', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [onClose])
+
+  const toggleGroup = (key) => setOpenGroup(prev => prev === key ? null : key)
+
+  // Лейбл текущего значения для свёрнутой строки
+  const statusLabels = { all: 'Все', active: 'Активные', hidden: 'Скрытые' }
+  const sortLabel = SORTS.find(s => s.key === filters.sort)?.label || ''
+  const currenciesLabel = filters.currencies.length === 0
+    ? 'Все валюты'
+    : filters.currencies.length === 1
+      ? CURRENCIES.find(c => c.code === filters.currencies[0])?.label || ''
+      : `${filters.currencies.length} валют`
+  const priceTypesLabel = filters.priceTypes.length === 0
+    ? 'Все'
+    : filters.priceTypes.length === 1
+      ? PRICE_TYPES.find(p => p.key === filters.priceTypes[0])?.label || ''
+      : `${filters.priceTypes.length} типа`
+
+  // Тоггл для мультивыбора
+  const toggleMulti = (field, value) => {
+    setFilters(f => {
+      const list = f[field]
+      const next = list.includes(value)
+        ? list.filter(v => v !== value)
+        : [...list, value]
+      return { ...f, [field]: next }
+    })
+  }
+
+  // Установка для одиночного выбора
+  const setSingle = (field, value) => {
+    setFilters(f => ({ ...f, [field]: value }))
+  }
+
+  const wrapStyle = isMobile ? {
+    // На мобайле — fullscreen bottom-sheet
+    position: 'fixed', left: 0, right: 0, bottom: 0,
+    width: '100%', maxHeight: '85vh',
+    background: '#fff',
+    borderRadius: '20px 20px 0 0',
+    boxShadow: '0 -8px 32px rgba(0,0,0,0.15)',
+    overflowY: 'auto',
+    zIndex: 110,
+    animation: 'slideUp 0.25s ease-out',
+  } : {
+    position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+    width: 380,
+    background: '#fff',
+    border: '1px solid #E8E7E0',
+    borderRadius: 14,
+    boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
+    overflow: 'hidden',
+    zIndex: 50,
+  }
+
+  // На мобайле нужен backdrop
+  const content = (
+    <div ref={wrapRef} style={wrapStyle}>
+      {isMobile && (
+        <>
+          <div style={{ width: 40, height: 4, background: '#E0E0D8', borderRadius: 2, margin: '8px auto 4px' }} />
+          <div style={{
+            padding: '10px 18px 14px', display: 'flex', alignItems: 'center',
+            justifyContent: 'space-between', borderBottom: '1px solid #F0EFE9',
+          }}>
+            <span style={{ fontSize: 16, fontWeight: 700 }}>Фильтры</span>
+            <button onClick={onClose} style={{
+              background: 'transparent', border: 'none', padding: 4, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', color: '#888',
+            }}>
+              <X size={20} />
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Статус */}
+      <FilterRow
+        label="Статус"
+        valuePreview={statusLabels[filters.status]}
+        open={openGroup === 'status'}
+        onToggle={() => toggleGroup('status')}
+      >
+        <PillRow>
+          {[
+            { key: 'all', label: 'Все' },
+            { key: 'active', label: 'Активные' },
+            { key: 'hidden', label: 'Скрытые' },
+          ].map(it => (
+            <Pill key={it.key} active={filters.status === it.key} onClick={() => setSingle('status', it.key)}>
+              {it.label}
+            </Pill>
+          ))}
+        </PillRow>
+      </FilterRow>
+
+      {/* Валюта */}
+      <FilterRow
+        label="Валюта"
+        valuePreview={currenciesLabel}
+        open={openGroup === 'currencies'}
+        onToggle={() => toggleGroup('currencies')}
+      >
+        <PillRow>
+          <Pill active={filters.currencies.length === 0} onClick={() => setFilters(f => ({ ...f, currencies: [] }))}>
+            Все
+          </Pill>
+          {CURRENCIES.map(c => (
+            <Pill key={c.code} active={filters.currencies.includes(c.code)} onClick={() => toggleMulti('currencies', c.code)}>
+              {c.label}
+            </Pill>
+          ))}
+        </PillRow>
+      </FilterRow>
+
+      {/* Тип цены */}
+      <FilterRow
+        label="Тип цены"
+        valuePreview={priceTypesLabel}
+        open={openGroup === 'priceTypes'}
+        onToggle={() => toggleGroup('priceTypes')}
+      >
+        <PillRow>
+          <Pill active={filters.priceTypes.length === 0} onClick={() => setFilters(f => ({ ...f, priceTypes: [] }))}>
+            Все
+          </Pill>
+          {PRICE_TYPES.map(p => (
+            <Pill key={p.key} active={filters.priceTypes.includes(p.key)} onClick={() => toggleMulti('priceTypes', p.key)}>
+              {p.label}
+            </Pill>
+          ))}
+        </PillRow>
+      </FilterRow>
+
+      {/* Сортировка */}
+      <FilterRow
+        label="Сортировка"
+        valuePreview={sortLabel}
+        open={openGroup === 'sort'}
+        onToggle={() => toggleGroup('sort')}
+        isLast
+      >
+        <PillRow>
+          {SORTS.map(s => (
+            <Pill key={s.key} active={filters.sort === s.key} onClick={() => setSingle('sort', s.key)}>
+              {s.label}
+            </Pill>
+          ))}
+        </PillRow>
+      </FilterRow>
+
+      {/* Низ: сброс */}
+      <div style={{
+        padding: '12px 18px', background: '#FAFAF7',
+        borderTop: '1px solid #F0EFE9',
+        textAlign: 'right',
+      }}>
+        <button onClick={onReset} style={{
+          background: 'transparent', border: 'none',
+          color: '#888', fontSize: 13, cursor: 'pointer', padding: 0,
+          textDecoration: 'underline',
+          fontFamily: 'Inter, sans-serif',
+        }}>
+          Сбросить фильтры
+        </button>
+      </div>
+    </div>
+  )
+
+  if (isMobile) {
+    return (
+      <>
+        {/* Backdrop */}
+        <div onClick={onClose} style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 109,
+          animation: 'fadeIn 0.2s ease-out',
+        }} />
+        {content}
+      </>
+    )
+  }
+  return content
+}
+
+function FilterRow({ label, valuePreview, open, onToggle, children, isLast }) {
+  return (
+    <div style={{
+      borderBottom: isLast ? 'none' : '1px solid #F0EFE9',
+      background: open ? '#FAF9F3' : 'transparent',
+    }}>
+      <div
+        onClick={onToggle}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '14px 18px', cursor: 'pointer',
+        }}
+      >
+        <span style={{ fontSize: 14, fontWeight: open ? 600 : 500, color: '#111' }}>{label}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, color: '#888' }}>{valuePreview}</span>
+          <ChevronDown
+            size={14}
+            color="#888"
+            style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}
+          />
+        </div>
+      </div>
+      {open && (
+        <div style={{ padding: '0 18px 14px' }}>
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PillRow({ children }) {
+  return <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{children}</div>
+}
+
+function Pill({ active, onClick, children }) {
+  return (
+    <span
+      onClick={onClick}
+      style={{
+        background: active ? '#111' : '#fff',
+        color: active ? '#fff' : '#111',
+        border: `1px solid ${active ? '#111' : '#E8E7E0'}`,
+        padding: '5px 11px',
+        borderRadius: 999,
+        fontSize: 12,
+        cursor: 'pointer',
+        userSelect: 'none',
+        whiteSpace: 'nowrap',
+        transition: 'background 0.12s, color 0.12s',
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
+// ============ CANT DELETE DIALOG ============
 
 function CantDeleteDialog({ meeting, bookingsCount, onClose, onHide }) {
   if (!meeting) return null
@@ -157,6 +419,8 @@ function CantDeleteDialog({ meeting, bookingsCount, onClose, onHide }) {
   )
 }
 
+// ============ MAIN ============
+
 export default function Services() {
   const [meetings, setMeetings] = useState([])
   const [bookings, setBookings] = useState([])
@@ -166,13 +430,13 @@ export default function Services() {
   const [openSheetId, setOpenSheetId] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
   const [hoveredId, setHoveredId] = useState(null)
-  const [filter, setFilter] = useState('all')
   const [cantDeleteDialog, setCantDeleteDialog] = useState(null)
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  )
+  // Фильтры и поиск
+  const [filters, setFilters] = useState(DEFAULT_FILTERS)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false) // мобайл — раскрытие поиска
 
   useEffect(() => {
     const u = localStorage.getItem('user')
@@ -188,13 +452,13 @@ export default function Services() {
 
   useEffect(() => {
     const mobileEditOpen = isMobile && editingId !== null
-    if (openSheetId !== null || cantDeleteDialog !== null || mobileEditOpen) {
+    if (openSheetId !== null || cantDeleteDialog !== null || mobileEditOpen || filterOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
     }
     return () => { document.body.style.overflow = '' }
-  }, [openSheetId, cantDeleteDialog, isMobile, editingId])
+  }, [openSheetId, cantDeleteDialog, isMobile, editingId, filterOpen])
 
   const loadMeetings = async () => {
     const token = localStorage.getItem('token')
@@ -261,30 +525,82 @@ export default function Services() {
     await toggleVisibility(id)
   }
 
+  // ============ ФИЛЬТРАЦИЯ + СОРТИРОВКА + ПОИСК ============
+
+  const visibleMeetings = useMemo(() => {
+    let arr = [...meetings]
+
+    // 1. Статус
+    if (filters.status === 'active') arr = arr.filter(m => m.is_active)
+    if (filters.status === 'hidden') arr = arr.filter(m => !m.is_active)
+
+    // 2. Валюты (если выбраны)
+    if (filters.currencies.length > 0) {
+      arr = arr.filter(m => {
+        const c = m.currency || 'RUB' // legacy без поля = RUB
+        return filters.currencies.includes(c)
+      })
+    }
+
+    // 3. Тип цены (если выбраны)
+    if (filters.priceTypes.length > 0) {
+      arr = arr.filter(m => filters.priceTypes.includes(m.price_mode || 'amount'))
+    }
+
+    // 4. Поиск (по названию + описанию)
+    const q = searchQuery.trim().toLowerCase()
+    if (q) {
+      arr = arr.filter(m => {
+        const t = (m.title || '').toLowerCase()
+        const d = (m.description || '').toLowerCase()
+        return t.includes(q) || d.includes(q)
+      })
+    }
+
+    // 5. Сортировка
+    switch (filters.sort) {
+      case 'newest':
+        arr.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+        break
+      case 'oldest':
+        arr.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
+        break
+      case 'price_asc':
+        arr.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0))
+        break
+      case 'price_desc':
+        arr.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0))
+        break
+      case 'duration':
+        arr.sort((a, b) => (a.duration || 0) - (b.duration || 0))
+        break
+      default:
+        break
+    }
+
+    return arr
+  }, [meetings, filters, searchQuery])
+
+  // Подсчёт активных фильтров для бейджа
+  const activeFilterCount = useMemo(() => {
+    let c = 0
+    if (filters.status !== DEFAULT_FILTERS.status) c++
+    if (filters.currencies.length > 0) c++
+    if (filters.priceTypes.length > 0) c++
+    if (filters.sort !== DEFAULT_FILTERS.sort) c++
+    return c
+  }, [filters])
+
+  const resetFilters = () => {
+    setFilters(DEFAULT_FILTERS)
+    setSearchQuery('')
+  }
+
   if (!user) return null
 
   const bookingLink = `https://app.kogda.app/${user.slug}`
-  const visibleMeetings = meetings.filter(m => filter === 'hidden' ? !m.is_active : true)
-  const hiddenCount = meetings.filter(m => !m.is_active).length
 
-  const handleDragEnd = async (event) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-    const oldIndex = meetings.findIndex(m => m.id === active.id)
-    const newIndex = meetings.findIndex(m => m.id === over.id)
-    if (oldIndex === -1 || newIndex === -1) return
-    const newOrder = arrayMove(meetings, oldIndex, newIndex)
-    setMeetings(newOrder)
-    const token = localStorage.getItem('token')
-    try {
-      await axios.patch(`${API}/meetings/reorder`,
-        { order: newOrder.map(m => m.id) },
-        { headers: { Authorization: `Bearer ${token}` } })
-    } catch (err) {
-      console.error('[reorder]', err)
-      loadMeetings()
-    }
-  }
+  // ============ ОБЗОР В ПРАВОЙ КОЛОНКЕ ============
 
   const confirmedBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed')
   const bookingsCount = {}
@@ -346,6 +662,8 @@ export default function Services() {
     </>
   )
 
+  // ============ КНОПКИ ============
+
   const addButtonDesktop = (
     <button onClick={createNewService} title="Добавить услугу" style={{
       background: '#E8FF47', color: '#111', border: 'none',
@@ -375,10 +693,140 @@ export default function Services() {
     ? meetings.find(m => m.id === editingId)
     : null
 
+  // ============ КНОПКА «ФИЛЬТРЫ» ============
+
+  const filterButton = (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setFilterOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: '#FAF9F3', color: '#111',
+          border: '1px solid #E8E7E0',
+          borderRadius: 999,
+          padding: '9px 16px',
+          fontSize: 14, fontWeight: 500, cursor: 'pointer',
+          fontFamily: 'Inter, sans-serif',
+          height: 38,
+          boxSizing: 'border-box',
+        }}
+      >
+        <SlidersHorizontal size={14} />
+        Фильтры
+        {activeFilterCount > 0 && (
+          <span style={{
+            background: '#111', color: '#E8FF47',
+            fontSize: 11, fontWeight: 700,
+            minWidth: 18, height: 18, lineHeight: '14px',
+            padding: '0 6px',
+            borderRadius: 999,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            boxSizing: 'border-box',
+          }}>{activeFilterCount}</span>
+        )}
+      </button>
+      {filterOpen && !isMobile && (
+        <FilterDropdown
+          filters={filters}
+          setFilters={setFilters}
+          onReset={resetFilters}
+          onClose={() => setFilterOpen(false)}
+          isMobile={false}
+        />
+      )}
+    </div>
+  )
+
+  // Поле поиска (десктоп)
+  const searchInputDesktop = (
+    <div style={{ position: 'relative', width: 260 }}>
+      <Search size={14} color="#888" style={{
+        position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+      }} />
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={e => setSearchQuery(e.target.value)}
+        placeholder="Поиск услуг…"
+        style={{
+          width: '100%',
+          padding: '9px 14px 9px 38px',
+          border: '1px solid #E8E7E0',
+          borderRadius: 999,
+          background: '#fff',
+          fontSize: 14,
+          outline: 'none',
+          fontFamily: 'Inter, sans-serif',
+          boxSizing: 'border-box',
+          height: 38,
+        }}
+      />
+      {searchQuery && (
+        <button
+          onClick={() => setSearchQuery('')}
+          style={{
+            position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+            background: 'transparent', border: 'none', padding: 4, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', color: '#888',
+          }}
+        >
+          <X size={14} />
+        </button>
+      )}
+    </div>
+  )
+
+  // Иконки поиска и фильтра (мобайл)
+  const searchButtonMobile = (
+    <button
+      onClick={() => setSearchOpen(o => !o)}
+      style={{
+        width: 38, height: 38, borderRadius: 999,
+        background: searchQuery ? '#111' : '#FAF9F3',
+        color: searchQuery ? '#E8FF47' : '#111',
+        border: `1px solid ${searchQuery ? '#111' : '#E8E7E0'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer', flexShrink: 0,
+      }}
+    >
+      <Search size={16} />
+    </button>
+  )
+
+  const filterButtonMobile = (
+    <button
+      onClick={() => setFilterOpen(true)}
+      style={{
+        width: 38, height: 38, borderRadius: 999,
+        background: activeFilterCount > 0 ? '#111' : '#FAF9F3',
+        color: activeFilterCount > 0 ? '#E8FF47' : '#111',
+        border: `1px solid ${activeFilterCount > 0 ? '#111' : '#E8E7E0'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer', flexShrink: 0,
+        position: 'relative',
+      }}
+    >
+      <SlidersHorizontal size={16} />
+      {activeFilterCount > 0 && (
+        <span style={{
+          position: 'absolute', top: -4, right: -4,
+          background: '#E8FF47', color: '#111',
+          fontSize: 10, fontWeight: 700,
+          minWidth: 16, height: 16, lineHeight: '12px',
+          padding: '0 4px',
+          borderRadius: 999,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          border: '2px solid #FAF9F3',
+        }}>{activeFilterCount}</span>
+      )}
+    </button>
+  )
+
   return (
     <AppLayout rightColumn={rightColumn}>
       <style>{hideArrows}</style>
 
+      {/* Заголовок + добавить */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         marginBottom: 20, gap: 12
@@ -387,259 +835,323 @@ export default function Services() {
         {!isMobile && addButtonDesktop}
       </div>
 
+      {/* Панель фильтров + поиска */}
       {meetings.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-          {[{ key: 'all', label: 'Все' }, { key: 'hidden', label: 'Скрытые' }].map(f => (
-            <button key={f.key} onClick={() => setFilter(f.key)} style={{
-              padding: '7px 16px', borderRadius: 100,
-              background: filter === f.key ? '#111' : '#fff',
-              color: filter === f.key ? '#fff' : '#111',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              border: `1.5px solid ${filter === f.key ? '#111' : '#E0E0D8'}`,
-              transition: 'all 0.15s', fontFamily: 'Inter, sans-serif'
-            }}>
-              {f.label}
-            </button>
-          ))}
-        </div>
+        <>
+          {!isMobile ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              {filterButton}
+              {searchInputDesktop}
+            </div>
+          ) : (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {filterButtonMobile}
+                {searchButtonMobile}
+                <div style={{ flex: 1 }} />
+              </div>
+              {searchOpen && (
+                <div style={{ position: 'relative', marginTop: 10 }}>
+                  <Search size={14} color="#888" style={{
+                    position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                  }} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Поиск услуг…"
+                    autoFocus
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px 10px 38px',
+                      border: '1px solid #E8E7E0',
+                      borderRadius: 999,
+                      background: '#fff',
+                      fontSize: 14,
+                      outline: 'none',
+                      fontFamily: 'Inter, sans-serif',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      style={{
+                        position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                        background: 'transparent', border: 'none', padding: 4, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', color: '#888',
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
+      {/* Мобильный фильтр-bottomsheet */}
+      {filterOpen && isMobile && (
+        <FilterDropdown
+          filters={filters}
+          setFilters={setFilters}
+          onReset={resetFilters}
+          onClose={() => setFilterOpen(false)}
+          isMobile={true}
+        />
+      )}
+
+      {/* Список услуг */}
       {meetings.length === 0 ? (
         <div style={{ background: '#fff', borderRadius: 14, padding: '48px 20px', border: '1px solid #E8E7E0', textAlign: 'center' }}>
           <div style={{ fontSize: 14, color: '#888', marginBottom: 4 }}>Пока нет услуг</div>
           <div style={{ fontSize: 13, color: '#aaa' }}>Добавь первую услугу и поделись ссылкой с клиентами</div>
         </div>
+      ) : visibleMeetings.length === 0 ? (
+        <div style={{ background: '#fff', borderRadius: 14, padding: '48px 20px', border: '1px solid #E8E7E0', textAlign: 'center' }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: '#111', marginBottom: 6 }}>Ничего не найдено</div>
+          <div style={{ fontSize: 13, color: '#888', marginBottom: 18 }}>
+            Попробуй изменить или сбросить фильтры
+          </div>
+          <button onClick={resetFilters} style={{
+            background: '#111', color: '#fff',
+            border: 'none', borderRadius: 100,
+            padding: '10px 20px',
+            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            fontFamily: 'Inter, sans-serif',
+          }}>
+            Сбросить фильтры
+          </button>
+        </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={visibleMeetings.map(m => m.id)} strategy={verticalListSortingStrategy}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {visibleMeetings.map(m => {
-                const detailsStr = [
-                  `${m.duration} мин`,
-                  m.buffer_after > 0 && `${m.buffer_after} мин буфер`,
-                  m.max_per_day > 0 && `макс ${m.max_per_day}/день`,
-                  m.require_confirm && 'требует подтверждения'
-                ].filter(Boolean).join(' · ')
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {visibleMeetings.map(m => {
+            const detailsStr = [
+              `${m.duration} мин`,
+              m.buffer_after > 0 && `${m.buffer_after} мин буфер`,
+              m.max_per_day > 0 && `макс ${m.max_per_day}/день`,
+              m.require_confirm && 'требует подтверждения'
+            ].filter(Boolean).join(' · ')
 
-                const serviceLink = m.slug ? `https://app.kogda.app/${user.slug}/${m.slug}` : bookingLink
-                // На мобайле inline-форму НЕ показываем — есть fullscreen-оверлей
-                const isExpanded = !isMobile && editingId === m.id
+            const serviceLink = m.slug ? `https://app.kogda.app/${user.slug}/${m.slug}` : bookingLink
+            const isExpanded = !isMobile && editingId === m.id
 
-                const toggleEdit = () => {
-                  setEditingId(editingId === m.id ? null : m.id)
-                }
+            const toggleEdit = () => {
+              setEditingId(editingId === m.id ? null : m.id)
+            }
 
-                const isHovered = hoveredId === m.id
-                const isHidden = !m.is_active
-                const showEye = isHovered || isHidden
-                const showOtherButtons = isHovered
+            const isHovered = hoveredId === m.id
+            const isHidden = !m.is_active
+            const showEye = isHovered || isHidden
+            const showOtherButtons = isHovered
 
-                const renderPrice = () => {
-                  if (m.price_mode === 'hidden' || m.hide_price) return null
-                  if (m.price_mode === 'on_request') return 'По запросу'
-                  if (m.price_mode === 'free') return 'Бесплатно'
-                  if (m.price > 0) return `${Number(m.price).toLocaleString('ru-RU')} ₽`
-                  return 'Бесплатно'
-                }
-                const priceLabel = renderPrice()
+            const renderPrice = () => {
+              if (m.price_mode === 'hidden' || m.hide_price) return null
+              if (m.price_mode === 'on_request') return 'По запросу'
+              if (m.price_mode === 'free') return 'Бесплатно'
+              const currency = m.currency || 'RUB'
+              const symbol = CURRENCIES.find(c => c.code === currency)?.symbol || currency
+              if (m.price > 0) return `${Number(m.price).toLocaleString('ru-RU')} ${symbol}`
+              return 'Бесплатно'
+            }
+            const priceLabel = renderPrice()
 
-                return (
-                  <SortableCard key={m.id} id={m.id} isHovered={isHovered}
-                    disabled={filter === 'hidden' || isMobile || isExpanded}>
-                    <div
-                      onClick={() => isMobile && !isExpanded && setOpenSheetId(m.id)}
-                      onMouseEnter={() => !isMobile && setHoveredId(m.id)}
-                      onMouseLeave={() => !isMobile && setHoveredId(null)}
-                      style={{
-                        background: isHovered ? '#FAFAF7' : '#fff',
-                        borderRadius: isExpanded ? '14px 14px 0 0' : 14,
-                        border: `1px solid ${isExpanded ? '#E8FF47' : '#E8E7E0'}`,
-                        borderBottom: isExpanded ? 'none' : `1px solid #E8E7E0`,
-                        padding: '20px 24px',
-                        display: 'flex', flexDirection: 'column', gap: isMobile ? 0 : 14,
-                        position: 'relative',
-                        cursor: isMobile && !isExpanded ? 'pointer' : 'default',
-                        transition: 'background 0.15s, border-color 0.2s',
-                        WebkitTapHighlightColor: 'transparent'
-                      }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: '#111', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            {m.title}
-                            {isHidden && (
-                              <span style={{
-                                fontSize: 9, fontWeight: 700, color: '#888',
-                                background: '#F0EFE9', padding: '3px 8px', borderRadius: 100,
-                                textTransform: 'uppercase', letterSpacing: 0.5
-                              }}>Скрыта</span>
-                            )}
-                          </div>
-                          <div style={{ fontSize: 12, color: '#999', marginTop: 8 }}>{detailsStr}</div>
-                        </div>
-                        {priceLabel && (
-                          <div style={{
-                            background: '#E8FF47', borderRadius: 10,
-                            padding: isMobile ? '8px 12px' : '10px 14px',
-                            fontSize: isMobile ? 14 : 16, fontWeight: 800, color: '#111',
-                            flexShrink: 0, whiteSpace: 'nowrap'
-                          }}>
-                            {priceLabel}
-                          </div>
+            return (
+              <div key={m.id}>
+                <div
+                  onClick={() => isMobile && !isExpanded && setOpenSheetId(m.id)}
+                  onMouseEnter={() => !isMobile && setHoveredId(m.id)}
+                  onMouseLeave={() => !isMobile && setHoveredId(null)}
+                  style={{
+                    background: isHovered ? '#FAFAF7' : '#fff',
+                    borderRadius: isExpanded ? '14px 14px 0 0' : 14,
+                    border: `1px solid ${isExpanded ? '#E8FF47' : '#E8E7E0'}`,
+                    borderBottom: isExpanded ? 'none' : `1px solid #E8E7E0`,
+                    padding: '20px 24px',
+                    display: 'flex', flexDirection: 'column', gap: isMobile ? 0 : 14,
+                    position: 'relative',
+                    cursor: isMobile && !isExpanded ? 'pointer' : 'default',
+                    transition: 'background 0.15s, border-color 0.2s',
+                    WebkitTapHighlightColor: 'transparent'
+                  }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#111', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {m.title}
+                        {isHidden && (
+                          <span style={{
+                            fontSize: 9, fontWeight: 700, color: '#888',
+                            background: '#F0EFE9', padding: '3px 8px', borderRadius: 100,
+                            textTransform: 'uppercase', letterSpacing: 0.5
+                          }}>Скрыта</span>
                         )}
                       </div>
-
-                      {!isMobile && (
+                      <div style={{ fontSize: 12, color: '#999', marginTop: 8 }}>{detailsStr}</div>
+                    </div>
+                    {priceLabel && (
                       <div style={{
-                        borderTop: '1px solid #F0EFE9', paddingTop: 14,
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8
+                        background: '#E8FF47', borderRadius: 10,
+                        padding: isMobile ? '8px 12px' : '10px 14px',
+                        fontSize: isMobile ? 14 : 16, fontWeight: 800, color: '#111',
+                        flexShrink: 0, whiteSpace: 'nowrap'
                       }}>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <button onClick={() => toggleVisibility(m.id)}
-                            title={isHidden ? 'Услуга скрыта — показать на публичной странице' : 'Скрыть на публичной странице'}
-                            style={{
-                              ...iconBtnStyle, cursor: 'pointer',
-                              color: isHidden ? '#DC2626' : '#111',
-                              opacity: showEye ? 1 : 0,
-                              pointerEvents: showEye ? 'auto' : 'none',
-                              transition: 'opacity 0.15s, background 0.15s, border-color 0.15s'
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}>
-                            {isHidden ? <EyeOff size={16} /> : <Eye size={16} />}
-                          </button>
-                          <button onClick={() => alert('Дублирование услуги — скоро будет доступно.')} title="Дублировать (Скоро)"
-                            style={{
-                              ...iconBtnStyle, cursor: 'pointer',
-                              opacity: showOtherButtons ? 0.5 : 0,
-                              pointerEvents: showOtherButtons ? 'auto' : 'none',
-                              transition: 'opacity 0.15s'
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.opacity = '0.8' }}
-                            onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}>
-                            <Layers size={16} />
-                          </button>
-                          <button onClick={() => alert('Виджет для встраивания на сайт — Premium функция, скоро будет доступна')} title="Встроить на сайт (Скоро)"
-                            style={{
-                              ...iconBtnStyle, cursor: 'pointer',
-                              opacity: showOtherButtons ? 0.5 : 0,
-                              pointerEvents: showOtherButtons ? 'auto' : 'none',
-                              transition: 'opacity 0.15s'
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.opacity = '0.8' }}
-                            onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}>
-                            <Code2 size={16} />
-                          </button>
-                          <button onClick={() => deleteMeeting(m.id)} title="Удалить услугу"
-                            style={{
-                              ...iconBtnStyle, cursor: 'pointer', color: '#DC2626',
-                              opacity: showOtherButtons ? 1 : 0,
-                              pointerEvents: showOtherButtons ? 'auto' : 'none',
-                              transition: 'opacity 0.15s, background 0.15s, border-color 0.15s'
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.borderColor = '#DC2626' }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}>
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <a href={serviceLink} target="_blank" rel="noreferrer" title="Предпросмотр" style={iconBtnStyle}
-                            onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}>
-                            <ExternalLink size={16} />
-                          </a>
-
-                          <button onClick={toggleEdit}
-                            title={isExpanded ? 'Свернуть' : 'Редактировать'}
-                            style={{
-                              ...iconBtnStyle, cursor: 'pointer',
-                              background: isExpanded ? '#E8FF47' : 'transparent',
-                              borderColor: isExpanded ? '#E8FF47' : '#E0E0D8',
-                            }}
-                            onMouseEnter={e => { if (!isExpanded) { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' } }}
-                            onMouseLeave={e => { if (!isExpanded) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' } }}>
-                            <Pencil size={16} />
-                          </button>
-
-                          <button onClick={() => {
-                              navigator.clipboard.writeText(serviceLink)
-                              setCopiedId(m.id)
-                              setTimeout(() => setCopiedId(null), 1500)
-                            }}
-                            title={copiedId === m.id ? 'Скопировано' : 'Копировать ссылку на услугу'}
-                            style={{
-                              ...iconBtnStyle,
-                              background: '#111',
-                              borderColor: '#111',
-                              color: copiedId === m.id ? '#E8FF47' : '#fff',
-                              cursor: 'pointer',
-                              transition: 'color 0.2s'
-                            }}>
-                            {copiedId === m.id ? <Check size={16} /> : <Copy size={16} />}
-                          </button>
-                        </div>
+                        {priceLabel}
                       </div>
-                      )}
+                    )}
+                  </div>
+
+                  {!isMobile && (
+                  <div style={{
+                    borderTop: '1px solid #F0EFE9', paddingTop: 14,
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8
+                  }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <button onClick={() => toggleVisibility(m.id)}
+                        title={isHidden ? 'Услуга скрыта — показать на публичной странице' : 'Скрыть на публичной странице'}
+                        style={{
+                          ...iconBtnStyle, cursor: 'pointer',
+                          color: isHidden ? '#DC2626' : '#111',
+                          opacity: showEye ? 1 : 0,
+                          pointerEvents: showEye ? 'auto' : 'none',
+                          transition: 'opacity 0.15s, background 0.15s, border-color 0.15s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}>
+                        {isHidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                      <button onClick={() => alert('Дублирование услуги — скоро будет доступно.')} title="Дублировать (Скоро)"
+                        style={{
+                          ...iconBtnStyle, cursor: 'pointer',
+                          opacity: showOtherButtons ? 0.5 : 0,
+                          pointerEvents: showOtherButtons ? 'auto' : 'none',
+                          transition: 'opacity 0.15s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.opacity = '0.8' }}
+                        onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}>
+                        <Layers size={16} />
+                      </button>
+                      <button onClick={() => alert('Виджет для встраивания на сайт — Premium функция, скоро будет доступна')} title="Встроить на сайт (Скоро)"
+                        style={{
+                          ...iconBtnStyle, cursor: 'pointer',
+                          opacity: showOtherButtons ? 0.5 : 0,
+                          pointerEvents: showOtherButtons ? 'auto' : 'none',
+                          transition: 'opacity 0.15s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.opacity = '0.8' }}
+                        onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}>
+                        <Code2 size={16} />
+                      </button>
+                      <button onClick={() => deleteMeeting(m.id)} title="Удалить услугу"
+                        style={{
+                          ...iconBtnStyle, cursor: 'pointer', color: '#DC2626',
+                          opacity: showOtherButtons ? 1 : 0,
+                          pointerEvents: showOtherButtons ? 'auto' : 'none',
+                          transition: 'opacity 0.15s, background 0.15s, border-color 0.15s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.borderColor = '#DC2626' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}>
+                        <Trash2 size={16} />
+                      </button>
                     </div>
 
-                    {isExpanded && (
-                      <>
-                        <div
-                          onClick={toggleEdit}
-                          style={{
-                            background: '#FAF9F4',
-                            borderLeft: '1px solid #E8FF47',
-                            borderRight: '1px solid #E8FF47',
-                            borderTop: '1px solid #F0EFE9',
-                            padding: '12px 24px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>
-                            Редактирование услуги
-                          </div>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); toggleEdit() }}
-                            title="Свернуть"
-                            style={{ ...iconBtnStyle, cursor: 'pointer' }}
-                            onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
-                          >
-                            <ChevronUp size={18} />
-                          </button>
-                        </div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <a href={serviceLink} target="_blank" rel="noreferrer" title="Предпросмотр" style={iconBtnStyle}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}>
+                        <ExternalLink size={16} />
+                      </a>
 
-                        <div style={{
-                          background: '#fff',
-                          border: '1px solid #E8FF47',
-                          borderTop: '1px solid #F0EFE9',
-                          borderRadius: '0 0 14px 14px',
-                          overflow: 'hidden',
+                      <button onClick={toggleEdit}
+                        title={isExpanded ? 'Свернуть' : 'Редактировать'}
+                        style={{
+                          ...iconBtnStyle, cursor: 'pointer',
+                          background: isExpanded ? '#E8FF47' : 'transparent',
+                          borderColor: isExpanded ? '#E8FF47' : '#E0E0D8',
+                        }}
+                        onMouseEnter={e => { if (!isExpanded) { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' } }}
+                        onMouseLeave={e => { if (!isExpanded) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' } }}>
+                        <Pencil size={16} />
+                      </button>
+
+                      <button onClick={() => {
+                          navigator.clipboard.writeText(serviceLink)
+                          setCopiedId(m.id)
+                          setTimeout(() => setCopiedId(null), 1500)
+                        }}
+                        title={copiedId === m.id ? 'Скопировано' : 'Копировать ссылку на услугу'}
+                        style={{
+                          ...iconBtnStyle,
+                          background: '#111',
+                          borderColor: '#111',
+                          color: copiedId === m.id ? '#E8FF47' : '#fff',
+                          cursor: 'pointer',
+                          transition: 'color 0.2s'
                         }}>
-                          <ServiceModal meetingId={m.id} onUpdate={handleMeetingUpdate} />
-                        </div>
-                      </>
-                    )}
-                  </SortableCard>
-                )
-              })}
+                        {copiedId === m.id ? <Check size={16} /> : <Copy size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                  )}
+                </div>
 
-              {isMobile && (
-                <div style={{ marginTop: 12 }}>{addButtonMobile}</div>
-              )}
-            </div>
-          </SortableContext>
-        </DndContext>
+                {isExpanded && (
+                  <>
+                    <div
+                      onClick={toggleEdit}
+                      style={{
+                        background: '#FAF9F4',
+                        borderLeft: '1px solid #E8FF47',
+                        borderRight: '1px solid #E8FF47',
+                        borderTop: '1px solid #F0EFE9',
+                        padding: '12px 24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>
+                        Редактирование услуги
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleEdit() }}
+                        title="Свернуть"
+                        style={{ ...iconBtnStyle, cursor: 'pointer' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
+                      >
+                        <ChevronUp size={18} />
+                      </button>
+                    </div>
+
+                    <div style={{
+                      background: '#fff',
+                      border: '1px solid #E8FF47',
+                      borderTop: '1px solid #F0EFE9',
+                      borderRadius: '0 0 14px 14px',
+                      overflow: 'hidden',
+                    }}>
+                      <ServiceModal meetingId={m.id} onUpdate={handleMeetingUpdate} />
+                    </div>
+                  </>
+                )}
+              </div>
+            )
+          })}
+
+          {isMobile && (
+            <div style={{ marginTop: 12 }}>{addButtonMobile}</div>
+          )}
+        </div>
       )}
 
       {meetings.length === 0 && isMobile && (
         <div style={{ marginTop: 20 }}>{addButtonMobile}</div>
       )}
 
-      {/* Bottom Sheet для мобайла */}
+      {/* Bottom Sheet для мобайла (действия на услуге) */}
       {openSheetId !== null && (() => {
         const sheetMeeting = meetings.find(m => m.id === openSheetId)
         if (!sheetMeeting) return null
@@ -655,7 +1167,9 @@ export default function Services() {
           if (sheetMeeting.price_mode === 'hidden' || sheetMeeting.hide_price) return 'Скрыта'
           if (sheetMeeting.price_mode === 'on_request') return 'По запросу'
           if (sheetMeeting.price_mode === 'free') return 'Бесплатно'
-          if (sheetMeeting.price > 0) return `${Number(sheetMeeting.price).toLocaleString('ru-RU')} ₽`
+          const currency = sheetMeeting.currency || 'RUB'
+          const symbol = CURRENCIES.find(c => c.code === currency)?.symbol || currency
+          if (sheetMeeting.price > 0) return `${Number(sheetMeeting.price).toLocaleString('ru-RU')} ${symbol}`
           return 'Бесплатно'
         })()
 
@@ -759,7 +1273,6 @@ export default function Services() {
             </div>
           </div>
 
-          {/* Контент со скроллом */}
           <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <ServiceModal meetingId={mobileEditingMeeting.id} onUpdate={handleMeetingUpdate} />
           </div>
