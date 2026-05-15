@@ -8,6 +8,7 @@ import AppLayout from '../components/AppLayout'
 import AIHelper from '../components/AIHelper'
 import PromoCard from '../components/PromoCard'
 import ServiceModal from '../components/ServiceModal'
+import { CURRENCIES, getCurrencySymbol } from '../currencies'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
@@ -30,22 +31,10 @@ const DEFAULT_NEW_SERVICE = {
 }
 
 // ============ ВАЛЮТЫ ============
-// 12 валют для русскоязычной аудитории + опция "Другая"
-const CURRENCIES = [
-  { code: 'RUB', symbol: '₽', label: '₽ RUB' },
-  { code: 'USD', symbol: '$', label: '$ USD' },
-  { code: 'EUR', symbol: '€', label: '€ EUR' },
-  { code: 'ILS', symbol: '₪', label: '₪ ILS' },
-  { code: 'KZT', symbol: '₸', label: '₸ KZT' },
-  { code: 'GEL', symbol: '₾', label: '₾ GEL' },
-  { code: 'GBP', symbol: '£', label: '£ GBP' },
-  { code: 'THB', symbol: '฿', label: '฿ THB' },
-  { code: 'TRY', symbol: '₺', label: '₺ TRY' },
-  { code: 'AED', symbol: 'AED', label: 'AED' },
-  { code: 'BYN', symbol: 'Br', label: 'Br BYN' },
-  { code: 'AMD', symbol: '֏', label: '֏ AMD' },
-  { code: 'OTHER', symbol: '', label: 'Другая' },
-]
+// Импортируем общий список из ../currencies (один источник правды).
+// CURRENCIES — массив { code, symbol, label, aliases }
+// Также есть OTHER кейс: услуга может быть в кастомной валюте (например 'KGS')
+// которой нет в списке — это нормально, getCurrencySymbol вернёт сам код.
 
 const PRICE_TYPES = [
   { key: 'amount', label: 'С фиксированной ценой' },
@@ -1019,8 +1008,8 @@ export default function Services() {
               if (m.price_mode === 'hidden' || m.hide_price) return null
               if (m.price_mode === 'on_request') return 'По запросу'
               if (m.price_mode === 'free') return 'Бесплатно'
-              const currency = m.currency || 'RUB'
-              const symbol = CURRENCIES.find(c => c.code === currency)?.symbol || currency
+              const currency = m.currency || 'USD'
+              const symbol = getCurrencySymbol(currency)
               if (m.price > 0) return `${Number(m.price).toLocaleString('ru-RU')} ${symbol}`
               return 'Бесплатно'
             }
@@ -1235,8 +1224,8 @@ export default function Services() {
           if (sheetMeeting.price_mode === 'hidden' || sheetMeeting.hide_price) return 'Скрыта'
           if (sheetMeeting.price_mode === 'on_request') return 'По запросу'
           if (sheetMeeting.price_mode === 'free') return 'Бесплатно'
-          const currency = sheetMeeting.currency || 'RUB'
-          const symbol = CURRENCIES.find(c => c.code === currency)?.symbol || currency
+          const currency = sheetMeeting.currency || 'USD'
+          const symbol = getCurrencySymbol(currency)
           if (sheetMeeting.price > 0) return `${Number(sheetMeeting.price).toLocaleString('ru-RU')} ${symbol}`
           return 'Бесплатно'
         })()

@@ -5,6 +5,8 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import AppLayout from '../components/AppLayout'
+import CurrencyPicker from '../components/CurrencyPicker'
+import { getCurrencyLabel } from '../currencies'
 import {
   User, Bell, CreditCard, Plug, Star, Lock,
   Mail, MessageCircle, Trash2, Eye, EyeOff, ChevronRight, ChevronLeft, X,
@@ -700,23 +702,6 @@ export default function Settings() {
 
 // ============ ЗАГЛУШКИ СЕКЦИЙ (заполнятся следующими шагами) ============
 
-// Список валют для русскоязычной аудитории + опция "Другая"
-const CURRENCIES = [
-  { code: 'RUB', symbol: '₽', label: '₽ RUB' },
-  { code: 'USD', symbol: '$', label: '$ USD' },
-  { code: 'EUR', symbol: '€', label: '€ EUR' },
-  { code: 'ILS', symbol: '₪', label: '₪ ILS' },
-  { code: 'KZT', symbol: '₸', label: '₸ KZT' },
-  { code: 'GEL', symbol: '₾', label: '₾ GEL' },
-  { code: 'GBP', symbol: '£', label: '£ GBP' },
-  { code: 'THB', symbol: '฿', label: '฿ THB' },
-  { code: 'TRY', symbol: '₺', label: '₺ TRY' },
-  { code: 'AED', symbol: 'AED', label: 'AED' },
-  { code: 'BYN', symbol: 'Br', label: 'Br BYN' },
-  { code: 'AMD', symbol: '֏', label: '֏ AMD' },
-  { code: 'OTHER', symbol: '', label: 'Другая' },
-]
-
 function AccountSection({ user, account, setAccount, isMobile }) {
   // Список часовых поясов — основные мировые + СНГ
   const TIMEZONES = [
@@ -729,7 +714,7 @@ function AccountSection({ user, account, setAccount, isMobile }) {
   ]
 
   const [currencyOpen, setCurrencyOpen] = useState(false)
-  const currentCurrency = CURRENCIES.find(c => c.code === account.default_currency) || CURRENCIES[1] // USD по умолчанию
+  const currentLabel = getCurrencyLabel(account.default_currency) // например "₽ RUB" или "KGS" для custom
 
   return (
     <>
@@ -774,7 +759,7 @@ function AccountSection({ user, account, setAccount, isMobile }) {
             onClick={() => setCurrencyOpen(o => !o)}
             right={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 14, color: C.muted }}>{currentCurrency.label}</span>
+                <span style={{ fontSize: 14, color: C.muted }}>{currentLabel}</span>
                 <svg
                   width="12" height="12" viewBox="0 0 24 24" fill="none"
                   stroke="#888" strokeWidth="2"
@@ -789,47 +774,26 @@ function AccountSection({ user, account, setAccount, isMobile }) {
             }
           />
           {currencyOpen && (
-            <div style={{ padding: '0 12px 12px', background: '#FAF9F3' }}>
-              <div style={{
-                background: '#fff',
-                border: `1px solid ${C.border}`,
-                borderRadius: 10,
-                overflow: 'hidden',
-              }}>
-                {CURRENCIES.map((c, i, arr) => {
-                  const active = account.default_currency === c.code
-                  return (
-                    <div
-                      key={c.code}
-                      onClick={() => {
-                        setAccount({ ...account, default_currency: c.code })
-                        setCurrencyOpen(false)
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '11px 14px',
-                        borderBottom: i === arr.length - 1 ? 'none' : `1px solid ${C.borderSoft}`,
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                      }}
-                    >
-                      <span style={{ fontSize: 14, color: C.text }}>{c.label}</span>
-                      {active && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth="3">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
+            <div style={{ padding: '12px 0 14px', background: '#FAF9F3' }}>
+              <CurrencyPicker
+                value={account.default_currency}
+                onChange={(code) => {
+                  setAccount({ ...account, default_currency: code })
+                  // Не закрываем автоматически — может ещё несколько валют посмотреть/выбрать
+                }}
+                colors={{
+                  text: C.text,
+                  muted: C.muted,
+                  mutedLight: C.mutedLight,
+                  border: C.border,
+                  borderSoft: C.borderSoft,
+                }}
+              />
               <div style={{
                 fontSize: 12, color: C.mutedLight,
-                marginTop: 10, padding: '0 4px', lineHeight: 1.4,
+                margin: '12px 16px 0', padding: '0 4px', lineHeight: 1.4,
               }}>
-                Валюта по умолчанию для новых услуг. Для каждой услуги можно выбрать свою.
+                Применяется только к новым услугам. У существующих можно поменять в самой услуге.
               </div>
             </div>
           )}
