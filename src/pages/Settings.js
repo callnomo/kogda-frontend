@@ -124,13 +124,11 @@ function LabelWithTip({ label, tip }) {
     >
       <span style={{ fontSize: 14, color: C.text, cursor: 'help' }}>{label}</span>
       <span style={{
-        width: 16, height: 16, borderRadius: '50%',
-        background: '#E0E0D8', color: '#666',
-        fontSize: 11, fontWeight: 700, fontStyle: 'italic',
-        fontFamily: 'Georgia, serif',
+        fontSize: 15,
+        color: '#888',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         lineHeight: 1, cursor: 'help', userSelect: 'none',
-      }}>i</span>
+      }}>ⓘ</span>
       {open && (
         <div style={{
           position: 'absolute',
