@@ -860,9 +860,29 @@ const BasicSection = ({ meeting, update, isNarrow }) => {
   )
 }
 
+// Список валют (тот же что в Settings.js)
+const CURRENCIES = [
+  { code: 'RUB', symbol: '₽', label: '₽ RUB' },
+  { code: 'USD', symbol: '$', label: '$ USD' },
+  { code: 'EUR', symbol: '€', label: '€ EUR' },
+  { code: 'ILS', symbol: '₪', label: '₪ ILS' },
+  { code: 'KZT', symbol: '₸', label: '₸ KZT' },
+  { code: 'GEL', symbol: '₾', label: '₾ GEL' },
+  { code: 'GBP', symbol: '£', label: '£ GBP' },
+  { code: 'THB', symbol: '฿', label: '฿ THB' },
+  { code: 'TRY', symbol: '₺', label: '₺ TRY' },
+  { code: 'AED', symbol: 'AED', label: 'AED' },
+  { code: 'BYN', symbol: 'Br', label: 'Br BYN' },
+  { code: 'AMD', symbol: '֏', label: '֏ AMD' },
+  { code: 'OTHER', symbol: '', label: 'Другая' },
+]
+
 const PriceSection = ({ meeting, update }) => {
   const [localPrice, setLocalPrice] = useState(meeting.price || 0)
+  const [currencyOpen, setCurrencyOpen] = useState(false)
   useEffect(() => { setLocalPrice(meeting.price || 0) }, [meeting.price])
+
+  const currentCurrency = CURRENCIES.find(c => c.code === meeting.currency) || CURRENCIES[1] // USD
 
   return (
     <>
@@ -886,19 +906,89 @@ const PriceSection = ({ meeting, update }) => {
         </div>
       </Group>
       {meeting.price_mode === 'amount' && (
-        <Field label="Сумма (₽)">
-          <input
-            type="number"
-            value={localPrice}
-            onChange={e => setLocalPrice(e.target.value)}
-            onBlur={() => {
-              const num = Number(localPrice) || 0
-              if (num !== Number(meeting.price)) update({ price: num })
-            }}
-            min={0}
-            style={{ ...inputStyle, MozAppearance: 'textfield' }}
-          />
-        </Field>
+        <>
+          <Field label={`Сумма (${currentCurrency.symbol || currentCurrency.code})`}>
+            <input
+              type="number"
+              value={localPrice}
+              onChange={e => setLocalPrice(e.target.value)}
+              onBlur={() => {
+                const num = Number(localPrice) || 0
+                if (num !== Number(meeting.price)) update({ price: num })
+              }}
+              min={0}
+              style={{ ...inputStyle, MozAppearance: 'textfield' }}
+            />
+          </Field>
+
+          {/* Валюта — раскрывается списком */}
+          <Group>
+            <div style={{
+              background: C.card, border: `1px solid ${C.border}`,
+              borderRadius: 12, overflow: 'hidden',
+            }}>
+              <Row
+                last
+                left="Валюта"
+                onClick={() => setCurrencyOpen(o => !o)}
+                right={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 14, color: C.muted }}>{currentCurrency.label}</span>
+                    <svg
+                      width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="#888" strokeWidth="2"
+                      style={{
+                        transform: currencyOpen ? 'rotate(90deg)' : 'rotate(0)',
+                        transition: 'transform 0.15s',
+                      }}
+                    >
+                      <polyline points="9,18 15,12 9,6" />
+                    </svg>
+                  </div>
+                }
+              />
+              {currencyOpen && (
+                <div style={{ padding: '0 12px 12px', background: '#FAF9F3' }}>
+                  <div style={{
+                    background: '#fff',
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                  }}>
+                    {CURRENCIES.map((c, i, arr) => {
+                      const active = meeting.currency === c.code
+                      return (
+                        <div
+                          key={c.code}
+                          onClick={() => {
+                            update({ currency: c.code })
+                            setCurrencyOpen(false)
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '11px 14px',
+                            borderBottom: i === arr.length - 1 ? 'none' : `1px solid ${C.borderSoft || '#F0EFE9'}`,
+                            cursor: 'pointer',
+                            userSelect: 'none',
+                          }}
+                        >
+                          <span style={{ fontSize: 14, color: C.text }}>{c.label}</span>
+                          {active && (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth="3">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Group>
+        </>
       )}
     </>
   )

@@ -166,7 +166,7 @@ export default function Settings() {
   const [account, setAccount] = useState({
     timezone: 'Asia/Bangkok',
     language: 'ru',
-    currency: 'RUB',
+    default_currency: 'USD',
   })
 
   const [notifications, setNotifications] = useState({
@@ -245,6 +245,10 @@ export default function Settings() {
         avatar: res.data.avatar || '',
       })
       setTelegramConnected(!!res.data.telegram_chat_id)
+      setAccount(a => ({
+        ...a,
+        default_currency: res.data.default_currency || 'USD',
+      }))
       setNotifications({
         notify_telegram: res.data.notify_telegram ?? false,
         notify_email: res.data.notify_email ?? true,
@@ -270,6 +274,19 @@ export default function Settings() {
     const token = localStorage.getItem('token')
     try {
       await axios.patch(`${API}/settings/notifications`, next, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    } catch (err) { console.error(err) }
+  }
+
+  // Автосохранение общих настроек аккаунта (валюта)
+  const saveAccount = async (next) => {
+    setAccount(next)
+    const token = localStorage.getItem('token')
+    try {
+      await axios.patch(`${API}/settings/account`, {
+        default_currency: next.default_currency,
+      }, {
         headers: { Authorization: `Bearer ${token}` }
       })
     } catch (err) { console.error(err) }
@@ -417,7 +434,7 @@ export default function Settings() {
     const common = { isMobile }
     switch (section) {
       case 'account':
-        return <AccountSection user={user} account={account} setAccount={setAccount} {...common} />
+        return <AccountSection user={user} account={account} setAccount={saveAccount} {...common} />
       case 'notifications':
         return <NotificationsSection
           notifications={notifications}
@@ -683,6 +700,23 @@ export default function Settings() {
 
 // ============ ЗАГЛУШКИ СЕКЦИЙ (заполнятся следующими шагами) ============
 
+// Список валют для русскоязычной аудитории + опция "Другая"
+const CURRENCIES = [
+  { code: 'RUB', symbol: '₽', label: '₽ RUB' },
+  { code: 'USD', symbol: '$', label: '$ USD' },
+  { code: 'EUR', symbol: '€', label: '€ EUR' },
+  { code: 'ILS', symbol: '₪', label: '₪ ILS' },
+  { code: 'KZT', symbol: '₸', label: '₸ KZT' },
+  { code: 'GEL', symbol: '₾', label: '₾ GEL' },
+  { code: 'GBP', symbol: '£', label: '£ GBP' },
+  { code: 'THB', symbol: '฿', label: '฿ THB' },
+  { code: 'TRY', symbol: '₺', label: '₺ TRY' },
+  { code: 'AED', symbol: 'AED', label: 'AED' },
+  { code: 'BYN', symbol: 'Br', label: 'Br BYN' },
+  { code: 'AMD', symbol: '֏', label: '֏ AMD' },
+  { code: 'OTHER', symbol: '', label: 'Другая' },
+]
+
 function AccountSection({ user, account, setAccount, isMobile }) {
   // Список часовых поясов — основные мировые + СНГ
   const TIMEZONES = [
@@ -693,6 +727,9 @@ function AccountSection({ user, account, setAccount, isMobile }) {
     'America/New_York', 'America/Los_Angeles', 'America/Mexico_City',
     'UTC',
   ]
+
+  const [currencyOpen, setCurrencyOpen] = useState(false)
+  const currentCurrency = CURRENCIES.find(c => c.code === account.default_currency) || CURRENCIES[1] // USD по умолчанию
 
   return (
     <>
@@ -729,13 +766,74 @@ function AccountSection({ user, account, setAccount, isMobile }) {
           right={<span style={{ fontSize: 14, color: C.muted }}>RU</span>}
           disabled
         />
-        {/* Валюта */}
-        <Row
-          last
-          left="Валюта"
-          right={<span style={{ fontSize: 14, color: C.muted }}>₽</span>}
-          disabled
-        />
+        {/* Валюта — раскрывается списком */}
+        <div style={{ borderTop: `1px solid ${C.borderSoft}` }}>
+          <Row
+            last
+            left="Валюта"
+            onClick={() => setCurrencyOpen(o => !o)}
+            right={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, color: C.muted }}>{currentCurrency.label}</span>
+                <svg
+                  width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  stroke="#888" strokeWidth="2"
+                  style={{
+                    transform: currencyOpen ? 'rotate(90deg)' : 'rotate(0)',
+                    transition: 'transform 0.15s',
+                  }}
+                >
+                  <polyline points="9,18 15,12 9,6" />
+                </svg>
+              </div>
+            }
+          />
+          {currencyOpen && (
+            <div style={{ padding: '0 12px 12px', background: '#FAF9F3' }}>
+              <div style={{
+                background: '#fff',
+                border: `1px solid ${C.border}`,
+                borderRadius: 10,
+                overflow: 'hidden',
+              }}>
+                {CURRENCIES.map((c, i, arr) => {
+                  const active = account.default_currency === c.code
+                  return (
+                    <div
+                      key={c.code}
+                      onClick={() => {
+                        setAccount({ ...account, default_currency: c.code })
+                        setCurrencyOpen(false)
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '11px 14px',
+                        borderBottom: i === arr.length - 1 ? 'none' : `1px solid ${C.borderSoft}`,
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <span style={{ fontSize: 14, color: C.text }}>{c.label}</span>
+                      {active && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth="3">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              <div style={{
+                fontSize: 12, color: C.mutedLight,
+                marginTop: 10, padding: '0 4px', lineHeight: 1.4,
+              }}>
+                Валюта по умолчанию для новых услуг. Для каждой услуги можно выбрать свою.
+              </div>
+            </div>
+          )}
+        </div>
       </Group>
     </>
   )
