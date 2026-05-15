@@ -939,6 +939,7 @@ const PriceSection = ({ meeting, update }) => {
                   <CurrencyPicker
                     value={meeting.currency}
                     onChange={(code) => update({ currency: code })}
+                    onSelected={() => setCurrencyOpen(false)}
                     colors={{
                       text: C.text,
                       muted: C.muted,

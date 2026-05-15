@@ -777,10 +777,8 @@ function AccountSection({ user, account, setAccount, isMobile }) {
             <div style={{ padding: '12px 0 14px', background: '#FAF9F3' }}>
               <CurrencyPicker
                 value={account.default_currency}
-                onChange={(code) => {
-                  setAccount({ ...account, default_currency: code })
-                  // Не закрываем автоматически — может ещё несколько валют посмотреть/выбрать
-                }}
+                onChange={(code) => setAccount({ ...account, default_currency: code })}
+                onSelected={() => setCurrencyOpen(false)}
                 colors={{
                   text: C.text,
                   muted: C.muted,
