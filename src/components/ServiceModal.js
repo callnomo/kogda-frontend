@@ -864,12 +864,10 @@ const BasicSection = ({ meeting, update, isNarrow }) => {
 
 const PriceSection = ({ meeting, update }) => {
   const [localPrice, setLocalPrice] = useState(meeting.price || 0)
-  const [currencyOpen, setCurrencyOpen] = useState(false)
   useEffect(() => { setLocalPrice(meeting.price || 0) }, [meeting.price])
 
   const currencyCode = meeting.currency || 'USD'
   const currencySymbol = getCurrencySymbol(currencyCode)
-  const currencyLabel = getCurrencyLabel(currencyCode)
 
   return (
     <>
@@ -908,49 +906,51 @@ const PriceSection = ({ meeting, update }) => {
             />
           </Field>
 
-          {/* Валюта — раскрывается списком */}
+          {/* Валюта — открывает оверлей через CurrencyPicker */}
           <Group>
-            <div style={{
-              background: C.card, border: `1px solid ${C.border}`,
-              borderRadius: 12, overflow: 'hidden',
-            }}>
-              <Row
-                last
-                left="Валюта"
-                onClick={() => setCurrencyOpen(o => !o)}
-                right={
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 14, color: C.muted }}>{currencyLabel}</span>
-                    <svg
-                      width="12" height="12" viewBox="0 0 24 24" fill="none"
-                      stroke="#888" strokeWidth="2"
-                      style={{
-                        transform: currencyOpen ? 'rotate(90deg)' : 'rotate(0)',
-                        transition: 'transform 0.15s',
-                      }}
-                    >
-                      <polyline points="9,18 15,12 9,6" />
-                    </svg>
+            <CurrencyPicker
+              value={meeting.currency}
+              onChange={(code) => update({ currency: code })}
+              colors={{
+                text: C.text,
+                muted: C.muted,
+                mutedLight: C.mutedLight,
+                border: C.border,
+                borderSoft: C.borderSoft || '#F0EFE9',
+                bg: C.bg,
+                card: C.card,
+                cardSoft: C.cardSoft,
+              }}
+              renderTrigger={({ triggerRef, label, isOpen, onClick }) => (
+                <div ref={triggerRef}>
+                  <div style={{
+                    background: C.card, border: `1px solid ${C.border}`,
+                    borderRadius: 12, overflow: 'hidden',
+                  }}>
+                    <Row
+                      last
+                      left="Валюта"
+                      onClick={onClick}
+                      right={
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 14, color: C.muted }}>{label}</span>
+                          <svg
+                            width="12" height="12" viewBox="0 0 24 24" fill="none"
+                            stroke="#888" strokeWidth="2"
+                            style={{
+                              transform: isOpen ? 'rotate(90deg)' : 'rotate(0)',
+                              transition: 'transform 0.15s',
+                            }}
+                          >
+                            <polyline points="9,18 15,12 9,6" />
+                          </svg>
+                        </div>
+                      }
+                    />
                   </div>
-                }
-              />
-              {currencyOpen && (
-                <div style={{ padding: '12px 0 14px', background: '#FAF9F3' }}>
-                  <CurrencyPicker
-                    value={meeting.currency}
-                    onChange={(code) => update({ currency: code })}
-                    onSelected={() => setCurrencyOpen(false)}
-                    colors={{
-                      text: C.text,
-                      muted: C.muted,
-                      mutedLight: C.mutedLight,
-                      border: C.border,
-                      borderSoft: C.borderSoft || '#F0EFE9',
-                    }}
-                  />
                 </div>
               )}
-            </div>
+            />
           </Group>
         </>
       )}

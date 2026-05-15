@@ -713,7 +713,6 @@ function AccountSection({ user, account, setAccount, isMobile }) {
     'UTC',
   ]
 
-  const [currencyOpen, setCurrencyOpen] = useState(false)
   const currentLabel = getCurrencyLabel(account.default_currency) // например "₽ RUB" или "KGS" для custom
 
   return (
@@ -751,45 +750,45 @@ function AccountSection({ user, account, setAccount, isMobile }) {
           right={<span style={{ fontSize: 14, color: C.muted }}>RU</span>}
           disabled
         />
-        {/* Валюта — раскрывается списком */}
-        <div style={{ borderTop: `1px solid ${C.borderSoft}` }}>
-          <Row
-            last
-            left="Валюта"
-            onClick={() => setCurrencyOpen(o => !o)}
-            right={
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 14, color: C.muted }}>{currentLabel}</span>
-                <svg
-                  width="12" height="12" viewBox="0 0 24 24" fill="none"
-                  stroke="#888" strokeWidth="2"
-                  style={{
-                    transform: currencyOpen ? 'rotate(90deg)' : 'rotate(0)',
-                    transition: 'transform 0.15s',
-                  }}
-                >
-                  <polyline points="9,18 15,12 9,6" />
-                </svg>
-              </div>
-            }
-          />
-          {currencyOpen && (
-            <div style={{ padding: '12px 0 14px', background: '#FAF9F3' }}>
-              <CurrencyPicker
-                value={account.default_currency}
-                onChange={(code) => setAccount({ ...account, default_currency: code })}
-                onSelected={() => setCurrencyOpen(false)}
-                colors={{
-                  text: C.text,
-                  muted: C.muted,
-                  mutedLight: C.mutedLight,
-                  border: C.border,
-                  borderSoft: C.borderSoft,
-                }}
+        {/* Валюта — открывает оверлей */}
+        <CurrencyPicker
+          value={account.default_currency}
+          onChange={(code) => setAccount({ ...account, default_currency: code })}
+          colors={{
+            text: C.text,
+            muted: C.muted,
+            mutedLight: C.mutedLight,
+            border: C.border,
+            borderSoft: C.borderSoft,
+            bg: C.bg,
+            card: C.card,
+            cardSoft: C.cardSoft,
+          }}
+          renderTrigger={({ triggerRef, label, isOpen, onClick }) => (
+            <div ref={triggerRef}>
+              <Row
+                last
+                left="Валюта"
+                onClick={onClick}
+                right={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 14, color: C.muted }}>{label}</span>
+                    <svg
+                      width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="#888" strokeWidth="2"
+                      style={{
+                        transform: isOpen ? 'rotate(90deg)' : 'rotate(0)',
+                        transition: 'transform 0.15s',
+                      }}
+                    >
+                      <polyline points="9,18 15,12 9,6" />
+                    </svg>
+                  </div>
+                }
               />
             </div>
           )}
-        </div>
+        />
       </Group>
     </>
   )
