@@ -419,9 +419,6 @@ export default function Profile() {
           <h2 style={{
             fontSize: isMobile ? 22 : 26, fontWeight: 800, margin: 0,
           }}>Профиль</h2>
-          <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>
-            Так клиент видит вашу страницу записи
-          </div>
         </div>
         <button
           onClick={openPreview}
@@ -460,7 +457,7 @@ export default function Profile() {
 
         {/* Никнейм / ссылка */}
         <div style={{ marginBottom: 20 }}>
-          <div style={labelStyle}>Никнейм — это ваша ссылка</div>
+          <div style={labelStyle}>Никнейм</div>
           <div style={{
             display: 'flex', alignItems: 'center',
             border: `1px solid ${slugError ? C.danger : C.border}`,
@@ -501,7 +498,7 @@ export default function Profile() {
             alignItems: 'baseline', marginBottom: 8, paddingLeft: 4, paddingRight: 4,
           }}>
             <span style={{ fontSize: 13, fontWeight: 500, color: C.muted }}>
-              О себе — одна строка
+              О себе
             </span>
             <span style={{
               fontSize: 12,
@@ -531,9 +528,9 @@ export default function Profile() {
             {socials.length === 0 && (
               <div style={{
                 fontSize: 13, color: C.mutedLight,
-                padding: '6px 2px 14px',
+                padding: '2px 2px 12px',
               }}>
-                Добавьте ссылки на ваши соцсети — клиент увидит их на странице.
+                Пока пусто
               </div>
             )}
 
