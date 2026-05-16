@@ -93,21 +93,40 @@ function Row({ left, right, sub, last = false, onClick, disabled = false, style 
 
 // Лейбл с info-иконкой и тултипом при hover/tap.
 // Триггер — вся строка (слова + иконка).
+// Иконка — настоящая курсивная буква (Georgia italic), не SVG-линия.
+// Тултип рендерится через Portal в body, чтобы его не обрезала
+// карточка Group с overflow:hidden.
 function LabelWithTip({ label, tip }) {
   const [open, setOpen] = useState(false)
+  const [coords, setCoords] = useState({ top: 0, left: 0 })
   const ref = useRef(null)
 
-  // Закрытие при клике вне (для мобильного tap)
+  // Пересчёт позиции тултипа по координатам лейбла
+  const recalc = () => {
+    if (!ref.current) return
+    const r = ref.current.getBoundingClientRect()
+    setCoords({
+      top: r.bottom + window.scrollY + 8,
+      left: r.left + window.scrollX,
+    })
+  }
+
   useEffect(() => {
     if (!open) return
+    recalc()
     const onClick = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false)
     }
+    const onScrollResize = () => recalc()
     document.addEventListener('mousedown', onClick)
     document.addEventListener('touchstart', onClick)
+    window.addEventListener('scroll', onScrollResize, true)
+    window.addEventListener('resize', onScrollResize)
     return () => {
       document.removeEventListener('mousedown', onClick)
       document.removeEventListener('touchstart', onClick)
+      window.removeEventListener('scroll', onScrollResize, true)
+      window.removeEventListener('resize', onScrollResize)
     }
   }, [open])
 
@@ -122,27 +141,29 @@ function LabelWithTip({ label, tip }) {
         setOpen(o => !o)
       }}
     >
-      <span style={{ fontSize: 14, color: C.text, cursor: 'help' }}>{label}</span>
-      <svg
-        width="16" height="16" viewBox="0 0 16 16"
-        xmlns="http://www.w3.org/2000/svg"
-        style={{ display: 'inline-block', flexShrink: 0, cursor: 'help' }}
-      >
-        <circle cx="8" cy="8" r="7" fill="none" stroke="#888" strokeWidth="1.3"/>
-        <text x="8" y="11.8" textAnchor="middle"
-          fontFamily="Georgia, serif" fontStyle="italic"
-          fontSize="10" fontWeight="600" fill="#888">i</text>
-      </svg>
+      <span style={{ fontSize: 14, color: C.text }}>{label}</span>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: 16, height: 16, borderRadius: '50%',
+        border: '1.4px solid #A8A69B', flexShrink: 0,
+      }}>
+        <span style={{
+          fontFamily: 'Georgia, "Times New Roman", serif',
+          fontStyle: 'italic', fontSize: 11, fontWeight: 600,
+          color: '#8A887D', lineHeight: 1,
+          transform: 'translateY(-0.5px)',
+        }}>i</span>
+      </span>
       {open && (
         <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 8px)',
-          left: 0,
+          position: 'fixed',
+          top: coords.top - window.scrollY,
+          left: coords.left - window.scrollX,
           background: '#F0EFE9', color: '#444',
           padding: '10px 14px', borderRadius: 10,
           fontSize: 13, lineHeight: 1.5,
-          width: 'min(280px, calc(100vw - 60px))',
-          zIndex: 50,
+          width: 'min(280px, calc(100vw - 40px))',
+          zIndex: 9999,
           boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
           border: '1px solid #E0E0D8',
           textTransform: 'none', letterSpacing: 0, fontWeight: 400,
