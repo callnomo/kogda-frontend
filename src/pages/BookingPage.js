@@ -141,6 +141,63 @@ function formatLocation(m) {
 }
 
 // ============================================================================
+// Соцсети: маппинг иконок (simpleicons CDN, как в Профиле — единообразие)
+// ============================================================================
+const SOCIAL_ICONS = {
+  telegram:  'https://cdn.simpleicons.org/telegram/229ED9',
+  instagram: 'https://cdn.simpleicons.org/instagram/E4405F',
+  x:         'https://cdn.simpleicons.org/x/000000',
+  vk:        'https://cdn.simpleicons.org/vk/0077FF',
+  tiktok:    'https://cdn.simpleicons.org/tiktok/000000',
+  youtube:   'https://cdn.simpleicons.org/youtube/FF0000',
+  facebook:  'https://cdn.simpleicons.org/facebook/0866FF',
+}
+
+function SocialLinks({ socials }) {
+  const list = Array.isArray(socials)
+    ? socials.filter(s => s && s.url && String(s.url).trim())
+    : []
+  if (list.length === 0) return null
+  return (
+    <div style={{
+      display: 'flex', gap: 10, flexWrap: 'wrap',
+      justifyContent: 'center', marginTop: 14,
+    }}>
+      {list.map((s, i) => {
+        const icon = SOCIAL_ICONS[s.type]
+        return (
+          <a
+            key={i}
+            href={s.url}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            title={s.type}
+            style={{
+              width: 38, height: 38, borderRadius: '50%',
+              background: '#fff', border: '1px solid #E8E7E0',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              textDecoration: 'none', flexShrink: 0,
+            }}
+          >
+            {icon ? (
+              <img src={icon} alt={s.type}
+                style={{ width: 18, height: 18, objectFit: 'contain', display: 'block' }} />
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            )}
+          </a>
+        )
+      })}
+    </div>
+  )
+}
+
+// ============================================================================
 // Onboarding модалка: уточняем timezone + валюту перед показом услуг
 // ============================================================================
 function OnboardingModal({
@@ -615,17 +672,46 @@ export default function BookingPage() {
         {/* STEP 1 */}
         {step === 1 && (
           <div style={{ maxWidth: 520, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 28 }}>
-              {profile.avatar ? (
-                <img src={profile.avatar} alt={profile.name}
-                  style={{ width: 72, height: 72, borderRadius: 36, objectFit: 'cover', margin: '0 auto 14px', display: 'block' }} />
-              ) : (
-                <div style={{ width: 72, height: 72, borderRadius: 36, background: '#E8FF47', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 800, margin: '0 auto 14px', color: '#111' }}>
-                  {profile.name.charAt(0)}
-                </div>
-              )}
-              <h2 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 4px' }}>{profile.name}</h2>
-              {profile.bio && <p style={{ fontSize: 14, color: '#888', margin: 0 }}>{profile.bio}</p>}
+            {/* Обложка + аватар внахлёст + имя + био + соцсети */}
+            <div style={{
+              background: '#fff', borderRadius: 20,
+              border: '1px solid #E8E7E0', overflow: 'hidden',
+              marginBottom: 28,
+            }}>
+              {/* Обложка (или градиент-заглушка) */}
+              <div style={{
+                height: 140,
+                background: profile.cover
+                  ? `center / cover no-repeat url("${profile.cover}")`
+                  : 'linear-gradient(135deg, #2B2A28 0%, #4A4640 55%, #6E665A 100%)',
+              }} />
+              <div style={{ padding: '0 24px 24px', textAlign: 'center' }}>
+                {profile.avatar ? (
+                  <img src={profile.avatar} alt={profile.name}
+                    style={{
+                      width: 88, height: 88, borderRadius: 44, objectFit: 'cover',
+                      border: '4px solid #fff', margin: '-44px auto 12px', display: 'block',
+                      boxSizing: 'border-box', background: '#fff',
+                    }} />
+                ) : (
+                  <div style={{
+                    width: 88, height: 88, borderRadius: 44, background: '#E8FF47',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 36, fontWeight: 800, color: '#111',
+                    border: '4px solid #fff', margin: '-44px auto 12px',
+                    boxSizing: 'border-box',
+                  }}>
+                    {profile.name.charAt(0)}
+                  </div>
+                )}
+                <h2 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 6px' }}>{profile.name}</h2>
+                {profile.bio && (
+                  <p style={{ fontSize: 14, color: '#888', margin: 0, lineHeight: 1.5 }}>
+                    {profile.bio}
+                  </p>
+                )}
+                <SocialLinks socials={profile.socials} />
+              </div>
             </div>
             <p style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1.5, textAlign: 'center', marginBottom: 14 }}>Выберите тип встречи</p>
             {filteredMeetings.length === 0 ? (
