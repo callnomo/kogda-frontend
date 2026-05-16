@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import AppLayout from '../components/AppLayout'
-import { ExternalLink, Pencil, Trash2, Plus, X, Globe } from 'lucide-react'
+import { ExternalLink, Pencil, Trash2, Globe } from 'lucide-react'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
@@ -41,8 +41,6 @@ const SOCIAL_TYPES = [
 
 const socialMeta = (type) =>
   SOCIAL_TYPES.find(s => s.key === type) || SOCIAL_TYPES[SOCIAL_TYPES.length - 1]
-const socialLabel = (type) => socialMeta(type).label
-const socialPlaceholder = (type) => socialMeta(type).placeholder
 
 // Иконка сети: фирменный логотип или глобус-заглушка для «Сайт»
 function SocialIcon({ type, size = 20 }) {
@@ -56,8 +54,92 @@ function SocialIcon({ type, size = 20 }) {
       />
     )
   }
-  // «Сайт» — простой глобус (lucide), фирменного бренда нет
+  // «Сайт»/«Другое» — простой глобус (lucide), фирменного бренда нет
   return <Globe size={size} color="#555" />
+}
+
+// ============ ОБЩИЕ КОМПОНЕНТЫ (копия из Settings.js, тот же стиль) ============
+
+function Group({ label, children, style = {} }) {
+  return (
+    <div style={{ marginBottom: 24, ...style }}>
+      {label && (
+        <div style={{
+          fontSize: 13, fontWeight: 500, color: C.muted,
+          marginBottom: 10, paddingLeft: 4,
+        }}>{label}</div>
+      )}
+      <div style={{
+        background: C.cardSoft,
+        border: `1px solid ${C.border}`,
+        borderRadius: 12,
+        overflow: 'hidden',
+      }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function Row({ left, right, sub, last = false, onClick, style = {} }) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '14px 16px',
+        borderBottom: last ? 'none' : `1px solid ${C.borderSoft}`,
+        cursor: onClick ? 'pointer' : 'default',
+        ...style,
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {typeof left === 'string' ? (
+          <div style={{ fontSize: 14, color: C.text }}>{left}</div>
+        ) : left}
+        {sub && (
+          <div style={{ fontSize: 12, color: C.mutedLight, marginTop: 2 }}>{sub}</div>
+        )}
+      </div>
+      {right && <div style={{ flexShrink: 0 }}>{right}</div>}
+    </div>
+  )
+}
+
+function Toggle({ on, onClick, disabled = false }) {
+  return (
+    <div
+      onClick={disabled ? undefined : onClick}
+      style={{
+        width: 40, height: 22, borderRadius: 11,
+        background: disabled ? '#E8E7E0' : (on ? '#111' : '#D8D6CC'),
+        position: 'relative', flexShrink: 0,
+        cursor: disabled ? 'default' : 'pointer',
+        transition: 'background 0.2s',
+      }}
+    >
+      <div style={{
+        position: 'absolute', top: 3, left: on ? 21 : 3,
+        width: 16, height: 16, borderRadius: 8,
+        background: '#FFFFFF',
+        transition: 'left 0.2s',
+      }} />
+    </div>
+  )
+}
+
+function IconBadge({ children, size = 32 }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: 8,
+      background: C.card,
+      border: `1px solid ${C.border}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexShrink: 0,
+    }}>
+      {children}
+    </div>
+  )
 }
 
 // ============ ОСНОВНОЙ КОМПОНЕНТ ============
@@ -77,13 +159,14 @@ export default function Profile() {
   const [bio, setBio] = useState('')
   const [avatar, setAvatar] = useState('')
   const [cover, setCover] = useState('')
-  const [socials, setSocials] = useState([]) // [{ type, url }]
+  // Ссылки соцсетей как объект { telegram: 'url', vk: 'url', ... }
+  // (на бэк уходит массивом [{type,url}] — конвертация в saveSocials)
+  const [socialUrls, setSocialUrls] = useState({})
+  // Какие сети включены тумблером (видны строки с полем)
+  const [socialOn, setSocialOn] = useState({})
 
   // Ошибка слага (никнейм занят)
   const [slugError, setSlugError] = useState('')
-
-  // Открыт ли popover выбора сети (под кнопкой «Добавить ссылку»)
-  const [socialPickerOpen, setSocialPickerOpen] = useState(false)
 
   // refs для файловых инпутов
   const avatarInputRef = useRef(null)
@@ -108,8 +191,18 @@ export default function Profile() {
       setBio(res.data.bio || '')
       setAvatar(res.data.avatar || '')
       setCover(res.data.cover || '')
-      const s = res.data.socials
-      setSocials(Array.isArray(s) ? s : [])
+      // массив [{type,url}] с бэка → объекты для UI
+      const arr = Array.isArray(res.data.socials) ? res.data.socials : []
+      const urls = {}
+      const on = {}
+      arr.forEach(item => {
+        if (item && item.type && item.url) {
+          urls[item.type] = item.url
+          on[item.type] = true
+        }
+      })
+      setSocialUrls(urls)
+      setSocialOn(on)
     } catch (err) {
       console.error('Load profile error:', err)
     }
@@ -133,7 +226,6 @@ export default function Profile() {
       })
       // Сервер вернул актуальные значения
       if (res.data.slug !== undefined) setSlug(res.data.slug)
-      if (Array.isArray(res.data.socials)) setSocials(res.data.socials)
       flashSaved()
     } catch (err) {
       const msg = err.response?.data?.error
@@ -210,50 +302,43 @@ export default function Profile() {
   const normalizeUrl = (raw) => {
     let u = (raw || '').trim()
     if (!u) return ''
-    // выкидываем опасные схемы целиком
     if (/^\s*(javascript|data|vbscript):/i.test(u)) return ''
-    // если схемы нет — добавляем https://
     if (!/^https?:\/\//i.test(u)) {
       u = 'https://' + u.replace(/^\/+/, '')
     }
     return u
   }
 
-  // Тапнули иконку сети в списке → добавить строку этой сети
-  const addSocialOfType = (typeKey) => {
-    const next = [...socials, { type: typeKey, url: '' }]
-    setSocials(next)
-    setSocialPickerOpen(false)
-  }
-
-  const updateSocial = (idx, patch) => {
-    const next = socials.map((s, i) => (i === idx ? { ...s, ...patch } : s))
-    setSocials(next)
-  }
-
-  const removeSocial = (idx) => {
-    const next = socials.filter((_, i) => i !== idx)
-    setSocials(next)
-    const cleaned = next
-      .map(s => ({ type: s.type, url: normalizeUrl(s.url) }))
+  // Собрать массив для бэка из текущих urls+on (только включённые с непустой ссылкой)
+  const buildSocialsArray = (urls, on) =>
+    SOCIAL_TYPES
+      .filter(t => on[t.key] && (urls[t.key] || '').trim())
+      .map(t => ({ type: t.key, url: normalizeUrl(urls[t.key]) }))
       .filter(s => s.url)
-    saveProfile({ socials: cleaned })
+
+  // Тумблер сети вкл/выкл
+  const toggleSocial = (typeKey) => {
+    const nextOn = { ...socialOn, [typeKey]: !socialOn[typeKey] }
+    setSocialOn(nextOn)
+    // при выключении — сразу сохранить (сеть пропадёт у клиента),
+    // текст ссылки НЕ трём (вернёт если включит обратно)
+    if (!nextOn[typeKey]) {
+      saveProfile({ socials: buildSocialsArray(socialUrls, nextOn) })
+    }
   }
 
-  // Сохранить соцсети целиком (onBlur поля) — с нормализацией
-  const saveSocials = () => {
-    const cleaned = socials
-      .map(s => ({ type: s.type, url: normalizeUrl(s.url) }))
-      .filter(s => s.url)
-    // подтянем нормализованные значения обратно в инпут
-    setSocials(prev => prev.map(s => ({ ...s, url: normalizeUrl(s.url) || s.url })))
-    saveProfile({ socials: cleaned })
+  // Печать в поле ссылки
+  const setSocialUrl = (typeKey, value) => {
+    setSocialUrls(prev => ({ ...prev, [typeKey]: value }))
   }
 
-  // Какие сети ещё не добавлены (для списка выбора)
-  const availableTypes = SOCIAL_TYPES.filter(
-    t => !socials.some(s => s.type === t.key) || t.key === 'other'
-  )
+  // onBlur поля — нормализовать и сохранить
+  const saveSocialsOnBlur = (typeKey) => {
+    const norm = normalizeUrl(socialUrls[typeKey])
+    const nextUrls = { ...socialUrls, [typeKey]: norm || socialUrls[typeKey] }
+    setSocialUrls(nextUrls)
+    saveProfile({ socials: buildSocialsArray(nextUrls, socialOn) })
+  }
 
   // Открыть публичную страницу (предпросмотр)
   const openPreview = () => {
@@ -409,20 +494,21 @@ export default function Profile() {
             </div>
           )}
 
-          {/* соцсети-превью */}
-          {socials.filter(s => s.url).length > 0 && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-              {socials.filter(s => s.url).map((s, i) => (
-                <div key={i} style={{
-                  fontSize: 12, fontWeight: 600, color: '#555',
-                  background: C.bg,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 999,
-                  padding: '6px 12px',
-                }}>
-                  {socialLabel(s.type)}
-                </div>
-              ))}
+          {/* соцсети-превью: иконки включённых сетей с заполненной ссылкой */}
+          {SOCIAL_TYPES.filter(t => socialOn[t.key] && (socialUrls[t.key] || '').trim()).length > 0 && (
+            <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+              {SOCIAL_TYPES
+                .filter(t => socialOn[t.key] && (socialUrls[t.key] || '').trim())
+                .map(t => (
+                  <div key={t.key} style={{
+                    width: 34, height: 34, borderRadius: '50%',
+                    background: C.card,
+                    border: `1px solid ${C.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <SocialIcon type={t.key} size={18} />
+                  </div>
+                ))}
             </div>
           )}
         </div>
@@ -563,152 +649,56 @@ export default function Profile() {
           />
         </div>
 
-        {/* Соцсети */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={labelStyle}>Соцсети</div>
-          <div style={{
-            background: C.cardSoft,
-            border: `1px solid ${C.border}`,
-            borderRadius: 12,
-            padding: 14,
-          }}>
-            {socials.length === 0 && (
-              <div style={{
-                fontSize: 13, color: C.mutedLight,
-                padding: '2px 2px 12px',
+        {/* Соцсети — список с тумблерами (стиль «Способы оплаты») */}
+        <Group label="Соцсети">
+          {SOCIAL_TYPES.map((t, i) => {
+            const isOn = !!socialOn[t.key]
+            const last = i === SOCIAL_TYPES.length - 1
+            return (
+              <div key={t.key} style={{
+                borderBottom: last ? 'none' : `1px solid ${C.borderSoft}`,
               }}>
-                Пока пусто
-              </div>
-            )}
-
-            {socials.map((s, idx) => (
-              <div key={idx} style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                background: C.card,
-                border: `1px solid ${C.border}`,
-                borderRadius: 12,
-                padding: '8px 10px',
-                marginBottom: 10,
-              }}>
-                {/* Иконка сети — фиксирована (выбрана при добавлении) */}
                 <div style={{
-                  width: 36, height: 36, flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: C.cardSoft,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 9,
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '14px 16px',
                 }}>
-                  <SocialIcon type={s.type} size={20} />
+                  <IconBadge size={32}>
+                    <SocialIcon type={t.key} size={18} />
+                  </IconBadge>
+                  <div style={{ flex: 1, minWidth: 0, fontSize: 14, color: C.text }}>
+                    {t.label}
+                  </div>
+                  <Toggle on={isOn} onClick={() => toggleSocial(t.key)} />
                 </div>
 
-                <input
-                  value={s.url}
-                  onChange={e => updateSocial(idx, { url: e.target.value })}
-                  onBlur={saveSocials}
-                  placeholder={socialPlaceholder(s.type)}
-                  style={{
-                    flex: 1, minWidth: 0,
-                    border: 'none', outline: 'none',
-                    padding: '6px 2px',
-                    fontSize: 14,
-                    fontFamily: 'Inter, sans-serif',
-                    color: C.text,
-                    background: 'transparent',
-                  }}
-                />
-
-                <button
-                  onClick={() => removeSocial(idx)}
-                  title="Удалить"
-                  style={{
-                    width: 30, height: 30, flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'transparent', border: 'none',
-                    cursor: 'pointer', color: C.mutedLight,
-                  }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            ))}
-
-            {/* Кнопка + popover со списком всех доступных сетей */}
-            <div style={{ position: 'relative', marginTop: 4 }}>
-              <button
-                onClick={() => setSocialPickerOpen(o => !o)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 7,
-                  background: C.card,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 9,
-                  padding: '9px 16px',
-                  fontSize: 13, fontWeight: 600, color: C.text,
-                  cursor: 'pointer',
-                  fontFamily: 'Inter, sans-serif',
-                }}
-              >
-                <Plus size={15} />
-                Добавить ссылку
-              </button>
-
-              {socialPickerOpen && (
-                <>
-                  {/* клик мимо — закрыть */}
-                  <div
-                    onClick={() => setSocialPickerOpen(false)}
-                    style={{ position: 'fixed', inset: 0, zIndex: 40 }}
-                  />
-                  <div style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 6px)', left: 0,
-                    zIndex: 50,
-                    background: C.card,
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 12,
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
-                    padding: 6,
-                    minWidth: 220,
-                    maxHeight: 320,
-                    overflowY: 'auto',
-                  }}>
-                    {availableTypes.length === 0 && (
-                      <div style={{
-                        fontSize: 13, color: C.mutedLight,
+                {/* Поле ссылки раскрывается в этой же строке когда тумблер ВКЛ */}
+                {isOn && (
+                  <div style={{ padding: '0 16px 14px 60px' }}>
+                    <input
+                      value={socialUrls[t.key] || ''}
+                      onChange={e => setSocialUrl(t.key, e.target.value)}
+                      onBlur={() => saveSocialsOnBlur(t.key)}
+                      placeholder={t.placeholder}
+                      autoFocus
+                      style={{
+                        width: '100%',
+                        border: `1px solid ${C.border}`,
+                        borderRadius: 8,
                         padding: '10px 12px',
-                      }}>
-                        Все сети уже добавлены
-                      </div>
-                    )}
-                    {availableTypes.map(t => (
-                      <div
-                        key={t.key}
-                        onClick={() => addSocialOfType(t.key)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '10px 12px',
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                        }}
-                        onMouseOver={e => { e.currentTarget.style.background = C.cardSoft }}
-                        onMouseOut={e => { e.currentTarget.style.background = 'transparent' }}
-                      >
-                        <div style={{
-                          width: 22, height: 22, flexShrink: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                          <SocialIcon type={t.key} size={20} />
-                        </div>
-                        <span style={{ flex: 1, fontSize: 14, color: C.text }}>
-                          {t.label}
-                        </span>
-                      </div>
-                    ))}
+                        fontSize: 14,
+                        fontFamily: 'Inter, sans-serif',
+                        outline: 'none',
+                        color: C.text,
+                        background: C.card,
+                        boxSizing: 'border-box',
+                      }}
+                    />
                   </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+                )}
+              </div>
+            )
+          })}
+        </Group>
 
         <div style={{
           fontSize: 11, color: C.mutedLight,
