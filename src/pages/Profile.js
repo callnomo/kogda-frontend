@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import AppLayout from '../components/AppLayout'
-import { ExternalLink, Pencil, Trash2, Plus, X } from 'lucide-react'
+import { ExternalLink, Pencil, Trash2, Plus, X, Globe, Check } from 'lucide-react'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
@@ -25,19 +25,39 @@ const C = {
 
 const BIO_MAX = 150
 
-// Типы соцсетей: ключ → подпись + плейсхолдер
+// Типы соцсетей: ключ → подпись + плейсхолдер + иконка (simpleicons CDN,
+// тот же паттерн что в Settings.js → Интеграции; цвет = фирменный бренда)
 const SOCIAL_TYPES = [
-  { key: 'telegram',  label: 'Telegram',  placeholder: 't.me/username' },
-  { key: 'instagram', label: 'Instagram', placeholder: 'instagram.com/username' },
-  { key: 'youtube',   label: 'YouTube',   placeholder: 'youtube.com/@channel' },
-  { key: 'vk',        label: 'VK',        placeholder: 'vk.com/username' },
-  { key: 'website',   label: 'Сайт',      placeholder: 'example.com' },
+  { key: 'telegram',  label: 'Telegram',  placeholder: 't.me/username',          icon: 'https://cdn.simpleicons.org/telegram/229ED9' },
+  { key: 'instagram', label: 'Instagram', placeholder: 'instagram.com/username', icon: 'https://cdn.simpleicons.org/instagram/E4405F' },
+  { key: 'x',         label: 'X',         placeholder: 'x.com/username',         icon: 'https://cdn.simpleicons.org/x/000000' },
+  { key: 'vk',        label: 'VK',        placeholder: 'vk.com/username',        icon: 'https://cdn.simpleicons.org/vk/0077FF' },
+  { key: 'tiktok',    label: 'TikTok',    placeholder: 'tiktok.com/@username',   icon: 'https://cdn.simpleicons.org/tiktok/000000' },
+  { key: 'youtube',   label: 'YouTube',   placeholder: 'youtube.com/@channel',   icon: 'https://cdn.simpleicons.org/youtube/FF0000' },
+  { key: 'facebook',  label: 'Facebook',  placeholder: 'facebook.com/username',  icon: 'https://cdn.simpleicons.org/facebook/0866FF' },
+  { key: 'website',   label: 'Сайт',      placeholder: 'example.com',            icon: null },
 ]
 
-const socialLabel = (type) =>
-  SOCIAL_TYPES.find(s => s.key === type)?.label || 'Ссылка'
-const socialPlaceholder = (type) =>
-  SOCIAL_TYPES.find(s => s.key === type)?.placeholder || 'https://…'
+const socialMeta = (type) =>
+  SOCIAL_TYPES.find(s => s.key === type) || SOCIAL_TYPES[SOCIAL_TYPES.length - 1]
+const socialLabel = (type) => socialMeta(type).label
+const socialPlaceholder = (type) => socialMeta(type).placeholder
+
+// Иконка сети: фирменный логотип или глобус-заглушка для «Сайт»
+function SocialIcon({ type, size = 20 }) {
+  const m = socialMeta(type)
+  if (m.icon) {
+    return (
+      <img
+        src={m.icon}
+        alt={m.label}
+        style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}
+      />
+    )
+  }
+  // «Сайт» — простой глобус (lucide), фирменного бренда нет
+  return <Globe size={size} color="#555" />
+}
 
 // ============ ОСНОВНОЙ КОМПОНЕНТ ============
 
@@ -60,6 +80,9 @@ export default function Profile() {
 
   // Ошибка слага (никнейм занят)
   const [slugError, setSlugError] = useState('')
+
+  // Какой строке соцсети открыт пикер выбора сети (idx или null)
+  const [socialPickerIdx, setSocialPickerIdx] = useState(null)
 
   // refs для файловых инпутов
   const avatarInputRef = useRef(null)
@@ -518,7 +541,7 @@ export default function Profile() {
 
         {/* Соцсети */}
         <div style={{ marginBottom: 20 }}>
-          <div style={labelStyle}>Соцсети и ссылки</div>
+          <div style={labelStyle}>Соцсети</div>
           <div style={{
             background: C.cardSoft,
             border: `1px solid ${C.border}`,
@@ -535,78 +558,138 @@ export default function Profile() {
             )}
 
             {socials.map((s, idx) => (
-              <div key={idx} style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                marginBottom: 10,
-              }}>
-                <select
-                  value={s.type}
-                  onChange={e => updateSocial(idx, { type: e.target.value })}
-                  onBlur={saveSocials}
-                  style={{
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 8,
-                    padding: '10px 8px',
-                    fontSize: 13,
-                    fontFamily: 'Inter, sans-serif',
+              <div key={idx} style={{ position: 'relative', marginBottom: 10 }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  background: C.card,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 12,
+                  padding: '8px 10px',
+                }}>
+                  {/* Иконка-кнопка: тап → выбор сети (Apple-style) */}
+                  <button
+                    onClick={() => setSocialPickerIdx(socialPickerIdx === idx ? null : idx)}
+                    title="Выбрать сеть"
+                    style={{
+                      width: 36, height: 36, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: C.cardSoft,
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 9,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <SocialIcon type={s.type} size={20} />
+                  </button>
+
+                  <input
+                    value={s.url}
+                    onChange={e => updateSocial(idx, { url: e.target.value })}
+                    onBlur={saveSocials}
+                    placeholder={socialPlaceholder(s.type)}
+                    style={{
+                      flex: 1, minWidth: 0,
+                      border: 'none', outline: 'none',
+                      padding: '6px 2px',
+                      fontSize: 14,
+                      fontFamily: 'Inter, sans-serif',
+                      color: C.text,
+                      background: 'transparent',
+                    }}
+                  />
+
+                  <button
+                    onClick={() => removeSocial(idx)}
+                    title="Удалить"
+                    style={{
+                      width: 30, height: 30, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'transparent', border: 'none',
+                      cursor: 'pointer', color: C.mutedLight,
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                {/* Выпадающий список сетей (Apple-style меню) */}
+                {socialPickerIdx === idx && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 56, left: 0,
+                    zIndex: 50,
                     background: C.card,
-                    color: C.text,
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                    width: isMobile ? 96 : 120,
-                  }}
-                >
-                  {SOCIAL_TYPES.map(t => (
-                    <option key={t.key} value={t.key}>{t.label}</option>
-                  ))}
-                </select>
-                <input
-                  value={s.url}
-                  onChange={e => updateSocial(idx, { url: e.target.value })}
-                  onBlur={saveSocials}
-                  placeholder={socialPlaceholder(s.type)}
-                  style={{
-                    flex: 1, minWidth: 0,
                     border: `1px solid ${C.border}`,
-                    borderRadius: 8,
-                    padding: '10px 12px',
-                    fontSize: 13,
-                    fontFamily: 'Inter, sans-serif',
-                    outline: 'none',
-                    color: C.text,
-                    background: C.card,
-                  }}
-                />
-                <button
-                  onClick={() => removeSocial(idx)}
-                  title="Удалить"
-                  style={{
-                    width: 32, height: 32, flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'transparent', border: 'none',
-                    cursor: 'pointer', color: C.muted,
-                  }}
-                >
-                  <X size={16} />
-                </button>
+                    borderRadius: 12,
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
+                    padding: 6,
+                    minWidth: 200,
+                  }}>
+                    {SOCIAL_TYPES.map(t => {
+                      const active = t.key === s.type
+                      return (
+                        <div
+                          key={t.key}
+                          onClick={() => {
+                            const next = socials.map((x, i) =>
+                              i === idx ? { ...x, type: t.key } : x
+                            )
+                            setSocials(next)
+                            setSocialPickerIdx(null)
+                            const cleaned = next
+                              .map(x => ({ type: x.type, url: (x.url || '').trim() }))
+                              .filter(x => x.url)
+                            saveProfile({ socials: cleaned })
+                          }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '10px 12px',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            background: active ? C.cardSoft : 'transparent',
+                          }}
+                        >
+                          <div style={{
+                            width: 22, height: 22, flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <SocialIcon type={t.key} size={20} />
+                          </div>
+                          <span style={{
+                            flex: 1, fontSize: 14, color: C.text,
+                            fontWeight: active ? 600 : 400,
+                          }}>
+                            {t.label}
+                          </span>
+                          {active && <Check size={16} color={C.text} />}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             ))}
 
             <button
               onClick={addSocial}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                background: C.card,
-                border: `1px dashed ${C.border}`,
-                borderRadius: 8,
-                padding: '9px 14px',
-                fontSize: 13, fontWeight: 600, color: C.text,
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'transparent',
+                border: 'none',
+                padding: '10px 4px 4px',
+                fontSize: 14, fontWeight: 600, color: '#16A34A',
                 cursor: 'pointer',
                 fontFamily: 'Inter, sans-serif',
-                marginTop: 4,
               }}
             >
-              <Plus size={15} />
+              <span style={{
+                width: 22, height: 22, borderRadius: '50%',
+                border: '2px solid #16A34A',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <Plus size={14} color="#16A34A" />
+              </span>
               Добавить ссылку
             </button>
           </div>
