@@ -125,11 +125,13 @@ const Group = ({ label, tip, children, style }) => {
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 16, height: 16, borderRadius: '50%',
                 border: '1.4px solid #A8A69B', flexShrink: 0,
+                textTransform: 'none',
               }}>
                 <span style={{
                   fontFamily: 'Georgia, "Times New Roman", serif',
                   fontStyle: 'italic', fontSize: 11, fontWeight: 600,
                   color: '#8A887D', lineHeight: 1,
+                  textTransform: 'none',
                   transform: 'translateY(-0.5px)',
                 }}>i</span>
               </span>
