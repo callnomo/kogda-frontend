@@ -423,6 +423,57 @@ function CheckItem({ active, onClick, children, last }) {
   )
 }
 
+// ============ CONFIRM DELETE DIALOG ============
+// Кастомный диалог подтверждения удаления услуги (вместо window.confirm).
+// Стиль идентичен CantDeleteDialog: белая карточка по центру, scaleIn,
+// затемнённый backdrop с fadeIn.
+
+function ConfirmDeleteDialog({ meeting, onClose, onConfirm }) {
+  if (!meeting) return null
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      animation: 'fadeIn 0.2s ease-out', padding: 20
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: '#fff', borderRadius: 16, padding: '28px 28px 24px',
+        maxWidth: 440, width: '100%',
+        border: '1px solid #E8E7E0',
+        animation: 'scaleIn 0.2s ease-out',
+        fontFamily: 'Inter, sans-serif'
+      }}>
+        <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10, color: '#111' }}>
+          Удалить услугу?
+        </div>
+        <div style={{ fontSize: 14, color: '#555', lineHeight: 1.55, marginBottom: 22 }}>
+          Услуга <b>«{meeting.title}»</b> будет удалена вместе со всеми прошедшими
+          записями по ней. Это действие нельзя отменить.
+        </div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{
+            background: 'transparent', border: '1.5px solid #E0E0D8',
+            padding: '10px 20px', borderRadius: 100,
+            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            fontFamily: 'Inter, sans-serif', color: '#111'
+          }}>
+            Отмена
+          </button>
+          <button onClick={onConfirm} style={{
+            background: '#DC2626', color: '#fff', border: 'none',
+            padding: '10px 22px', borderRadius: 100,
+            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            fontFamily: 'Inter, sans-serif'
+          }}>
+            Да, удалить
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ============ CANT DELETE DIALOG ============
 
 function CantDeleteDialog({ meeting, bookingsCount, onClose, onHide }) {
@@ -488,6 +539,7 @@ export default function Services() {
   const [copiedId, setCopiedId] = useState(null)
   const [hoveredId, setHoveredId] = useState(null)
   const [cantDeleteDialog, setCantDeleteDialog] = useState(null)
+  const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(null)
 
   // Фильтры и поиск
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
@@ -509,13 +561,13 @@ export default function Services() {
 
   useEffect(() => {
     const mobileEditOpen = isMobile && editingId !== null
-    if (openSheetId !== null || cantDeleteDialog !== null || mobileEditOpen || filterOpen) {
+    if (openSheetId !== null || cantDeleteDialog !== null || confirmDeleteDialog !== null || mobileEditOpen || filterOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
     }
     return () => { document.body.style.overflow = '' }
-  }, [openSheetId, cantDeleteDialog, isMobile, editingId, filterOpen])
+  }, [openSheetId, cantDeleteDialog, confirmDeleteDialog, isMobile, editingId, filterOpen])
 
   const loadMeetings = async () => {
     const token = localStorage.getItem('token')
@@ -541,15 +593,26 @@ export default function Services() {
       })
       await loadMeetings()
       setEditingId(res.data.id)
-    } catch (err) { console.error(err) }
+    } catch (err) {
+      console.error('[createNewService]', err)
+      alert('Не удалось создать услугу. Попробуй ещё раз.')
+    }
   }
 
   const handleMeetingUpdate = (updated) => {
     setMeetings(prev => prev.map(m => m.id === updated.id ? updated : m))
   }
 
-  const deleteMeeting = async (id) => {
-    if (!window.confirm('Удалить эту услугу?')) return
+  // Клик «Удалить» → открываем кастомный диалог подтверждения
+  const requestDelete = (id) => {
+    const meeting = meetings.find(m => m.id === id)
+    if (!meeting) return
+    setConfirmDeleteDialog({ meeting })
+  }
+
+  // Реальное удаление — вызывается из ConfirmDeleteDialog по кнопке «Да, удалить»
+  const performDelete = async (id) => {
+    setConfirmDeleteDialog(null)
     const token = localStorage.getItem('token')
     try {
       await axios.delete(`${API}/meetings/${id}`, { headers: { Authorization: `Bearer ${token}` } })
@@ -562,7 +625,7 @@ export default function Services() {
         setCantDeleteDialog({ meeting, bookingsCount })
         return
       }
-      console.error('[deleteMeeting]', err)
+      console.error('[performDelete]', err)
       alert('Не удалось удалить услугу. Попробуй ещё раз.')
     }
   }
@@ -1100,7 +1163,7 @@ export default function Services() {
                         onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}>
                         <Code2 size={16} />
                       </button>
-                      <button onClick={() => deleteMeeting(m.id)} title="Удалить услугу"
+                      <button onClick={() => requestDelete(m.id)} title="Удалить услугу"
                         style={{
                           ...iconBtnStyle, cursor: 'pointer', color: '#DC2626',
                           opacity: showOtherButtons ? 1 : 0,
@@ -1279,7 +1342,7 @@ export default function Services() {
                 <div style={{ borderTop: '1px solid #F0EFE9', margin: '8px 0' }} />
                 <button onClick={() => {
                     setOpenSheetId(null)
-                    deleteMeeting(sheetMeeting.id)
+                    requestDelete(sheetMeeting.id)
                   }}
                   style={{ ...sheetItemStyle, color: '#DC2626' }}>
                   <Trash2 size={18} />Удалить
@@ -1334,6 +1397,14 @@ export default function Services() {
             <ServiceModal meetingId={mobileEditingMeeting.id} onUpdate={handleMeetingUpdate} />
           </div>
         </div>
+      )}
+
+      {confirmDeleteDialog && (
+        <ConfirmDeleteDialog
+          meeting={confirmDeleteDialog.meeting}
+          onClose={() => setConfirmDeleteDialog(null)}
+          onConfirm={() => performDelete(confirmDeleteDialog.meeting.id)}
+        />
       )}
 
       {cantDeleteDialog && (
