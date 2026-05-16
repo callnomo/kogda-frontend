@@ -61,6 +61,7 @@ const RIGHT_COLUMN_WIDTH = 320
 export default function AppLayout({ children, rightColumn }) {
   const location = useLocation()
   const [user, setUser] = useState(null)
+  const [avatar, setAvatar] = useState('')
   const [isMobile, setIsMobile] = useState(false)
   const [isNarrow, setIsNarrow] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -82,6 +83,24 @@ export default function AppLayout({ children, rightColumn }) {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  // Дозапрос профиля с бэка — чтобы показать настоящий аватар (в localStorage его нет)
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+    let cancelled = false
+    axios.get(`${API}/settings`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(res => {
+      if (cancelled) return
+      if (res.data.avatar) setAvatar(res.data.avatar)
+      // если имя на бэке отличается — подтянем тоже
+      if (res.data.name) {
+        setUser(prev => ({ ...(prev || {}), name: res.data.name }))
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [location.pathname])
 
   useEffect(() => {
     const loadPendingCount = async () => {
@@ -114,6 +133,26 @@ export default function AppLayout({ children, rightColumn }) {
 
   const planLabel = user?.plan || 'Бесплатный'
 
+  // Переиспользуемый кружок аватара: фото если есть, иначе инициалы.
+  // size — диаметр в px.
+  const Avatar = ({ size }) => (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      background: avatar
+        ? `center / cover no-repeat url("${avatar}")`
+        : '#D3D1C7',
+      border: '2px solid #E8FF47',
+      boxSizing: 'border-box',
+      display: 'flex',
+      alignItems: 'center', justifyContent: 'center',
+      fontSize: size <= 32 ? 12 : 14, fontWeight: 600, color: '#444',
+      flexShrink: 0,
+      overflow: 'hidden'
+    }}>
+      {!avatar && initials}
+    </div>
+  )
+
   const isActive = (to) => {
     if (to === '/dashboard') return location.pathname === '/dashboard' || location.pathname === '/'
     return location.pathname.startsWith(to)
@@ -130,14 +169,7 @@ export default function AppLayout({ children, rightColumn }) {
         background: '#F7F6F1', padding: '20px 16px',
         display: 'flex', alignItems: 'center', gap: 12
       }}>
-        <div style={{
-          width: 40, height: 40, borderRadius: '50%',
-          background: '#D3D1C7', border: '2px solid #E8FF47',
-          boxSizing: 'border-box',
-          display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          fontSize: 14, fontWeight: 600, color: '#444'
-        }}>{initials}</div>
+        <Avatar size={40} />
         <div>
           <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{user?.name || 'Гость'}</div>
           <div style={{ fontSize: 12, color: '#666' }}>{planLabel}</div>
@@ -167,14 +199,7 @@ export default function AppLayout({ children, rightColumn }) {
         background: '#F7F6F1', padding: '20px 16px',
         display: 'flex', alignItems: 'center', gap: 12
       }}>
-        <div style={{
-          width: 40, height: 40, borderRadius: '50%',
-          background: '#D3D1C7', border: '2px solid #E8FF47',
-          boxSizing: 'border-box',
-          display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          fontSize: 14, fontWeight: 600, color: '#444'
-        }}>{initials}</div>
+        <Avatar size={40} />
         <div>
           <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{user?.name || 'Гость'}</div>
           <div style={{ fontSize: 12, color: '#666' }}>{planLabel}</div>
@@ -232,14 +257,7 @@ export default function AppLayout({ children, rightColumn }) {
           cursor: 'pointer'
         }}
       >
-        <div style={{
-          width: 32, height: 32, borderRadius: '50%',
-          background: '#D3D1C7', border: '2px solid #E8FF47',
-          boxSizing: 'border-box',
-          display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          fontSize: 12, fontWeight: 600, color: '#444'
-        }}>{initials}</div>
+        <Avatar size={32} />
       </button>
 
       <img
@@ -420,15 +438,7 @@ export default function AppLayout({ children, rightColumn }) {
               fontFamily: 'Inter, sans-serif'
             }}
           >
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%',
-              background: '#D3D1C7', border: '2px solid #E8FF47',
-              boxSizing: 'border-box',
-              display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, fontWeight: 600, color: '#444',
-              flexShrink: 0
-            }}>{initials}</div>
+            <Avatar size={32} />
             {!collapsed && (
               <div style={{ textAlign: 'left', overflow: 'hidden' }}>
                 <div style={{

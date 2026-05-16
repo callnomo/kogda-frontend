@@ -432,37 +432,35 @@ export default function Profile() {
         style={{ display: 'none' }}
       />
 
-      {/* Шапка */}
-      <div style={{
-        display: 'flex', alignItems: 'flex-start',
-        justifyContent: 'space-between', gap: 12,
-        marginBottom: 6,
-      }}>
-        <div>
+      {/* Единый контейнер ограниченной ширины — слева, без растяжения */}
+      <div style={{ maxWidth: isMobile ? '100%' : 640 }}>
+
+        {/* Шапка: заголовок + кнопка предпросмотра на одной строке */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: 12,
+          marginBottom: 6,
+        }}>
           <h2 style={{
             fontSize: isMobile ? 22 : 26, fontWeight: 800, margin: 0,
           }}>Профиль</h2>
+          <button
+            onClick={openPreview}
+            title="Предпросмотр"
+            style={iconBtnStyle}
+          >
+            <ExternalLink size={18} />
+          </button>
         </div>
-        <button
-          onClick={openPreview}
-          title="Предпросмотр"
-          style={iconBtnStyle}
-        >
-          <ExternalLink size={18} />
-        </button>
-      </div>
 
-      {/* флеш «сохранено» */}
-      <div style={{ height: 20, marginBottom: 8 }}>
-        {savedFlash && (
-          <span style={{ fontSize: 12, color: '#16A34A', fontWeight: 500 }}>
-            ✓ Сохранено
-          </span>
-        )}
-      </div>
-
-      {/* Контейнер: на десктопе ограничим ширину для читаемости */}
-      <div style={{ maxWidth: isMobile ? '100%' : 720 }}>
+        {/* флеш «сохранено» */}
+        <div style={{ height: 20, marginBottom: 8 }}>
+          {savedFlash && (
+            <span style={{ fontSize: 12, color: '#16A34A', fontWeight: 500 }}>
+              ✓ Сохранено
+            </span>
+          )}
+        </div>
 
         <PreviewCard />
 
@@ -673,23 +671,18 @@ export default function Profile() {
             <button
               onClick={addSocial}
               style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: 'transparent',
-                border: 'none',
-                padding: '10px 4px 4px',
-                fontSize: 14, fontWeight: 600, color: '#16A34A',
+                display: 'flex', alignItems: 'center', gap: 7,
+                background: C.card,
+                border: `1px solid ${C.border}`,
+                borderRadius: 9,
+                padding: '9px 16px',
+                fontSize: 13, fontWeight: 600, color: C.text,
                 cursor: 'pointer',
                 fontFamily: 'Inter, sans-serif',
+                marginTop: 4,
               }}
             >
-              <span style={{
-                width: 22, height: 22, borderRadius: '50%',
-                border: '2px solid #16A34A',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-                <Plus size={14} color="#16A34A" />
-              </span>
+              <Plus size={15} />
               Добавить ссылку
             </button>
           </div>
