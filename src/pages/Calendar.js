@@ -285,12 +285,6 @@ export default function Calendar() {
   const pendingCount = bookings.filter(b => b.status === 'pending').length
   const rescheduleCount = bookings.filter(b => b.status === 'reschedule_requested').length
 
-  // ближайшая будущая встреча
-  const upcoming = activeBookings
-    .map(b => ({ b, t: new Date(b.start_time) }))
-    .filter(x => x.t.getTime() >= Date.now())
-    .sort((a, b) => a.t - b.t)[0]
-
   const rightColumn = (
     <>
       <AIHelper />
@@ -323,23 +317,6 @@ export default function Calendar() {
       </div>
 
       <PromoCard />
-
-      {upcoming && (
-        <div>
-          <h3 style={sectionLabelStyle}>Ближайшая</h3>
-          <div style={blockStyle}>
-            <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>
-              {upcoming.t.getDate()} {MONTHS[upcoming.t.getMonth()]}
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 2 }}>
-              {hhmm(upcoming.t)} — {upcoming.b.client_name || '—'}
-            </div>
-            {upcoming.b.meeting_title && (
-              <div style={{ fontSize: 12, color: '#999' }}>{upcoming.b.meeting_title}</div>
-            )}
-          </div>
-        </div>
-      )}
     </>
   )
 
