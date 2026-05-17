@@ -5,7 +5,7 @@
 // Окно часов пока фиксированное 8:00–21:00 (адаптив — отдельный шаг).
 // День / Месяц — заглушки в этом шаге.
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import AppLayout from '../components/AppLayout'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -55,8 +55,11 @@ const STATUS = {
 // Сетка часов: фиксированное окно (шаг 1). Адаптив — позже.
 const HOUR_START = 8
 const HOUR_END = 21
-const HOUR_PX = 44 // высота одного часа в пикселях
+const HOUR_PX = 44 // высота одного часа в пикселях (Неделя)
 const GUTTER = 46 // ширина колонки с подписями часов
+
+// Вид День — полная сетка 0..24
+const DAY_HOUR_PX = 52 // высота часа в виде День (просторнее, подробные карточки)
 
 const DAYS_SHORT = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
 const MONTHS = [
@@ -110,6 +113,7 @@ export default function Calendar() {
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const dayScrollRef = useRef(null)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -143,6 +147,24 @@ export default function Calendar() {
     setAnchor(new Date())
   }
 
+  // Вид День: при открытии/смене даты проскроллить к 8:00,
+  // а если выбранный день — сегодня, то к текущему времени.
+  useEffect(() => {
+    if (view !== 'day') return
+    const el = dayScrollRef.current
+    if (!el) return
+    const isToday = sameDay(anchor, new Date())
+    let targetMin
+    if (isToday) {
+      const now = new Date()
+      targetMin = now.getHours() * 60 + now.getMinutes()
+    } else {
+      targetMin = HOUR_START * 60 // 8:00
+    }
+    const y = (targetMin / 60) * DAY_HOUR_PX - 80 // -80 чтобы цель была не вплотную к верху
+    el.scrollTop = Math.max(0, y)
+  }, [view, anchor])
+
   // отфильтровать брони, попадающие в конкретный день, и посчитать позицию
   function eventsForDay(day) {
     return bookings
@@ -161,6 +183,27 @@ export default function Calendar() {
         const isPast = e.getTime() < Date.now()
         return { booking: b, start: s, end: e, top, height, isPast }
       })
+  }
+
+  // Версия для вида День: позиции от полуночи (сетка 0..24), DAY_HOUR_PX
+  function eventsForDayFull(day) {
+    return bookings
+      .filter(b => {
+        if (b.status === 'cancelled') return false
+        const s = new Date(b.start_time)
+        return sameDay(s, day)
+      })
+      .map(b => {
+        const s = new Date(b.start_time)
+        const e = new Date(b.end_time)
+        const startMin = s.getHours() * 60 + s.getMinutes()
+        const endMin = e.getHours() * 60 + e.getMinutes()
+        const top = (startMin / 60) * DAY_HOUR_PX
+        const height = Math.max(((endMin - startMin) / 60) * DAY_HOUR_PX, 30)
+        const isPast = e.getTime() < Date.now()
+        return { booking: b, start: s, end: e, top, height, isPast }
+      })
+      .sort((a, b) => a.start - b.start)
   }
 
   // ---- стили ----
@@ -348,7 +391,6 @@ export default function Calendar() {
                     const st = STATUS[sk]
                     const colLeft = `calc(${GUTTER}px + (100% - ${GUTTER}px) * ${dayIdx}/7 + 3px)`
                     const colWidth = `calc((100% - ${GUTTER}px) / 7 - 6px)`
-                    const showService = height >= 44 && sk !== 'reschedule'
                     return (
                       <div
                         key={booking.id}
@@ -375,19 +417,6 @@ export default function Calendar() {
                         }}>
                           {booking.client_name || '—'}
                         </div>
-                        {sk === 'reschedule' && (
-                          <div style={{ fontSize: 11, color: st.subText }}>
-                            просит перенос
-                          </div>
-                        )}
-                        {showService && booking.meeting_title && (
-                          <div style={{
-                            fontSize: 11, color: st.text, opacity: 0.7,
-                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                          }}>
-                            {booking.meeting_title}
-                          </div>
-                        )}
                       </div>
                     )
                   })
@@ -406,14 +435,129 @@ export default function Calendar() {
           </>
         )}
 
-        {/* ВИД ДЕНЬ / МЕСЯЦ — заглушки этого шага */}
-        {!loading && !error && (view === 'day' || view === 'month') && (
+        {/* ВИД ДЕНЬ — сетка 0..24 со скроллом, подробные карточки */}
+        {!loading && !error && view === 'day' && (() => {
+          const dayDate = new Date(anchor)
+          const isToday = sameDay(dayDate, today)
+          const dayTitle = `${DAYS_SHORT[(dayDate.getDay() + 6) % 7]}, ${dayDate.getDate()} ${MONTHS[dayDate.getMonth()]}`
+          const evs = eventsForDayFull(dayDate)
+          const fullHeight = 24 * DAY_HOUR_PX
+          const nowMin = today.getHours() * 60 + today.getMinutes()
+          return (
+            <>
+              <div style={{
+                fontSize: 15, fontWeight: 500, color: C.text,
+                margin: '0 0 12px 2px',
+              }}>
+                {dayTitle}{isToday ? ' · сегодня' : ''}
+              </div>
+
+              <div style={{
+                background: C.card, border: `1px solid ${C.border}`,
+                borderRadius: 12, overflow: 'hidden',
+              }}>
+                <div
+                  ref={dayScrollRef}
+                  style={{ position: 'relative', height: 560, overflowY: 'auto' }}
+                >
+                  <div style={{ position: 'relative', height: fullHeight }}>
+                    {/* фон: подписи часов + горизонтальные линии */}
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      display: 'grid', gridTemplateColumns: `${GUTTER}px 1fr`,
+                    }}>
+                      <div style={{ borderRight: `1px solid ${C.borderSoft}` }}>
+                        {Array.from({ length: 24 }, (_, h) => (
+                          <div key={h} style={{ height: DAY_HOUR_PX, position: 'relative' }}>
+                            <span style={{
+                              position: 'absolute', top: -7, right: 6,
+                              fontSize: 11, color: C.mutedLight,
+                            }}>
+                              {h}:00
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{
+                        backgroundImage: `repeating-linear-gradient(${C.gridLine} 0 1px, transparent 1px ${DAY_HOUR_PX}px)`,
+                      }} />
+                    </div>
+
+                    {/* линия текущего времени (только если выбран сегодня) */}
+                    {isToday && (
+                      <div style={{
+                        position: 'absolute', left: GUTTER, right: 0,
+                        top: (nowMin / 60) * DAY_HOUR_PX,
+                        height: 1, background: '#E0837A', zIndex: 5,
+                      }}>
+                        <div style={{
+                          position: 'absolute', left: -2.5, top: -2,
+                          width: 5, height: 5, borderRadius: '50%',
+                          background: '#E0837A',
+                        }} />
+                      </div>
+                    )}
+
+                    {/* события — подробные карточки */}
+                    {evs.map(({ booking, start, end, top, height, isPast }) => {
+                      const sk = statusKey(booking.status)
+                      const st = STATUS[sk]
+                      return (
+                        <div
+                          key={booking.id}
+                          style={{
+                            position: 'absolute',
+                            left: GUTTER + 6, right: 8,
+                            top, height,
+                            background: st.bg,
+                            borderLeft: `3px solid ${st.bar}`,
+                            borderRadius: '0 6px 6px 0',
+                            padding: '7px 10px',
+                            boxSizing: 'border-box',
+                            overflow: 'hidden',
+                            opacity: isPast ? 0.45 : 1,
+                          }}
+                        >
+                          <div style={{ fontSize: 12, fontWeight: 500, color: st.text }}>
+                            {hhmm(start)}–{hhmm(end)} · {booking.client_name || '—'}
+                          </div>
+                          {booking.meeting_title && height >= 44 && (
+                            <div style={{ fontSize: 12, color: st.text, opacity: 0.7, marginTop: 2 }}>
+                              {booking.meeting_title}
+                            </div>
+                          )}
+                          {sk === 'reschedule' && height >= 60 && (
+                            <div style={{ fontSize: 12, color: st.subText, marginTop: 2 }}>
+                              просит перенос
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* легенда */}
+              <div style={{ display: 'flex', gap: 16, marginTop: 11, padding: '0 4px' }}>
+                <LegendDot label="Подтверждено" swatch={{ background: STATUS.confirmed.bar }} />
+                <LegendDot label="Ждёт подтверждения" swatch={{
+                  background: 'repeating-linear-gradient(45deg, #DDE1E5 0 3px, #FFFFFF 3px 6px)',
+                }} />
+                <LegendDot label="Просит перенос" swatch={{ background: STATUS.reschedule.bar }} />
+              </div>
+            </>
+          )
+        })()}
+
+        {/* ВИД МЕСЯЦ — заглушка (следующий шаг) */}
+        {!loading && !error && view === 'month' && (
           <div style={{
             background: C.card, border: `1px solid ${C.border}`,
             borderRadius: 12, padding: 60, textAlign: 'center',
             color: C.muted, fontSize: 14,
           }}>
-            Вид «{view === 'day' ? 'День' : 'Месяц'}» — следующий шаг.
+            Вид «Месяц» — следующий шаг.
           </div>
         )}
 
