@@ -76,6 +76,8 @@ export default function Bookings() {
   // Модалка подтверждения: null | { type: 'cancel'|'reschedule', id }
   const [confirmModal, setConfirmModal] = useState(null)
   const [confirmBusy, setConfirmBusy] = useState(false)
+  // Мобильный bottom-sheet действий по записи: null | объект записи
+  const [sheetBooking, setSheetBooking] = useState(null)
 
   useEffect(() => {
     const u = localStorage.getItem('user')
@@ -291,7 +293,7 @@ export default function Bookings() {
           </>
         )}
 
-        {b.status === 'confirmed' && !isPast && b.video_link && (
+        {b.status === 'confirmed' && !isPast && b.video_link && !isMobile && (
           <>
             <div className="kg-tip-wrap" style={{ position: 'relative' }}>
               <button
@@ -405,7 +407,17 @@ export default function Bookings() {
         {isMobile ? (
           // ============== МОБАЙЛ ==============
           // Структура: клиент (с услугой) → коммент → кнопки на всю ширину
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          // Для confirmed-будущих кнопок нет — тап по карточке открывает bottom-sheet
+          <div
+            onClick={() => {
+              if (b.status === 'confirmed' && !isPast) setSheetBooking(b)
+            }}
+            style={{
+              display: 'flex', flexDirection: 'column', gap: 14,
+              cursor: (b.status === 'confirmed' && !isPast) ? 'pointer' : 'default',
+              WebkitTapHighlightColor: 'transparent'
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{
                 width: 44, height: 44, borderRadius: 10,
@@ -605,6 +617,8 @@ export default function Bookings() {
           z-index: 20;
         }
         .kg-tip-wrap:hover .kg-tip { opacity: 1; }
+        @keyframes kgFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes kgSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
       `}</style>
 
       {/* List */}
@@ -696,6 +710,80 @@ export default function Bookings() {
                 {confirmBusy
                   ? '...'
                   : confirmModal.type === 'cancel' ? 'Отменить' : 'Перенести'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Мобильный bottom-sheet действий по записи (паттерн из Услуг) */}
+      {sheetBooking && (
+        <div
+          onClick={() => setSheetBooking(null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100,
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+            animation: 'kgFadeIn 0.2s ease-out'
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#fff', borderRadius: '20px 20px 0 0',
+              width: '100%', maxHeight: '85vh', overflowY: 'auto',
+              padding: '8px 0 24px', animation: 'kgSlideUp 0.25s ease-out'
+            }}
+          >
+            <div style={{ width: 40, height: 4, background: '#E0E0D8', borderRadius: 2, margin: '8px auto 16px' }} />
+            <div style={{ padding: '0 20px 16px', borderBottom: '1px solid #F0EFE9' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>{sheetBooking.client_name}</div>
+              <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
+                {formatDateShort(sheetBooking.start_time)} · {formatTime(sheetBooking.start_time)} · {sheetBooking.meeting_title}
+              </div>
+            </div>
+            <div style={{ padding: '8px 0' }}>
+              {sheetBooking.video_link && (
+                <a
+                  href={sheetBooking.video_link} target="_blank" rel="noreferrer"
+                  onClick={() => setSheetBooking(null)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    width: '100%', padding: '14px 20px',
+                    background: 'transparent', border: 'none',
+                    cursor: 'pointer', textAlign: 'left',
+                    fontSize: 15, color: '#111',
+                    fontFamily: 'Inter, sans-serif', textDecoration: 'none'
+                  }}
+                >
+                  <Video size={18} /> Войти на встречу
+                </a>
+              )}
+              <button
+                onClick={() => { const id = sheetBooking.id; setSheetBooking(null); rescheduleBooking(id) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  width: '100%', padding: '14px 20px',
+                  background: 'transparent', border: 'none',
+                  cursor: 'pointer', textAlign: 'left',
+                  fontSize: 15, color: '#111',
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              >
+                <RefreshCw size={18} /> Перенести
+              </button>
+              <div style={{ borderTop: '1px solid #F0EFE9', margin: '8px 0' }} />
+              <button
+                onClick={() => { const id = sheetBooking.id; setSheetBooking(null); cancelBooking(id) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  width: '100%', padding: '14px 20px',
+                  background: 'transparent', border: 'none',
+                  cursor: 'pointer', textAlign: 'left',
+                  fontSize: 15, color: '#DC2626',
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              >
+                <X size={18} /> Отменить
               </button>
             </div>
           </div>
