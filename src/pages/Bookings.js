@@ -600,23 +600,6 @@ export default function Bookings() {
       {/* Скрываем scrollbar в Webkit-браузерах */}
       <style>{`
         .bookings-filter-tabs::-webkit-scrollbar { display: none; }
-        .kg-tip-wrap .kg-tip {
-          position: absolute;
-          bottom: calc(100% + 8px);
-          left: 50%;
-          transform: translateX(-50%);
-          background: #111;
-          color: #fff;
-          font-size: 12px;
-          padding: 6px 10px;
-          border-radius: 8px;
-          white-space: nowrap;
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.15s;
-          z-index: 20;
-        }
-        .kg-tip-wrap:hover .kg-tip { opacity: 1; }
         @keyframes kgFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes kgSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
       `}</style>
