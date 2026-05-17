@@ -291,12 +291,6 @@ export default function Calendar() {
     .filter(x => x.t.getTime() >= Date.now())
     .sort((a, b) => a.t - b.t)[0]
 
-  const CAL_SOURCES = [
-    { name: 'Google Calendar', connected: false },
-    { name: 'Apple Calendar', connected: false },
-    { name: 'Яндекс Календарь', connected: false },
-  ]
-
   const rightColumn = (
     <>
       <AIHelper />
@@ -328,6 +322,8 @@ export default function Calendar() {
         </div>
       </div>
 
+      <PromoCard />
+
       {upcoming && (
         <div>
           <h3 style={sectionLabelStyle}>Ближайшая</h3>
@@ -344,33 +340,6 @@ export default function Calendar() {
           </div>
         </div>
       )}
-
-      <PromoCard />
-
-      <div>
-        <h3 style={sectionLabelStyle}>Календари</h3>
-        <div style={blockStyle}>
-          {CAL_SOURCES.map((c, i) => (
-            <div key={c.name} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              paddingTop: i === 0 ? 0 : 12,
-              paddingBottom: i < CAL_SOURCES.length - 1 ? 12 : 0,
-              borderBottom: i < CAL_SOURCES.length - 1 ? '1px solid #F0EFE9' : 'none',
-            }}>
-              <span style={{ fontSize: 13, color: '#111' }}>{c.name}</span>
-              <span style={{ fontSize: 12, color: '#999' }}>не подключён</span>
-            </div>
-          ))}
-          <div style={{ borderTop: '1px solid #F0EFE9', marginTop: 14, paddingTop: 14 }}>
-            <a href="/settings" style={{
-              fontSize: 13, fontWeight: 600, color: '#111',
-              textDecoration: 'none',
-            }}>
-              Настроить
-            </a>
-          </div>
-        </div>
-      </div>
     </>
   )
 
