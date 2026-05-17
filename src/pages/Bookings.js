@@ -149,6 +149,17 @@ export default function Bookings() {
     } catch (err) { console.error(err) }
   }
 
+  const rescheduleBooking = async (id) => {
+    if (!window.confirm('Попросить клиента перенести встречу? Текущая запись отменится, клиенту придёт письмо с просьбой выбрать новое время.')) return
+    const token = localStorage.getItem('token')
+    try {
+      await axios.patch(`${API}/bookings/${id}/cancel-reschedule`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      loadBookings()
+    } catch (err) { console.error(err) }
+  }
+
   const filtered = sortBookings(bookings.filter(b => {
     if (filter === 'all') return true
     if (filter === 'upcoming') return new Date(b.start_time) > new Date() && b.status !== 'cancelled'
@@ -286,6 +297,13 @@ export default function Bookings() {
               cursor: 'pointer'
             }}>
               Отменить
+            </button>
+            <button onClick={() => rescheduleBooking(b.id)} style={{
+              background: 'transparent', border: 'none',
+              color: '#999', padding: '8px 4px', fontSize: 12, fontWeight: 500,
+              cursor: 'pointer'
+            }}>
+              Перенести
             </button>
             <a href={b.video_link} target="_blank" rel="noreferrer" style={{
               background: '#111', color: '#fff', padding: '8px 14px',
