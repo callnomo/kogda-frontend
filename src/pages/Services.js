@@ -1131,8 +1131,9 @@ export default function Services() {
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8
                   }}>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
                       <button onClick={() => toggleVisibility(m.id)}
-                        title={isHidden ? 'Услуга скрыта — показать на публичной странице' : 'Скрыть на публичной странице'}
+                        aria-label={isHidden ? 'Показать услугу' : 'Скрыть услугу'}
                         style={{
                           ...iconBtnStyle, cursor: 'pointer',
                           color: isHidden ? '#DC2626' : '#111',
@@ -1144,7 +1145,10 @@ export default function Services() {
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}>
                         {isHidden ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
-                      <button onClick={() => alert('Дублирование услуги — скоро будет доступно.')} title="Дублировать (Скоро)"
+                        <span className="kg-tip">{isHidden ? 'Показать' : 'Скрыть'}</span>
+                      </span>
+                      <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
+                      <button onClick={() => alert('Дублирование услуги — скоро будет доступно.')} aria-label="Дублировать"
                         style={{
                           ...iconBtnStyle, cursor: 'pointer',
                           opacity: showOtherButtons ? 0.5 : 0,
@@ -1155,7 +1159,10 @@ export default function Services() {
                         onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}>
                         <Layers size={16} />
                       </button>
-                      <button onClick={() => alert('Виджет для встраивания на сайт — Premium функция, скоро будет доступна')} title="Встроить на сайт (Скоро)"
+                        <span className="kg-tip">Дублировать · скоро</span>
+                      </span>
+                      <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
+                      <button onClick={() => alert('Виджет для встраивания на сайт — Premium функция, скоро будет доступна')} aria-label="Встроить на сайт"
                         style={{
                           ...iconBtnStyle, cursor: 'pointer',
                           opacity: showOtherButtons ? 0.5 : 0,
@@ -1166,7 +1173,10 @@ export default function Services() {
                         onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}>
                         <Code2 size={16} />
                       </button>
-                      <button onClick={() => requestDelete(m.id)} title="Удалить услугу"
+                        <span className="kg-tip">Встроить · скоро</span>
+                      </span>
+                      <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
+                      <button onClick={() => requestDelete(m.id)} aria-label="Удалить услугу"
                         style={{
                           ...iconBtnStyle, cursor: 'pointer', color: '#DC2626',
                           opacity: showOtherButtons ? 1 : 0,
@@ -1177,6 +1187,8 @@ export default function Services() {
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}>
                         <Trash2 size={16} />
                       </button>
+                        <span className="kg-tip">Удалить</span>
+                      </span>
                     </div>
 
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
