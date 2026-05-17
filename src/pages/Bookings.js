@@ -312,7 +312,7 @@ export default function Bookings() {
             <div className="kg-tip-wrap" style={{ position: 'relative' }}>
               <button
                 onClick={() => rescheduleBooking(b.id)}
-                aria-label="Попросить перенести"
+                aria-label="Перенести"
                 style={{
                   width: 44, height: 44, borderRadius: 12,
                   background: 'transparent', border: '1px solid #E8E7E0',
@@ -322,7 +322,7 @@ export default function Bookings() {
               >
                 <RefreshCw size={18} color="#555" />
               </button>
-              <span className="kg-tip">Попросить перенести</span>
+              <span className="kg-tip">Перенести</span>
             </div>
 
             <div className="kg-tip-wrap" style={{ position: 'relative' }}>
