@@ -369,7 +369,10 @@ export default function Calendar() {
                         <div style={{ fontSize: 11, fontWeight: 500, color: st.text }}>
                           {hhmm(start)}{height >= 40 ? `–${hhmm(end)}` : ''}
                         </div>
-                        <div style={{ fontSize: 12, fontWeight: 500, color: st.text }}>
+                        <div style={{
+                          fontSize: 12, fontWeight: 500, color: st.text,
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        }}>
                           {booking.client_name || '—'}
                         </div>
                         {sk === 'reschedule' && (
@@ -378,7 +381,10 @@ export default function Calendar() {
                           </div>
                         )}
                         {showService && booking.meeting_title && (
-                          <div style={{ fontSize: 11, color: st.text, opacity: 0.7 }}>
+                          <div style={{
+                            fontSize: 11, color: st.text, opacity: 0.7,
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                          }}>
                             {booking.meeting_title}
                           </div>
                         )}
