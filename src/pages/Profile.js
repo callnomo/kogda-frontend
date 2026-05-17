@@ -668,13 +668,16 @@ export default function Profile() {
           <h2 style={{
             fontSize: isMobile ? 22 : 26, fontWeight: 800, margin: 0,
           }}>Профиль</h2>
-          <button
-            onClick={openPreview}
-            title="Предпросмотр"
-            style={iconBtnStyle}
-          >
-            <ExternalLink size={18} />
-          </button>
+          <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
+            <button
+              onClick={openPreview}
+              aria-label="Предпросмотр"
+              style={iconBtnStyle}
+            >
+              <ExternalLink size={18} />
+            </button>
+            <span className="kg-tip">Предпросмотр</span>
+          </span>
         </div>
 
         {/* флеш «сохранено» */}
