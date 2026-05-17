@@ -356,65 +356,83 @@ export default function Dashboard() {
               ...(isMobile ? { width: '100%' } : {})
             }}>
               {/* Open */}
-              <a
-                href={bookingLink}
-                target="_blank"
-                rel="noreferrer"
-                title="Открыть страницу"
-                style={{
-                  ...(isMobile ? { flex: 1, height: 40 } : { width: 40, height: 40 }),
-                  borderRadius: 10,
-                  background: '#fff',
-                  border: '1px solid #E0E0D8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#111',
-                  textDecoration: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <ExternalLink size={18} />
-              </a>
+              <span className="kg-tip-wrap" style={{
+                display: 'flex',
+                ...(isMobile ? { flex: 1 } : {})
+              }}>
+                <a
+                  href={bookingLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Открыть страницу"
+                  style={{
+                    ...(isMobile ? { flex: 1, height: 40 } : { width: 40, height: 40 }),
+                    borderRadius: 10,
+                    background: '#fff',
+                    border: '1px solid #E0E0D8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#111',
+                    textDecoration: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <ExternalLink size={18} />
+                </a>
+                <span className="kg-tip">Открыть страницу</span>
+              </span>
 
               {/* QR */}
-              <button
-                onClick={() => setShowQR(!showQR)}
-                title="Показать QR-код"
-                style={{
-                  ...(isMobile ? { flex: 1, height: 40 } : { width: 40, height: 40 }),
-                  borderRadius: 10,
-                  background: showQR ? '#E8FF47' : '#fff',
-                  border: showQR ? '1px solid #E8FF47' : '1px solid #E0E0D8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#111',
-                  cursor: 'pointer'
-                }}
-              >
-                <QrCode size={18} />
-              </button>
+              <span className="kg-tip-wrap" style={{
+                display: 'flex',
+                ...(isMobile ? { flex: 1 } : {})
+              }}>
+                <button
+                  onClick={() => setShowQR(!showQR)}
+                  aria-label="Показать QR-код"
+                  style={{
+                    ...(isMobile ? { flex: 1, height: 40 } : { width: 40, height: 40 }),
+                    borderRadius: 10,
+                    background: showQR ? '#E8FF47' : '#fff',
+                    border: showQR ? '1px solid #E8FF47' : '1px solid #E0E0D8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#111',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <QrCode size={18} />
+                </button>
+                <span className="kg-tip">QR-код</span>
+              </span>
 
               {/* Copy — главная */}
-              <button
-                onClick={copyLink}
-                title="Скопировать ссылку"
-                style={{
-                  ...(isMobile ? { flex: 1, height: 40 } : { width: 40, height: 40 }),
-                  borderRadius: 10,
-                  background: '#111',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: copied ? '#E8FF47' : '#fff',
-                  cursor: 'pointer',
-                  transition: 'color 0.15s'
-                }}
-              >
-                {copied ? <Check size={18} /> : <Copy size={18} />}
-              </button>
+              <span className="kg-tip-wrap" style={{
+                display: 'flex',
+                ...(isMobile ? { flex: 1 } : {})
+              }}>
+                <button
+                  onClick={copyLink}
+                  aria-label="Скопировать ссылку"
+                  style={{
+                    ...(isMobile ? { flex: 1, height: 40 } : { width: 40, height: 40 }),
+                    borderRadius: 10,
+                    background: '#111',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: copied ? '#E8FF47' : '#fff',
+                    cursor: 'pointer',
+                    transition: 'color 0.15s'
+                  }}
+                >
+                  {copied ? <Check size={18} /> : <Copy size={18} />}
+                </button>
+                <span className="kg-tip">{copied ? 'Скопировано' : 'Скопировать ссылку'}</span>
+              </span>
             </div>
           </div>
 
