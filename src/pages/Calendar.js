@@ -8,6 +8,8 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import AppLayout from '../components/AppLayout'
+import AIHelper from '../components/AIHelper'
+import PromoCard from '../components/PromoCard'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
@@ -97,6 +99,15 @@ function addDays(d, n) {
 
 function hhmm(date) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+// Склонение русских слов по числу
+function pluralize(n, one, few, many) {
+  const mod10 = n % 10
+  const mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return one
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few
+  return many
 }
 
 // Привести статус брони к ключу палитры
@@ -267,8 +278,109 @@ export default function Calendar() {
   const gridTemplate = `${GUTTER}px repeat(7, 1fr)`
   const bodyHeight = (HOUR_END - HOUR_START) * HOUR_PX
 
+  // ---- данные для третьей колонки ----
+  const sectionLabelStyle = {
+    fontSize: 11, fontWeight: 700, color: '#999',
+    textTransform: 'uppercase', letterSpacing: 1.5, margin: '0 0 14px',
+  }
+  const blockStyle = {
+    background: '#fff', borderRadius: 14,
+    border: '1px solid #E8E7E0', padding: 20,
+  }
+
+  // считаем по реальным броням
+  const activeBookings = bookings.filter(b => b.status !== 'cancelled')
+  const todayCount = activeBookings.filter(b => sameDay(new Date(b.start_time), today)).length
+  const pendingCount = bookings.filter(b => b.status === 'pending').length
+  const rescheduleCount = bookings.filter(b => b.status === 'reschedule_requested').length
+
+  // ближайшая будущая встреча
+  const upcoming = activeBookings
+    .map(b => ({ b, t: new Date(b.start_time) }))
+    .filter(x => x.t.getTime() >= Date.now())
+    .sort((a, b) => a.t - b.t)[0]
+
+  const CAL_SOURCES = [
+    { name: 'Google Calendar', connected: false },
+    { name: 'Apple Calendar', connected: false },
+    { name: 'Яндекс Календарь', connected: false },
+  ]
+
+  const rightColumn = (
+    <>
+      <AIHelper />
+
+      <div>
+        <h3 style={sectionLabelStyle}>Сегодня</h3>
+        <div style={blockStyle}>
+          <div style={{ marginBottom: 14 }}>
+            <span style={{ fontSize: 32, fontWeight: 800, color: '#111' }}>{todayCount}</span>
+            <span style={{ fontSize: 13, color: '#888', marginLeft: 6 }}>
+              {pluralize(todayCount, 'запись', 'записи', 'записей')}
+            </span>
+          </div>
+          <div style={{
+            borderTop: '1px solid #F0EFE9', paddingTop: 14,
+            display: 'flex', flexDirection: 'column', gap: 6,
+          }}>
+            <div style={{ fontSize: 13, color: '#888' }}>
+              Ждут подтверждения: <span style={{ color: '#111', fontWeight: 600 }}>{pendingCount}</span>
+            </div>
+            <div style={{ fontSize: 13, color: '#888' }}>
+              Просят перенос: <span style={{ color: '#111', fontWeight: 600 }}>{rescheduleCount}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {upcoming && (
+        <div>
+          <h3 style={sectionLabelStyle}>Ближайшая</h3>
+          <div style={blockStyle}>
+            <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>
+              {upcoming.t.getDate()} {MONTHS[upcoming.t.getMonth()]}
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 2 }}>
+              {hhmm(upcoming.t)} — {upcoming.b.client_name || '—'}
+            </div>
+            {upcoming.b.meeting_title && (
+              <div style={{ fontSize: 12, color: '#999' }}>{upcoming.b.meeting_title}</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <h3 style={sectionLabelStyle}>Календари</h3>
+        <div style={blockStyle}>
+          {CAL_SOURCES.map((c, i) => (
+            <div key={c.name} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              paddingTop: i === 0 ? 0 : 12,
+              paddingBottom: i < CAL_SOURCES.length - 1 ? 12 : 0,
+              borderBottom: i < CAL_SOURCES.length - 1 ? '1px solid #F0EFE9' : 'none',
+            }}>
+              <span style={{ fontSize: 13, color: '#111' }}>{c.name}</span>
+              <span style={{ fontSize: 12, color: '#999' }}>не подключён</span>
+            </div>
+          ))}
+          <div style={{ borderTop: '1px solid #F0EFE9', marginTop: 14, paddingTop: 14 }}>
+            <a href="/settings" style={{
+              fontSize: 13, fontWeight: 600, color: '#111',
+              textDecoration: 'none',
+            }}>
+              Настроить
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <PromoCard />
+    </>
+  )
+
   return (
-    <AppLayout>
+    <AppLayout rightColumn={rightColumn}>
       <div style={pageWrap}>
 
         {/* ШАПКА */}
