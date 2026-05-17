@@ -2,6 +2,8 @@
 // Страница профиля — публичное лицо коуча
 // Создано 16 мая 2026 — с нуля, дизайн согласован
 // 17 мая 2026 — добавлено поле headline (специализация)
+// 17 мая 2026 — соцсети свёрнуты под тумблер «Добавить ссылку»
+//   (рубильник: выкл → скрыты у клиента, ссылки сохранены; localStorage)
 
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
@@ -26,6 +28,12 @@ const C = {
 
 const BIO_MAX = 150
 const HEADLINE_MAX = 120
+
+// Ключ localStorage для состояния блока соцсетей.
+// Хранит { enabled, urls, on } — чтобы выключенные ссылки не терялись
+// между перезагрузками (в этом браузере). Смена устройства / чистка
+// кэша — состояние забудется (компромисс фронт-варианта без БД).
+const SOCIALS_LS_KEY = 'kogda_socials_state'
 
 // Типы соцсетей: ключ → подпись + плейсхолдер + иконка (simpleicons CDN,
 // тот же паттерн что в Settings.js → Интеграции; цвет = фирменный бренда)
@@ -167,6 +175,11 @@ export default function Profile() {
   const [socialUrls, setSocialUrls] = useState({})
   // Какие сети включены тумблером (видны строки с полем)
   const [socialOn, setSocialOn] = useState({})
+  // Верхний тумблер-рубильник «Добавить ссылку»:
+  // вкл → список раскрыт, сети показываются клиенту;
+  // выкл → список свёрнут, на бэк уходит [] (клиент не видит),
+  //        ссылки в стейте + localStorage сохраняются.
+  const [socialsEnabled, setSocialsEnabled] = useState(false)
 
   // Ошибка слага (никнейм занят)
   const [slugError, setSlugError] = useState('')
@@ -182,6 +195,30 @@ export default function Profile() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
+  // Прочитать сохранённое состояние соцсетей из localStorage
+  const readSocialsLS = () => {
+    try {
+      const raw = localStorage.getItem(SOCIALS_LS_KEY)
+      if (!raw) return null
+      const parsed = JSON.parse(raw)
+      if (!parsed || typeof parsed !== 'object') return null
+      return {
+        enabled: !!parsed.enabled,
+        urls: parsed.urls && typeof parsed.urls === 'object' ? parsed.urls : {},
+        on: parsed.on && typeof parsed.on === 'object' ? parsed.on : {},
+      }
+    } catch {
+      return null
+    }
+  }
+
+  // Записать состояние соцсетей в localStorage
+  const writeSocialsLS = (enabled, urls, on) => {
+    try {
+      localStorage.setItem(SOCIALS_LS_KEY, JSON.stringify({ enabled, urls, on }))
+    } catch {}
+  }
+
   // === API ===
   const loadProfile = async () => {
     const token = localStorage.getItem('token')
@@ -195,18 +232,44 @@ export default function Profile() {
       setBio(res.data.bio || '')
       setAvatar(res.data.avatar || '')
       setCover(res.data.cover || '')
+
       // массив [{type,url}] с бэка → объекты для UI
       const arr = Array.isArray(res.data.socials) ? res.data.socials : []
-      const urls = {}
-      const on = {}
+      const urlsFromApi = {}
+      const onFromApi = {}
       arr.forEach(item => {
         if (item && item.type && item.url) {
-          urls[item.type] = item.url
-          on[item.type] = true
+          urlsFromApi[item.type] = item.url
+          onFromApi[item.type] = true
         }
       })
-      setSocialUrls(urls)
-      setSocialOn(on)
+
+      // Сохранённое локальное состояние (в т.ч. выключенные ссылки)
+      const ls = readSocialsLS()
+
+      if (ls && ls.enabled === false) {
+        // Рубильник был выключен: бэк отдаст [] (клиент не видит),
+        // но ссылки восстанавливаем из localStorage, не теряем их.
+        setSocialUrls(ls.urls || {})
+        setSocialOn(ls.on || {})
+        setSocialsEnabled(false)
+      } else if (arr.length > 0) {
+        // На бэке есть сети → рубильник включён.
+        setSocialUrls(urlsFromApi)
+        setSocialOn(onFromApi)
+        setSocialsEnabled(true)
+      } else if (ls && (Object.keys(ls.urls || {}).length > 0)) {
+        // Бэк пуст, но в LS есть введённые ссылки (enabled было true,
+        // просто ничего ещё не сохранилось на бэк) — подхватываем.
+        setSocialUrls(ls.urls || {})
+        setSocialOn(ls.on || {})
+        setSocialsEnabled(!!ls.enabled)
+      } else {
+        // Совсем пусто — рубильник выключен по умолчанию.
+        setSocialUrls({})
+        setSocialOn({})
+        setSocialsEnabled(false)
+      }
     } catch (err) {
       console.error('Load profile error:', err)
     }
@@ -320,14 +383,35 @@ export default function Profile() {
       .map(t => ({ type: t.key, url: normalizeUrl(urls[t.key]) }))
       .filter(s => s.url)
 
-  // Тумблер сети вкл/выкл
+  // Сохранить соцсети на бэк С УЧЁТОМ верхнего тумблера.
+  // Рубильник выкл → на бэк уходит [] (клиент не видит соцсети),
+  //                  но ссылки в стейте/LS сохраняются.
+  // Рубильник вкл  → нормальный массив добавленных сетей.
+  // Всегда синхронизируем localStorage.
+  const saveSocialsRespectingMaster = (enabled, urls, on) => {
+    writeSocialsLS(enabled, urls, on)
+    const payload = enabled ? buildSocialsArray(urls, on) : []
+    saveProfile({ socials: payload })
+  }
+
+  // Верхний тумблер-рубильник «Добавить ссылку»
+  const toggleSocialsMaster = () => {
+    const next = !socialsEnabled
+    setSocialsEnabled(next)
+    saveSocialsRespectingMaster(next, socialUrls, socialOn)
+  }
+
+  // Тумблер конкретной сети вкл/выкл
   const toggleSocial = (typeKey) => {
     const nextOn = { ...socialOn, [typeKey]: !socialOn[typeKey] }
     setSocialOn(nextOn)
     // при выключении — сразу сохранить (сеть пропадёт у клиента),
     // текст ссылки НЕ трём (вернёт если включит обратно)
     if (!nextOn[typeKey]) {
-      saveProfile({ socials: buildSocialsArray(socialUrls, nextOn) })
+      saveSocialsRespectingMaster(socialsEnabled, socialUrls, nextOn)
+    } else {
+      // включили строку, но ссылки может ещё не быть — синхроним LS
+      writeSocialsLS(socialsEnabled, socialUrls, nextOn)
     }
   }
 
@@ -341,13 +425,28 @@ export default function Profile() {
     const norm = normalizeUrl(socialUrls[typeKey])
     const nextUrls = { ...socialUrls, [typeKey]: norm || socialUrls[typeKey] }
     setSocialUrls(nextUrls)
-    saveProfile({ socials: buildSocialsArray(nextUrls, socialOn) })
+    saveSocialsRespectingMaster(socialsEnabled, nextUrls, socialOn)
   }
 
   // Открыть публичную страницу (предпросмотр)
   const openPreview = () => {
     if (!slug) return
     window.open(`${window.location.origin}/${slug}`, '_blank', 'noopener')
+  }
+
+  // Сколько сетей реально добавлено (есть включённый тумблер сети + ссылка)
+  const addedSocials = SOCIAL_TYPES.filter(
+    t => socialOn[t.key] && (socialUrls[t.key] || '').trim()
+  )
+
+  // Склонение «сеть/сети/сетей»
+  const pluralNets = (n) => {
+    const last = n % 10
+    const lastTwo = n % 100
+    if (lastTwo >= 11 && lastTwo <= 14) return 'сетей'
+    if (last === 1) return 'сеть'
+    if (last >= 2 && last <= 4) return 'сети'
+    return 'сетей'
   }
 
   // ============ СТИЛИ ============
@@ -399,6 +498,9 @@ export default function Profile() {
   const PreviewCard = () => {
     const coverH = isMobile ? 120 : 150
     const avaSize = isMobile ? 76 : 92
+    // В превью показываем соцсети ТОЛЬКО если рубильник включён —
+    // ровно так их увидит клиент на публичной странице.
+    const previewSocials = socialsEnabled ? addedSocials : []
     return (
       <div style={{
         background: C.card,
@@ -505,21 +607,20 @@ export default function Profile() {
             </div>
           )}
 
-          {/* соцсети-превью: иконки включённых сетей с заполненной ссылкой */}
-          {SOCIAL_TYPES.filter(t => socialOn[t.key] && (socialUrls[t.key] || '').trim()).length > 0 && (
+          {/* соцсети-превью: иконки включённых сетей с заполненной ссылкой
+              (только если рубильник вкл — как увидит клиент) */}
+          {previewSocials.length > 0 && (
             <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-              {SOCIAL_TYPES
-                .filter(t => socialOn[t.key] && (socialUrls[t.key] || '').trim())
-                .map(t => (
-                  <div key={t.key} style={{
-                    width: 34, height: 34, borderRadius: '50%',
-                    background: C.card,
-                    border: `1px solid ${C.border}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <SocialIcon type={t.key} size={18} />
-                  </div>
-                ))}
+              {previewSocials.map(t => (
+                <div key={t.key} style={{
+                  width: 34, height: 34, borderRadius: '50%',
+                  background: C.card,
+                  border: `1px solid ${C.border}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <SocialIcon type={t.key} size={18} />
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -685,9 +786,49 @@ export default function Profile() {
           />
         </div>
 
-        {/* Соцсети — список с тумблерами (стиль «Способы оплаты») */}
+        {/* Соцсети — рубильник «Добавить ссылку» + раскрывающийся список */}
         <Group label="Соцсети">
-          {SOCIAL_TYPES.map((t, i) => {
+          {/* Строка-рубильник */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '15px 16px',
+            borderBottom: socialsEnabled ? `1px solid ${C.borderSoft}` : 'none',
+          }}>
+            <IconBadge size={32}>
+              <Globe size={17} color="#555" />
+            </IconBadge>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, color: C.text }}>Добавить ссылку</div>
+              {!socialsEnabled && addedSocials.length > 0 && (
+                <div style={{ fontSize: 12, color: C.mutedLight, marginTop: 2 }}>
+                  {addedSocials.length} {pluralNets(addedSocials.length)} скрыты —
+                  включите, чтобы показать
+                </div>
+              )}
+            </div>
+
+            {/* В свёрнутом виде с добавленными — приглушённые иконки */}
+            {!socialsEnabled && addedSocials.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                {addedSocials.map(t => (
+                  <div key={t.key} style={{
+                    width: 24, height: 24, borderRadius: '50%',
+                    background: C.card,
+                    border: `1px solid ${C.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: 0.55,
+                  }}>
+                    <SocialIcon type={t.key} size={13} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Toggle on={socialsEnabled} onClick={toggleSocialsMaster} />
+          </div>
+
+          {/* Список 9 сетей — только когда рубильник включён */}
+          {socialsEnabled && SOCIAL_TYPES.map((t, i) => {
             const isOn = !!socialOn[t.key]
             const last = i === SOCIAL_TYPES.length - 1
             return (
