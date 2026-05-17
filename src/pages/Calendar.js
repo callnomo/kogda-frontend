@@ -101,15 +101,6 @@ function hhmm(date) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
-// Склонение русских слов по числу
-function pluralize(n, one, few, many) {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return one
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few
-  return many
-}
-
 // Привести статус брони к ключу палитры
 function statusKey(status) {
   if (status === 'confirmed') return 'confirmed'
@@ -313,22 +304,26 @@ export default function Calendar() {
       <div>
         <h3 style={sectionLabelStyle}>Сегодня</h3>
         <div style={blockStyle}>
-          <div style={{ marginBottom: 14 }}>
-            <span style={{ fontSize: 32, fontWeight: 800, color: '#111' }}>{todayCount}</span>
-            <span style={{ fontSize: 13, color: '#888', marginLeft: 6 }}>
-              {pluralize(todayCount, 'запись', 'записи', 'записей')}
-            </span>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            paddingTop: 4, paddingBottom: 12,
+          }}>
+            <span style={{ fontSize: 13, color: '#888' }}>Записей</span>
+            <span style={{ fontSize: 22, fontWeight: 800, color: '#111' }}>{todayCount}</span>
           </div>
           <div style={{
-            borderTop: '1px solid #F0EFE9', paddingTop: 14,
-            display: 'flex', flexDirection: 'column', gap: 6,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            paddingTop: 12, paddingBottom: 12, borderTop: '1px solid #F0EFE9',
           }}>
-            <div style={{ fontSize: 13, color: '#888' }}>
-              Ждут подтверждения: <span style={{ color: '#111', fontWeight: 600 }}>{pendingCount}</span>
-            </div>
-            <div style={{ fontSize: 13, color: '#888' }}>
-              Просят перенос: <span style={{ color: '#111', fontWeight: 600 }}>{rescheduleCount}</span>
-            </div>
+            <span style={{ fontSize: 13, color: '#888' }}>Ждут подтверждения</span>
+            <span style={{ fontSize: 22, fontWeight: 800, color: '#111' }}>{pendingCount}</span>
+          </div>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            paddingTop: 12, paddingBottom: 4, borderTop: '1px solid #F0EFE9',
+          }}>
+            <span style={{ fontSize: 13, color: '#888' }}>Просят перенос</span>
+            <span style={{ fontSize: 22, fontWeight: 800, color: '#666' }}>{rescheduleCount}</span>
           </div>
         </div>
       </div>
@@ -349,6 +344,8 @@ export default function Calendar() {
           </div>
         </div>
       )}
+
+      <PromoCard />
 
       <div>
         <h3 style={sectionLabelStyle}>Календари</h3>
@@ -374,8 +371,6 @@ export default function Calendar() {
           </div>
         </div>
       </div>
-
-      <PromoCard />
     </>
   )
 
