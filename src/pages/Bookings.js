@@ -73,6 +73,9 @@ export default function Bookings() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [isMobile, setIsMobile] = useState(false)
+  // Модалка подтверждения: null | { type: 'cancel'|'reschedule', id }
+  const [confirmModal, setConfirmModal] = useState(null)
+  const [confirmBusy, setConfirmBusy] = useState(false)
 
   useEffect(() => {
     const u = localStorage.getItem('user')
@@ -138,26 +141,25 @@ export default function Bookings() {
     } catch (err) { console.error(err) }
   }
 
-  const cancelBooking = async (id) => {
-    if (!window.confirm('Отменить эту запись?')) return
-    const token = localStorage.getItem('token')
-    try {
-      await axios.patch(`${API}/bookings/${id}/cancel`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      loadBookings()
-    } catch (err) { console.error(err) }
-  }
+  // Открытие модалки (вместо window.confirm)
+  const cancelBooking = (id) => setConfirmModal({ type: 'cancel', id })
+  const rescheduleBooking = (id) => setConfirmModal({ type: 'reschedule', id })
 
-  const rescheduleBooking = async (id) => {
-    if (!window.confirm('Попросить клиента перенести встречу? Текущая запись отменится, клиенту придёт письмо с просьбой выбрать новое время.')) return
+  // Выполнение действия после подтверждения в модалке
+  const runConfirmAction = async () => {
+    if (!confirmModal) return
+    const { type, id } = confirmModal
+    const endpoint = type === 'cancel' ? 'cancel' : 'cancel-reschedule'
     const token = localStorage.getItem('token')
+    setConfirmBusy(true)
     try {
-      await axios.patch(`${API}/bookings/${id}/cancel-reschedule`, {}, {
+      await axios.patch(`${API}/bookings/${id}/${endpoint}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       })
       loadBookings()
     } catch (err) { console.error(err) }
+    setConfirmBusy(false)
+    setConfirmModal(null)
   }
 
   const filtered = sortBookings(bookings.filter(b => {
@@ -291,27 +293,53 @@ export default function Bookings() {
 
         {b.status === 'confirmed' && !isPast && b.video_link && (
           <>
-            <button onClick={() => cancelBooking(b.id)} style={{
-              background: 'transparent', border: 'none',
-              color: '#999', padding: '8px 4px', fontSize: 12, fontWeight: 500,
-              cursor: 'pointer'
-            }}>
-              Отменить
-            </button>
-            <button onClick={() => rescheduleBooking(b.id)} style={{
-              background: 'transparent', border: 'none',
-              color: '#999', padding: '8px 4px', fontSize: 12, fontWeight: 500,
-              cursor: 'pointer'
-            }}>
-              Перенести
-            </button>
-            <a href={b.video_link} target="_blank" rel="noreferrer" style={{
-              background: '#111', color: '#fff', padding: '8px 14px',
-              borderRadius: 100, fontSize: 12, fontWeight: 600, textDecoration: 'none',
-              display: 'flex', alignItems: 'center', gap: 5
-            }}>
-              <Video size={13} /> Войти
-            </a>
+            <div className="kg-tip-wrap" style={{ position: 'relative' }}>
+              <button
+                onClick={() => cancelBooking(b.id)}
+                aria-label="Отменить запись"
+                style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background: 'transparent', border: '1px solid #E8E7E0',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', padding: 0,
+                }}
+              >
+                <X size={19} color="#DC2626" />
+              </button>
+              <span className="kg-tip">Отменить запись</span>
+            </div>
+
+            <div className="kg-tip-wrap" style={{ position: 'relative' }}>
+              <button
+                onClick={() => rescheduleBooking(b.id)}
+                aria-label="Попросить перенести"
+                style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background: 'transparent', border: '1px solid #E8E7E0',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', padding: 0,
+                }}
+              >
+                <RefreshCw size={18} color="#555" />
+              </button>
+              <span className="kg-tip">Попросить перенести</span>
+            </div>
+
+            <div className="kg-tip-wrap" style={{ position: 'relative' }}>
+              <a
+                href={b.video_link} target="_blank" rel="noreferrer"
+                aria-label="Войти на встречу"
+                style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background: '#111', border: '1px solid #111',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  textDecoration: 'none',
+                }}
+              >
+                <Video size={18} color="#fff" />
+              </a>
+              <span className="kg-tip">Войти на встречу</span>
+            </div>
           </>
         )}
       </div>
@@ -560,6 +588,23 @@ export default function Bookings() {
       {/* Скрываем scrollbar в Webkit-браузерах */}
       <style>{`
         .bookings-filter-tabs::-webkit-scrollbar { display: none; }
+        .kg-tip-wrap .kg-tip {
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%);
+          background: #111;
+          color: #fff;
+          font-size: 12px;
+          padding: 6px 10px;
+          border-radius: 8px;
+          white-space: nowrap;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.15s;
+          z-index: 20;
+        }
+        .kg-tip-wrap:hover .kg-tip { opacity: 1; }
       `}</style>
 
       {/* List */}
@@ -583,6 +628,77 @@ export default function Bookings() {
           ))}
           {/* На мобайле, если карточек < 3 — промо в конце */}
           {isMobile && filtered.length > 0 && filtered.length < 3 && <PromoCard key="promo-mobile-end" />}
+        </div>
+      )}
+
+      {/* Модалка подтверждения (вместо window.confirm) */}
+      {confirmModal && (
+        <div
+          onClick={() => !confirmBusy && setConfirmModal(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#fff', borderRadius: 18, padding: 28,
+              width: '100%', maxWidth: 340, textAlign: 'center',
+            }}
+          >
+            <div style={{
+              width: 52, height: 52, borderRadius: '50%',
+              background: confirmModal.type === 'cancel' ? '#FCEBEB' : '#F1F0EA',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}>
+              {confirmModal.type === 'cancel'
+                ? <X size={24} color="#DC2626" />
+                : <RefreshCw size={22} color="#555" />}
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 8 }}>
+              {confirmModal.type === 'cancel' ? 'Отменить запись?' : 'Перенести запись?'}
+            </div>
+            <div style={{ fontSize: 14, color: '#888', lineHeight: 1.5, marginBottom: 22 }}>
+              {confirmModal.type === 'cancel'
+                ? 'Клиент получит письмо об отмене. Это время снова станет доступным для записи.'
+                : 'Клиент получит письмо со ссылкой на выбор нового времени. Текущая запись будет отменена.'}
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setConfirmModal(null)}
+                disabled={confirmBusy}
+                style={{
+                  flex: 1, background: '#F1F0EA', color: '#111', border: 'none',
+                  padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 600,
+                  cursor: confirmBusy ? 'default' : 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Назад
+              </button>
+              <button
+                onClick={runConfirmAction}
+                disabled={confirmBusy}
+                style={{
+                  flex: 1,
+                  background: '#111',
+                  color: '#fff', border: 'none',
+                  padding: 13, borderRadius: 12, fontSize: 14, fontWeight: 600,
+                  cursor: confirmBusy ? 'default' : 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  opacity: confirmBusy ? 0.6 : 1,
+                }}
+              >
+                {confirmBusy
+                  ? '...'
+                  : confirmModal.type === 'cancel' ? 'Отменить' : 'Перенести'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </AppLayout>
