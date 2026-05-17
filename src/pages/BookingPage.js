@@ -672,7 +672,7 @@ export default function BookingPage() {
         {/* STEP 1 */}
         {step === 1 && (
           <div style={{ maxWidth: 520, margin: '0 auto' }}>
-            {/* Обложка + аватар внахлёст + имя + био + соцсети */}
+            {/* Обложка + аватар внахлёст + имя + специализация + био + соцсети */}
             <div style={{
               background: '#fff', borderRadius: 20,
               border: '1px solid #E8E7E0', overflow: 'hidden',
@@ -705,6 +705,11 @@ export default function BookingPage() {
                   </div>
                 )}
                 <h2 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 6px' }}>{profile.name}</h2>
+                {profile.headline && (
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#555', margin: '0 0 6px', lineHeight: 1.4 }}>
+                    {profile.headline}
+                  </p>
+                )}
                 {profile.bio && (
                   <p style={{ fontSize: 14, color: '#888', margin: 0, lineHeight: 1.5 }}>
                     {profile.bio}
