@@ -8,7 +8,7 @@ const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.u
 const SECTIONS = [
   { key: 'basic', label: 'Основное' },
   { key: 'price', label: 'Цена' },
-  { key: 'location', label: 'Видео и место' },
+  { key: 'location', label: 'Формат встречи' },
   { key: 'availability', label: 'Доступность' },
   { key: 'payments', label: 'Способы оплаты' },
   { key: 'confirmation', label: 'Подтверждение' },
@@ -28,7 +28,6 @@ const LOCATION_TYPES = [
   { value: 'video', label: 'Видеозвонок' },
   { value: 'phone', label: 'Телефон' },
   { value: 'in_person', label: 'Лично' },
-  { value: 'client_chooses', label: 'Клиент выберет' },
 ]
 
 const BUFFERS = [0, 5, 10, 15, 20, 30, 45, 60, 90, 120]
@@ -786,7 +785,6 @@ function locationPreview(type) {
     video: 'Видеозвонок',
     phone: 'Телефон',
     in_person: 'Лично',
-    client_chooses: 'Клиент выберет',
   }
   return map[type] || '—'
 }
