@@ -392,7 +392,7 @@ export default function Calendar() {
             {/* легенда */}
             <div style={{ display: 'flex', gap: 16, marginTop: 11, padding: '0 4px' }}>
               <LegendDot label="Подтверждено" swatch={{ background: STATUS.confirmed.bar }} />
-              <LegendDot label="Ждёт" swatch={{
+              <LegendDot label="Ждёт подтверждения" swatch={{
                 background: 'repeating-linear-gradient(45deg, #DDE1E5 0 3px, #FFFFFF 3px 6px)',
               }} />
               <LegendDot label="Просит перенос" swatch={{ background: STATUS.reschedule.bar }} />
