@@ -1,6 +1,7 @@
 // kogda-frontend/src/pages/Profile.js
 // Страница профиля — публичное лицо коуча
 // Создано 16 мая 2026 — с нуля, дизайн согласован
+// 17 мая 2026 — добавлено поле headline (специализация)
 
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
@@ -24,6 +25,7 @@ const C = {
 }
 
 const BIO_MAX = 150
+const HEADLINE_MAX = 120
 
 // Типы соцсетей: ключ → подпись + плейсхолдер + иконка (simpleicons CDN,
 // тот же паттерн что в Settings.js → Интеграции; цвет = фирменный бренда)
@@ -156,6 +158,7 @@ export default function Profile() {
   // Поля профиля
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
+  const [headline, setHeadline] = useState('')
   const [bio, setBio] = useState('')
   const [avatar, setAvatar] = useState('')
   const [cover, setCover] = useState('')
@@ -188,6 +191,7 @@ export default function Profile() {
       })
       setName(res.data.name || '')
       setSlug(res.data.slug || '')
+      setHeadline(res.data.headline || '')
       setBio(res.data.bio || '')
       setAvatar(res.data.avatar || '')
       setCover(res.data.cover || '')
@@ -215,7 +219,7 @@ export default function Profile() {
     setTimeout(() => setSavedFlash(false), 1500)
   }
 
-  // Сохранить текстовые поля (имя / bio / slug / socials) — onBlur
+  // Сохранить текстовые поля (имя / headline / bio / slug / socials) — onBlur
   const saveProfile = async (patch) => {
     const token = localStorage.getItem('token')
     setSaving(true)
@@ -486,6 +490,13 @@ export default function Profile() {
           <div style={{ fontSize: isMobile ? 19 : 22, fontWeight: 800, color: C.text }}>
             {name || 'Ваше имя'}
           </div>
+          {headline && (
+            <div style={{
+              fontSize: 13.5, color: C.muted, marginTop: 4,
+            }}>
+              {headline}
+            </div>
+          )}
           {bio && (
             <div style={{
               fontSize: 13.5, color: '#555', marginTop: 6, lineHeight: 1.5,
@@ -584,6 +595,31 @@ export default function Profile() {
             onChange={e => setName(e.target.value)}
             onBlur={() => saveProfile({ name })}
             placeholder="Как вас зовут"
+            style={inputStyle}
+          />
+        </div>
+
+        {/* Специализация */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between',
+            alignItems: 'baseline', marginBottom: 8, paddingLeft: 4, paddingRight: 4,
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: C.muted }}>
+              Специализация
+            </span>
+            <span style={{
+              fontSize: 12,
+              color: headline.length > HEADLINE_MAX ? C.danger : C.mutedLight,
+            }}>
+              {headline.length} / {HEADLINE_MAX}
+            </span>
+          </div>
+          <input
+            value={headline}
+            onChange={e => setHeadline(e.target.value.slice(0, HEADLINE_MAX))}
+            onBlur={() => saveProfile({ headline })}
+            placeholder="Психолог · КПТ, схема-терапия"
             style={inputStyle}
           />
         </div>
