@@ -55,7 +55,7 @@ const STATUS = {
 // Сетка часов: фиксированное окно (шаг 1). Адаптив — позже.
 const HOUR_START = 8
 const HOUR_END = 21
-const HOUR_PX = 56 // высота одного часа в пикселях
+const HOUR_PX = 44 // высота одного часа в пикселях
 const GUTTER = 46 // ширина колонки с подписями часов
 
 const DAYS_SHORT = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
@@ -158,7 +158,8 @@ export default function Calendar() {
         const endMin = e.getHours() * 60 + e.getMinutes()
         const top = ((startMin - HOUR_START * 60) / 60) * HOUR_PX
         const height = Math.max(((endMin - startMin) / 60) * HOUR_PX, 22)
-        return { booking: b, start: s, end: e, top, height }
+        const isPast = e.getTime() < Date.now()
+        return { booking: b, start: s, end: e, top, height, isPast }
       })
   }
 
@@ -342,7 +343,7 @@ export default function Calendar() {
                 {/* события по дням */}
                 {weekDays.map((day, dayIdx) => {
                   const evs = eventsForDay(day)
-                  return evs.map(({ booking, start, end, top, height }) => {
+                  return evs.map(({ booking, start, end, top, height, isPast }) => {
                     const sk = statusKey(booking.status)
                     const st = STATUS[sk]
                     const colLeft = `calc(${GUTTER}px + (100% - ${GUTTER}px) * ${dayIdx}/7 + 3px)`
@@ -351,7 +352,7 @@ export default function Calendar() {
                     return (
                       <div
                         key={booking.id}
-                        title={`${hhmm(start)}–${hhmm(end)} · ${booking.client_name || ''}${booking.meeting_title ? ' · ' + booking.meeting_title : ''}`}
+                        title={`${hhmm(start)}–${hhmm(end)} · ${booking.client_name || ''}${booking.meeting_title ? ' · ' + booking.meeting_title : ''}${isPast ? ' · прошла' : ''}`}
                         style={{
                           position: 'absolute',
                           left: colLeft, width: colWidth,
@@ -362,6 +363,7 @@ export default function Calendar() {
                           padding: '5px 7px',
                           boxSizing: 'border-box',
                           overflow: 'hidden',
+                          opacity: isPast ? 0.45 : 1,
                         }}
                       >
                         <div style={{ fontSize: 11, fontWeight: 500, color: st.text }}>
