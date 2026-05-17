@@ -785,16 +785,19 @@ export default function Services() {
   // ============ КНОПКИ ============
 
   const addButtonDesktop = (
-    <button onClick={createNewService} title="Добавить услугу" style={{
-      background: '#E8FF47', color: '#111', border: 'none',
-      width: 44, height: 44, borderRadius: '50%', cursor: 'pointer',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexShrink: 0, fontFamily: 'Inter, sans-serif', transition: 'transform 0.15s'
-    }}
-      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
-      onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
-      <Plus size={20} strokeWidth={2.5} />
-    </button>
+    <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
+      <button onClick={createNewService} aria-label="Добавить услугу" style={{
+        background: '#E8FF47', color: '#111', border: 'none',
+        width: 44, height: 44, borderRadius: '50%', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, fontFamily: 'Inter, sans-serif', transition: 'transform 0.15s'
+      }}
+        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
+        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+        <Plus size={20} strokeWidth={2.5} />
+      </button>
+      <span className="kg-tip">Добавить услугу</span>
+    </span>
   )
 
   const addButtonMobile = (
@@ -1177,40 +1180,49 @@ export default function Services() {
                     </div>
 
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      <a href={serviceLink} target="_blank" rel="noreferrer" title="Предпросмотр" style={iconBtnStyle}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}>
-                        <ExternalLink size={16} />
-                      </a>
+                      <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
+                        <a href={serviceLink} target="_blank" rel="noreferrer" aria-label="Предпросмотр" style={iconBtnStyle}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}>
+                          <ExternalLink size={16} />
+                        </a>
+                        <span className="kg-tip">Предпросмотр</span>
+                      </span>
 
-                      <button onClick={toggleEdit}
-                        title={isExpanded ? 'Свернуть' : 'Редактировать'}
-                        style={{
-                          ...iconBtnStyle, cursor: 'pointer',
-                          background: isExpanded ? '#E8FF47' : 'transparent',
-                          borderColor: isExpanded ? '#E8FF47' : '#E0E0D8',
-                        }}
-                        onMouseEnter={e => { if (!isExpanded) { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' } }}
-                        onMouseLeave={e => { if (!isExpanded) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' } }}>
-                        <Pencil size={16} />
-                      </button>
+                      <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
+                        <button onClick={toggleEdit}
+                          aria-label={isExpanded ? 'Свернуть' : 'Редактировать'}
+                          style={{
+                            ...iconBtnStyle, cursor: 'pointer',
+                            background: isExpanded ? '#E8FF47' : 'transparent',
+                            borderColor: isExpanded ? '#E8FF47' : '#E0E0D8',
+                          }}
+                          onMouseEnter={e => { if (!isExpanded) { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' } }}
+                          onMouseLeave={e => { if (!isExpanded) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' } }}>
+                          <Pencil size={16} />
+                        </button>
+                        <span className="kg-tip">{isExpanded ? 'Свернуть' : 'Редактировать'}</span>
+                      </span>
 
-                      <button onClick={() => {
-                          navigator.clipboard.writeText(serviceLink)
-                          setCopiedId(m.id)
-                          setTimeout(() => setCopiedId(null), 1500)
-                        }}
-                        title={copiedId === m.id ? 'Скопировано' : 'Копировать ссылку на услугу'}
-                        style={{
-                          ...iconBtnStyle,
-                          background: '#111',
-                          borderColor: '#111',
-                          color: copiedId === m.id ? '#E8FF47' : '#fff',
-                          cursor: 'pointer',
-                          transition: 'color 0.2s'
-                        }}>
-                        {copiedId === m.id ? <Check size={16} /> : <Copy size={16} />}
-                      </button>
+                      <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
+                        <button onClick={() => {
+                            navigator.clipboard.writeText(serviceLink)
+                            setCopiedId(m.id)
+                            setTimeout(() => setCopiedId(null), 1500)
+                          }}
+                          aria-label={copiedId === m.id ? 'Скопировано' : 'Копировать ссылку на услугу'}
+                          style={{
+                            ...iconBtnStyle,
+                            background: '#111',
+                            borderColor: '#111',
+                            color: copiedId === m.id ? '#E8FF47' : '#fff',
+                            cursor: 'pointer',
+                            transition: 'color 0.2s'
+                          }}>
+                          {copiedId === m.id ? <Check size={16} /> : <Copy size={16} />}
+                        </button>
+                        <span className="kg-tip">{copiedId === m.id ? 'Скопировано' : 'Копировать ссылку'}</span>
+                      </span>
                     </div>
                   </div>
                   )}
@@ -1235,15 +1247,18 @@ export default function Services() {
                       <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>
                         Редактирование услуги
                       </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); toggleEdit() }}
-                        title="Свернуть"
-                        style={{ ...iconBtnStyle, cursor: 'pointer' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
-                      >
-                        <ChevronUp size={18} />
-                      </button>
+                      <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleEdit() }}
+                          aria-label="Свернуть"
+                          style={{ ...iconBtnStyle, cursor: 'pointer' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#F7F6F1'; e.currentTarget.style.borderColor = '#111' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E0E0D8' }}
+                        >
+                          <ChevronUp size={18} />
+                        </button>
+                        <span className="kg-tip">Свернуть</span>
+                      </span>
                     </div>
 
                     <div style={{
