@@ -132,16 +132,27 @@ export default function Calendar() {
   const weekStart = startOfWeek(anchor)
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
-  // заголовок: "Май 2026" по понедельнику недели
-  const headerTitle = `${MONTHS_NOM[weekStart.getMonth()]} ${weekStart.getFullYear()}`
+  // заголовок: для Месяца — по anchor, иначе по понедельнику недели
+  const titleDate = view === 'month' ? anchor : weekStart
+  const headerTitle = `${MONTHS_NOM[titleDate.getMonth()]} ${titleDate.getFullYear()}`
 
   function goPrev() {
     if (view === 'week') setAnchor(addDays(anchor, -7))
     else if (view === 'day') setAnchor(addDays(anchor, -1))
+    else if (view === 'month') {
+      const d = new Date(anchor)
+      d.setMonth(d.getMonth() - 1, 1)
+      setAnchor(d)
+    }
   }
   function goNext() {
     if (view === 'week') setAnchor(addDays(anchor, 7))
     else if (view === 'day') setAnchor(addDays(anchor, 1))
+    else if (view === 'month') {
+      const d = new Date(anchor)
+      d.setMonth(d.getMonth() + 1, 1)
+      setAnchor(d)
+    }
   }
   function goToday() {
     setAnchor(new Date())
@@ -202,6 +213,21 @@ export default function Calendar() {
         const height = Math.max(((endMin - startMin) / 60) * DAY_HOUR_PX, 30)
         const isPast = e.getTime() < Date.now()
         return { booking: b, start: s, end: e, top, height, isPast }
+      })
+      .sort((a, b) => a.start - b.start)
+  }
+
+  // Для вида Месяц: брони конкретного дня, отсортированы по времени
+  function bookingsOfDay(day) {
+    return bookings
+      .filter(b => {
+        if (b.status === 'cancelled') return false
+        return sameDay(new Date(b.start_time), day)
+      })
+      .map(b => {
+        const s = new Date(b.start_time)
+        const e = new Date(b.end_time)
+        return { booking: b, start: s, isPast: e.getTime() < Date.now() }
       })
       .sort((a, b) => a.start - b.start)
   }
@@ -550,16 +576,133 @@ export default function Calendar() {
           )
         })()}
 
-        {/* ВИД МЕСЯЦ — заглушка (следующий шаг) */}
-        {!loading && !error && view === 'month' && (
-          <div style={{
-            background: C.card, border: `1px solid ${C.border}`,
-            borderRadius: 12, padding: 60, textAlign: 'center',
-            color: C.muted, fontSize: 14,
-          }}>
-            Вид «Месяц» — следующий шаг.
-          </div>
-        )}
+        {/* ВИД МЕСЯЦ — сетка дней, события строчками */}
+        {!loading && !error && view === 'month' && (() => {
+          const y = anchor.getFullYear()
+          const m = anchor.getMonth()
+          const firstOfMonth = new Date(y, m, 1)
+          const gridStart = startOfWeek(firstOfMonth) // понедельник первой строки
+          const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i))
+          const MAX_LINES = 3 // сколько событий показываем в клетке
+
+          return (
+            <>
+              <div style={{
+                background: C.card, border: `1px solid ${C.border}`,
+                borderRadius: 12, overflow: 'hidden',
+              }}>
+                {/* шапка дней недели */}
+                <div style={{
+                  display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+                  borderBottom: `1px solid ${C.border}`,
+                }}>
+                  {DAYS_SHORT.map((d, i) => (
+                    <div key={i} style={{
+                      textAlign: 'center', padding: '8px 0',
+                      fontSize: 11, textTransform: 'uppercase',
+                      color: C.mutedLight,
+                      borderRight: i < 6 ? `1px solid ${C.borderSoft}` : 'none',
+                    }}>
+                      {d}
+                    </div>
+                  ))}
+                </div>
+
+                {/* сетка 6 строк × 7 дней */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(7, 1fr)',
+                  gridAutoRows: '104px',
+                }}>
+                  {cells.map((cellDate, idx) => {
+                    const inMonth = cellDate.getMonth() === m
+                    const isToday = sameDay(cellDate, today)
+                    const col = idx % 7
+                    const row = Math.floor(idx / 7)
+                    const evs = bookingsOfDay(cellDate)
+                    const shown = evs.slice(0, MAX_LINES)
+                    const more = evs.length - shown.length
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => { setAnchor(new Date(cellDate)); setView('day') }}
+                        style={{
+                          borderRight: col < 6 ? `1px solid ${C.borderSoft}` : 'none',
+                          borderBottom: row < 5 ? `1px solid ${C.borderSoft}` : 'none',
+                          background: isToday ? C.limeSoftBg : 'transparent',
+                          padding: '6px 6px 4px',
+                          boxSizing: 'border-box',
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          opacity: inMonth ? 1 : 0.35,
+                        }}
+                      >
+                        <div style={{
+                          fontSize: 13, marginBottom: 4,
+                          textAlign: 'right', paddingRight: 2,
+                          color: isToday ? C.text : C.muted,
+                          fontWeight: isToday ? 500 : 400,
+                        }}>
+                          {isToday ? (
+                            <span style={{
+                              background: C.lime, color: C.text,
+                              width: 22, height: 22, lineHeight: '22px',
+                              borderRadius: '50%', display: 'inline-block',
+                              textAlign: 'center', fontWeight: 500,
+                            }}>{cellDate.getDate()}</span>
+                          ) : cellDate.getDate()}
+                        </div>
+
+                        {shown.map(({ booking, start, isPast }) => {
+                          const sk = statusKey(booking.status)
+                          const st = STATUS[sk]
+                          return (
+                            <div
+                              key={booking.id}
+                              title={`${hhmm(start)} · ${booking.client_name || ''}`}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 4,
+                                fontSize: 11, lineHeight: '15px',
+                                color: st.text,
+                                opacity: isPast ? 0.45 : 1,
+                                whiteSpace: 'nowrap', overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                marginBottom: 1,
+                              }}
+                            >
+                              <span style={{
+                                width: 6, height: 6, borderRadius: 2,
+                                background: st.bar, flexShrink: 0,
+                              }} />
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {hhmm(start)} {booking.client_name || '—'}
+                              </span>
+                            </div>
+                          )
+                        })}
+
+                        {more > 0 && (
+                          <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>
+                            ещё {more}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* легенда */}
+              <div style={{ display: 'flex', gap: 16, marginTop: 11, padding: '0 4px' }}>
+                <LegendDot label="Подтверждено" swatch={{ background: STATUS.confirmed.bar }} />
+                <LegendDot label="Ждёт подтверждения" swatch={{
+                  background: 'repeating-linear-gradient(45deg, #DDE1E5 0 3px, #FFFFFF 3px 6px)',
+                }} />
+                <LegendDot label="Просит перенос" swatch={{ background: STATUS.reschedule.bar }} />
+              </div>
+            </>
+          )
+        })()}
 
       </div>
     </AppLayout>
