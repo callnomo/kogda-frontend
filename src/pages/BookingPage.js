@@ -134,7 +134,6 @@ function formatLocation(m) {
   switch (m.location_type) {
     case 'phone': return { icon: '📞', label: 'Телефон' }
     case 'in_person': return { icon: '📍', label: 'Лично' }
-    case 'client_chooses': return { icon: '💬', label: 'Клиент выберет' }
     case 'video':
     default: return { icon: '📹', label: 'Видеозвонок' }
   }
