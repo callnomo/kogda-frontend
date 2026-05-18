@@ -378,6 +378,8 @@ export default function BookingPage() {
   const [form, setForm] = useState({ name: '', email: '', notes: '' })
   const [loading, setLoading] = useState(true)
   const [bookingLoading, setBookingLoading] = useState(false)
+  // Ошибка бронирования. type: 'slot_taken' (время заняли) | 'generic' (прочее)
+  const [bookingError, setBookingError] = useState(null)
   const [notFound, setNotFound] = useState(false)
 
   // Prefs клиента: timezone + currency. Запоминаются в localStorage на 30 дней.
@@ -518,6 +520,7 @@ export default function BookingPage() {
 
   const handleBooking = async (e) => {
     e.preventDefault()
+    setBookingError(null)
     setBookingLoading(true)
     try {
       const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`
@@ -533,7 +536,14 @@ export default function BookingPage() {
       })
       setStep(4)
     } catch (err) {
-      alert('Ошибка при бронировании. Попробуй ещё раз.')
+      // Бэкенд при овербукинге шлёт 409 { error: 'slot_taken' }.
+      // Это НЕ "сервер сломался" — время заняли пока клиент заполнял форму.
+      // Клиенту нужно выбрать другое время, а не повторять то же.
+      if (err.response?.status === 409 && err.response?.data?.error === 'slot_taken') {
+        setBookingError({ type: 'slot_taken' })
+      } else {
+        setBookingError({ type: 'generic' })
+      }
     }
     setBookingLoading(false)
   }
@@ -881,6 +891,46 @@ export default function BookingPage() {
                     {notesLength} / {NOTES_MAX}
                   </div>
                 </div>
+
+                {/* Сообщение об ошибке бронирования — в стиле страницы, НЕ системный alert */}
+                {bookingError && (
+                  <div style={{
+                    background: '#FEF2F2', border: '1.5px solid #FECACA',
+                    borderRadius: 12, padding: '14px 16px', marginBottom: 16,
+                  }}>
+                    {bookingError.type === 'slot_taken' ? (
+                      <>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#B91C1C', marginBottom: 4 }}>
+                          Это время только что заняли
+                        </div>
+                        <div style={{ fontSize: 13, color: '#991B1B', marginBottom: 12, lineHeight: 1.5 }}>
+                          Пока вы заполняли форму, слот стал недоступен. Пожалуйста, выберите другое время.
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBookingError(null)
+                            setSelectedSlot(null)
+                            setStep(2)
+                          }}
+                          style={{
+                            background: '#111', color: '#fff', border: 'none',
+                            padding: '10px 18px', borderRadius: 10,
+                            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                            fontFamily: 'Inter, sans-serif',
+                          }}
+                        >
+                          Выбрать другое время
+                        </button>
+                      </>
+                    ) : (
+                      <div style={{ fontSize: 13, color: '#991B1B', lineHeight: 1.5 }}>
+                        Не удалось забронировать встречу. Проверьте соединение и попробуйте ещё раз.
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <button type="submit" disabled={bookingLoading} style={{ width: '100%', background: '#E8FF47', color: '#111', border: 'none', padding: '15px', borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: 'pointer' }}>
                   {bookingLoading ? 'Отправляем...' : selectedMeeting?.require_confirm ? 'Отправить запрос' : 'Подтвердить встречу'}
                 </button>
