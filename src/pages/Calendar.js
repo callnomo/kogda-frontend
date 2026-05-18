@@ -235,12 +235,6 @@ export default function Calendar() {
   }
 
   // ---- стили ----
-  const pageWrap = {
-    background: C.bg,
-    minHeight: '100vh',
-    padding: '20px 24px 40px',
-    boxSizing: 'border-box',
-  }
   const headerRow = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     marginBottom: 16, flexWrap: 'wrap', gap: 12,
@@ -322,14 +316,18 @@ export default function Calendar() {
 
   return (
     <AppLayout rightColumn={rightColumn}>
-      <div style={pageWrap}>
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Календарь</h1>
+      </div>
 
-        {/* ШАПКА */}
+      <div>
+
+        {/* ШАПКА: месяц + навигация + переключатель видов */}
         <div style={headerRow}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <span style={{
-              fontSize: 22, fontWeight: 800,
-              fontFamily: 'Syne, sans-serif', color: C.text,
+              fontSize: 18, fontWeight: 700,
+              fontFamily: 'Inter, sans-serif', color: C.text,
             }}>
               {headerTitle}
             </span>
