@@ -1,6 +1,7 @@
 // kogda-frontend/src/pages/Settings.js
 // Master-detail редизайн под iOS-стиль
 // Версия от 14 мая 2026 — переписано с нуля
+// 18 мая 2026 — заголовок страницы приведён к стандарту (h1 28/800/Inter, как Записи)
 
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
@@ -605,7 +606,7 @@ export default function Settings() {
       <AppLayout>
         {!mobileShowDetail ? (
           <>
-            <h2 style={{ fontSize: 24, fontWeight: 700, margin: '0 0 20px' }}>Настройки</h2>
+            <h1 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 28px', fontFamily: 'Inter, sans-serif' }}>Настройки</h1>
             <div style={{
               background: C.cardSoft,
               border: `1px solid ${C.border}`,
@@ -703,7 +704,7 @@ export default function Settings() {
   // ========================================
   return (
     <AppLayout>
-      <h2 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 24px' }}>Настройки</h2>
+      <h1 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 28px', fontFamily: 'Inter, sans-serif' }}>Настройки</h1>
 
       <div style={{
         background: C.card,
