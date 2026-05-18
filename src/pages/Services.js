@@ -949,17 +949,16 @@ export default function Services() {
     <AppLayout rightColumn={rightColumn}>
       <style>{hideArrows}</style>
 
-      {/* Заголовок — точь-в-точь как на Записях */}
-      <div style={{ marginBottom: 28 }}>
+      {/* Заголовок + кнопка на одной линии (кнопка на уровне заголовка и Ассистента).
+          h1 и marginBottom как у эталона — единообразие сохранено, но flex
+          нужен потому что у Услуг есть кнопка рядом (у Записей её нет). */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 12, marginBottom: 28,
+      }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Услуги</h1>
+        {!isMobile && addButtonDesktop}
       </div>
-
-      {/* Кнопка добавить — строкой ниже заголовка (десктоп) */}
-      {!isMobile && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
-          {addButtonDesktop}
-        </div>
-      )}
 
       {/* Панель фильтров + поиска */}
       {meetings.length > 0 && (
