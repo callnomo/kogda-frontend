@@ -657,27 +657,28 @@ export default function Profile() {
         style={{ display: 'none' }}
       />
 
-      {/* Заголовок — точь-в-точь как на Записях */}
-      <div style={{ marginBottom: 28 }}>
+      {/* Заголовок + кнопка предпросмотра на одной линии.
+          h1 и marginBottom как у эталона; flex — потому что у Профиля
+          есть кнопка рядом с заголовком (у Записей её нет). */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 12, marginBottom: 28,
+      }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Профиль</h1>
+        <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
+          <button
+            onClick={openPreview}
+            aria-label="Предпросмотр"
+            style={iconBtnStyle}
+          >
+            <ExternalLink size={18} />
+          </button>
+          <span className="kg-tip">Предпросмотр</span>
+        </span>
       </div>
 
       {/* Единый контейнер ограниченной ширины — слева, без растяжения */}
       <div style={{ maxWidth: isMobile ? '100%' : 640 }}>
-
-        {/* Кнопка предпросмотра — строкой ниже заголовка */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-          <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
-            <button
-              onClick={openPreview}
-              aria-label="Предпросмотр"
-              style={iconBtnStyle}
-            >
-              <ExternalLink size={18} />
-            </button>
-            <span className="kg-tip">Предпросмотр</span>
-          </span>
-        </div>
 
         {/* флеш «сохранено» */}
         <div style={{ height: 20, marginBottom: 8 }}>
