@@ -949,14 +949,17 @@ export default function Services() {
     <AppLayout rightColumn={rightColumn}>
       <style>{hideArrows}</style>
 
-      {/* Заголовок + добавить — обёртка marginBottom 28 как на Записях */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 28, gap: 12
-      }}>
+      {/* Заголовок — точь-в-точь как на Записях */}
+      <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Услуги</h1>
-        {!isMobile && addButtonDesktop}
       </div>
+
+      {/* Кнопка добавить — строкой ниже заголовка (десктоп) */}
+      {!isMobile && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
+          {addButtonDesktop}
+        </div>
+      )}
 
       {/* Панель фильтров + поиска */}
       {meetings.length > 0 && (

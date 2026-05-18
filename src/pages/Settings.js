@@ -606,7 +606,9 @@ export default function Settings() {
       <AppLayout>
         {!mobileShowDetail ? (
           <>
-            <h1 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 28px', fontFamily: 'Inter, sans-serif' }}>Настройки</h1>
+            <div style={{ marginBottom: 28 }}>
+              <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Настройки</h1>
+            </div>
             <div style={{
               background: C.cardSoft,
               border: `1px solid ${C.border}`,
@@ -704,7 +706,9 @@ export default function Settings() {
   // ========================================
   return (
     <AppLayout>
-      <h1 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 28px', fontFamily: 'Inter, sans-serif' }}>Настройки</h1>
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Настройки</h1>
+      </div>
 
       <div style={{
         background: C.card,
