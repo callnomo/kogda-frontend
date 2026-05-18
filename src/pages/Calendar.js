@@ -4,6 +4,7 @@
 // Данные: GET /bookings (start_time, end_time, meeting_title, client_name, status).
 // Окно часов пока фиксированное 8:00–21:00 (адаптив — отдельный шаг).
 // День / Месяц — заглушки в этом шаге.
+// 18.05.2026: палитра 1 (фиолет/бирюза/коралл). Выбор палитры коучем — позже.
 
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
@@ -30,26 +31,33 @@ const C = {
   limeText: '#7C8400',
 }
 
-// ============ ПАЛИТРА СТАТУСОВ (согласовано 17.05.2026) ============
-// confirmed — сплошная синяя; pending — штриховка; reschedule — терракота.
+// ============ ПАЛИТРА СТАТУСОВ — Вариант 1 (18.05.2026) ============
+// confirmed — фиолет; pending — бирюза; reschedule — коралл.
+// busy — нейтральный графит (занятость из личного календаря, НЕ статус).
 const STATUS = {
   confirmed: {
-    bg: '#EAEEF3',
-    bar: '#2E4057',
-    text: '#1F2D3D',
+    bg: '#ECE7FB',
+    bar: '#7C5CE0',
+    text: '#4A2FA8',
     striped: false,
   },
   pending: {
-    bg: 'repeating-linear-gradient(45deg, #F1F3F5 0 5px, #FBFCFC 5px 10px)',
-    bar: '#97A1AC',
-    text: '#5E6B78',
-    striped: true,
+    bg: '#DDF3EF',
+    bar: '#15A89A',
+    text: '#0B6B61',
+    striped: false,
   },
   reschedule: {
-    bg: '#F7EAE4',
-    bar: '#C26B47',
-    text: '#8A4329',
-    subText: '#B05C33',
+    bg: '#FCE6DC',
+    bar: '#E8633A',
+    text: '#A8401E',
+    subText: '#C2542A',
+    striped: false,
+  },
+  busy: {
+    bg: '#E6E5DD',
+    bar: '#C9C8BF',
+    text: '#76756B',
     striped: false,
   },
 }
@@ -558,12 +566,11 @@ export default function Calendar() {
             </div>
 
             {/* легенда */}
-            <div style={{ display: 'flex', gap: 16, marginTop: 11, padding: '0 4px' }}>
+            <div style={{ display: 'flex', gap: 16, marginTop: 11, padding: '0 4px', flexWrap: 'wrap' }}>
               <LegendDot label="Подтверждено" swatch={{ background: STATUS.confirmed.bar }} />
-              <LegendDot label="Ждёт подтверждения" swatch={{
-                background: 'repeating-linear-gradient(45deg, #DDE1E5 0 3px, #FFFFFF 3px 6px)',
-              }} />
+              <LegendDot label="Ждёт подтверждения" swatch={{ background: STATUS.pending.bar }} />
               <LegendDot label="Просит перенос" swatch={{ background: STATUS.reschedule.bar }} />
+              <LegendDot label="Занято (личный календарь)" swatch={{ background: STATUS.busy.bar }} />
             </div>
           </>
         )}
@@ -672,12 +679,11 @@ export default function Calendar() {
               </div>
 
               {/* легенда */}
-              <div style={{ display: 'flex', gap: 16, marginTop: 11, padding: '0 4px' }}>
+              <div style={{ display: 'flex', gap: 16, marginTop: 11, padding: '0 4px', flexWrap: 'wrap' }}>
                 <LegendDot label="Подтверждено" swatch={{ background: STATUS.confirmed.bar }} />
-                <LegendDot label="Ждёт подтверждения" swatch={{
-                  background: 'repeating-linear-gradient(45deg, #DDE1E5 0 3px, #FFFFFF 3px 6px)',
-                }} />
+                <LegendDot label="Ждёт подтверждения" swatch={{ background: STATUS.pending.bar }} />
                 <LegendDot label="Просит перенос" swatch={{ background: STATUS.reschedule.bar }} />
+                <LegendDot label="Занято (личный календарь)" swatch={{ background: STATUS.busy.bar }} />
               </div>
             </>
           )
@@ -800,12 +806,11 @@ export default function Calendar() {
               </div>
 
               {/* легенда */}
-              <div style={{ display: 'flex', gap: 16, marginTop: 11, padding: '0 4px' }}>
+              <div style={{ display: 'flex', gap: 16, marginTop: 11, padding: '0 4px', flexWrap: 'wrap' }}>
                 <LegendDot label="Подтверждено" swatch={{ background: STATUS.confirmed.bar }} />
-                <LegendDot label="Ждёт подтверждения" swatch={{
-                  background: 'repeating-linear-gradient(45deg, #DDE1E5 0 3px, #FFFFFF 3px 6px)',
-                }} />
+                <LegendDot label="Ждёт подтверждения" swatch={{ background: STATUS.pending.bar }} />
                 <LegendDot label="Просит перенос" swatch={{ background: STATUS.reschedule.bar }} />
+                <LegendDot label="Занято (личный календарь)" swatch={{ background: STATUS.busy.bar }} />
               </div>
             </>
           )
