@@ -10,7 +10,7 @@ import axios from 'axios'
 import AppLayout from '../components/AppLayout'
 import AIHelper from '../components/AIHelper'
 import PromoCard from '../components/PromoCard'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CalendarOff } from 'lucide-react'
 
 const API = process.env.REACT_APP_API_URL || 'https://kogda-backend-production.up.railway.app'
 
@@ -279,6 +279,15 @@ export default function Calendar() {
   const pendingCount = bookings.filter(b => b.status === 'pending').length
   const rescheduleCount = bookings.filter(b => b.status === 'reschedule_requested').length
 
+  // Подключённые календари. Сейчас всегда пусто — реальный OAuth это Этап 2.
+  // Когда сделаем синхронизацию, сюда придёт список из API. Иконки — те же
+  // источники, что в Settings.js → Интеграции (один источник правды).
+  // Формат элемента: { key, label, icon }
+  // Пример для Этапа 2:
+  //   { key: 'google', label: 'Google Calendar', icon: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg' }
+  //   { key: 'apple',  label: 'Apple Calendar',  icon: 'https://cdn.simpleicons.org/apple/000000' }
+  const connectedCalendars = []
+
   const rightColumn = (
     <>
       <AIHelper />
@@ -311,6 +320,53 @@ export default function Calendar() {
       </div>
 
       <PromoCard />
+
+      {/* Блок «Календари» — информативный, без действий.
+          Реальное подключение (OAuth) — Этап 2. Пока подключать нечем,
+          поэтому connectedCalendars всегда []. На Этапе 2 сюда придёт
+          реальный список из API — ветка со списком уже готова ниже. */}
+      <div>
+        <h3 style={sectionLabelStyle}>Календари</h3>
+        <div style={blockStyle}>
+          {connectedCalendars.length === 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 9,
+                background: C.bg,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <CalendarOff size={18} color={C.muted} />
+              </div>
+              <div style={{ fontSize: 13, color: C.muted }}>
+                Нет подключённых календарей
+              </div>
+            </div>
+          ) : (
+            connectedCalendars.map((cal, i) => (
+              <div key={cal.key} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                paddingTop: i === 0 ? 0 : 14,
+                paddingBottom: i < connectedCalendars.length - 1 ? 14 : 0,
+                borderTop: i === 0 ? 'none' : `1px solid ${C.borderSoft}`,
+              }}>
+                <img
+                  src={cal.icon}
+                  alt={cal.label}
+                  style={{ width: 24, height: 24, objectFit: 'contain', flexShrink: 0 }}
+                />
+                <div style={{ flex: 1, minWidth: 0, fontSize: 14, color: C.text }}>
+                  {cal.label}
+                </div>
+                <div style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: '#22C55E', flexShrink: 0,
+                }} />
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </>
   )
 
