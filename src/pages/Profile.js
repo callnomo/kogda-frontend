@@ -4,6 +4,7 @@
 // 17 мая 2026 — добавлено поле headline (специализация)
 // 17 мая 2026 — соцсети свёрнуты под тумблер «Добавить ссылку»
 //   (рубильник: выкл → скрыты у клиента, ссылки сохранены; localStorage)
+// 18 мая 2026 — заголовок приведён к стандарту страниц (h1 28/800/Inter, как Записи)
 
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
@@ -656,29 +657,30 @@ export default function Profile() {
         style={{ display: 'none' }}
       />
 
+      {/* Заголовок страницы — стандарт как на Записях (h1 28/800/Inter) */}
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', gap: 12,
+        marginBottom: 28,
+        maxWidth: isMobile ? '100%' : 640,
+      }}>
+        <h1 style={{
+          fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif',
+        }}>Профиль</h1>
+        <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
+          <button
+            onClick={openPreview}
+            aria-label="Предпросмотр"
+            style={iconBtnStyle}
+          >
+            <ExternalLink size={18} />
+          </button>
+          <span className="kg-tip">Предпросмотр</span>
+        </span>
+      </div>
+
       {/* Единый контейнер ограниченной ширины — слева, без растяжения */}
       <div style={{ maxWidth: isMobile ? '100%' : 640 }}>
-
-        {/* Шапка: заголовок + кнопка предпросмотра на одной строке */}
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', gap: 12,
-          marginBottom: 6,
-        }}>
-          <h2 style={{
-            fontSize: isMobile ? 22 : 26, fontWeight: 800, margin: 0,
-          }}>Профиль</h2>
-          <span className="kg-tip-wrap" style={{ display: 'inline-flex' }}>
-            <button
-              onClick={openPreview}
-              aria-label="Предпросмотр"
-              style={iconBtnStyle}
-            >
-              <ExternalLink size={18} />
-            </button>
-            <span className="kg-tip">Предпросмотр</span>
-          </span>
-        </div>
 
         {/* флеш «сохранено» */}
         <div style={{ height: 20, marginBottom: 8 }}>
