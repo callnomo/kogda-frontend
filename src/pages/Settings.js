@@ -1230,9 +1230,7 @@ function IntegrationsSection({ telegramConnected, connectTelegram, googleCal, on
         <IntegrationRow
           icon={renderIcon('gcal', true)}
           label="Google Calendar"
-          sub={googleCal.connected
-            ? (googleCal.email ? `Подключён · ${googleCal.email}` : 'Подключён')
-            : null}
+          sub={googleCal.connected && googleCal.email ? googleCal.email : null}
           value={googleCal.connected}
           onChange={onGoogleToggle}
         />
