@@ -2,6 +2,7 @@
 // Master-detail редизайн под iOS-стиль
 // Версия от 14 мая 2026 — переписано с нуля
 // 18 мая 2026 — заголовок страницы приведён к стандарту (h1 28/800/Inter, как Записи)
+// 18 мая 2026 — интеграция Google Calendar (статус/подключить/отключить)
 
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
@@ -241,10 +242,12 @@ function ActionRow({ children, isMobile }) {
 
 export default function Settings() {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768)
-  // Начальная секция: либо из ?section= в URL, либо 'account' по умолчанию
+  // Начальная секция: либо из ?section= в URL, либо 'account' по умолчанию.
+  // Если в URL есть ?calendar=... (возврат от Google) — открываем секцию интеграций.
   const getInitialSection = () => {
     if (typeof window === 'undefined') return 'account'
     const params = new URLSearchParams(window.location.search)
+    if (params.get('calendar')) return 'integrations'
     const fromUrl = params.get('section')
     const valid = SECTIONS.some(s => s.key === fromUrl)
     return valid ? fromUrl : 'account'
@@ -253,6 +256,7 @@ export default function Settings() {
   const [mobileShowDetail, setMobileShowDetail] = useState(() => {
     if (typeof window === 'undefined') return false
     const params = new URLSearchParams(window.location.search)
+    if (params.get('calendar')) return true
     const fromUrl = params.get('section')
     return SECTIONS.some(s => s.key === fromUrl)
   })
@@ -275,6 +279,12 @@ export default function Settings() {
 
   const [telegramConnected, setTelegramConnected] = useState(false)
   const [telegramLink, setTelegramLink] = useState(null)
+
+  // Google Calendar
+  const [googleCal, setGoogleCal] = useState({ connected: false, email: null })
+  const [showGoogleDisconnect, setShowGoogleDisconnect] = useState(false)
+  const [googleDisconnecting, setGoogleDisconnecting] = useState(false)
+  const [calendarToast, setCalendarToast] = useState('')
 
   const [payments, setPayments] = useState({
     payment_sbp: false, payment_tinkoff: false,
@@ -310,6 +320,8 @@ export default function Settings() {
   // === EFFECTS ===
   useEffect(() => {
     loadSettings()
+    loadCalendarStatus()
+    handleCalendarReturn()
     const onResize = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
@@ -363,6 +375,79 @@ export default function Settings() {
         payment_other: other,
       })
     } catch (err) { console.error(err) }
+  }
+
+  // Статус подключённых календарей
+  const loadCalendarStatus = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+    try {
+      const res = await axios.get(`${API}/integrations/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setGoogleCal({
+        connected: !!res.data?.google?.connected,
+        email: res.data?.google?.email || null,
+      })
+    } catch (err) {
+      console.error('Calendar status error:', err)
+    }
+  }
+
+  // Возврат от Google: ?calendar=google_connected | error | cancelled
+  const handleCalendarReturn = () => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get('calendar')
+    if (!result) return
+    if (result === 'google_connected') {
+      setCalendarToast('Google Calendar подключён')
+    } else if (result === 'cancelled') {
+      setCalendarToast('Подключение отменено')
+    } else if (result === 'error') {
+      setCalendarToast('Не удалось подключить Google Calendar. Попробуй ещё раз.')
+    }
+    // Чистим query, чтобы тост не показывался при перезагрузке
+    const url = new URL(window.location.href)
+    url.searchParams.delete('calendar')
+    window.history.replaceState({}, '', url.pathname + url.search)
+    setTimeout(() => setCalendarToast(''), 5000)
+  }
+
+  // Подключить Google: переход по ссылке (не fetch — нужен редирект на Google)
+  const connectGoogle = () => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+    window.location.href = `${API}/integrations/google/connect?token=${encodeURIComponent(token)}`
+  }
+
+  // Отключить Google (после подтверждения в модалке)
+  const disconnectGoogle = async () => {
+    const token = localStorage.getItem('token')
+    setGoogleDisconnecting(true)
+    try {
+      await axios.post(`${API}/integrations/google/disconnect`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setGoogleCal({ connected: false, email: null })
+      setShowGoogleDisconnect(false)
+      setCalendarToast('Google Calendar отключён')
+      setTimeout(() => setCalendarToast(''), 4000)
+    } catch (err) {
+      console.error('Google disconnect error:', err)
+      setCalendarToast('Не удалось отключить. Попробуй ещё раз.')
+      setTimeout(() => setCalendarToast(''), 4000)
+    }
+    setGoogleDisconnecting(false)
+  }
+
+  // Клик по тумблеру Google: вкл = подключить, выкл = модалка подтверждения
+  const onGoogleToggle = () => {
+    if (googleCal.connected) {
+      setShowGoogleDisconnect(true)
+    } else {
+      connectGoogle()
+    }
   }
 
   // Автосохранение уведомлений
@@ -550,6 +635,8 @@ export default function Settings() {
         return <IntegrationsSection
           telegramConnected={telegramConnected}
           connectTelegram={connectTelegram}
+          googleCal={googleCal}
+          onGoogleToggle={onGoogleToggle}
           {...common}
         />
       case 'subscription':
@@ -592,6 +679,7 @@ export default function Settings() {
     })(),
     integrations: [
       telegramConnected && 'Telegram',
+      googleCal.connected && 'Google',
       'Jitsi',
     ].filter(Boolean).join(', '),
     subscription: 'Free',
@@ -665,11 +753,21 @@ export default function Settings() {
           </>
         )}
 
+        {/* Тост результата подключения календаря */}
+        {calendarToast && <CalendarToast text={calendarToast} />}
+
         {/* Модалки */}
         {telegramLink && (
           <TelegramConnectModal
             telegramLink={telegramLink}
             onClose={() => setTelegramLink(null)}
+          />
+        )}
+        {showGoogleDisconnect && (
+          <GoogleDisconnectModal
+            loading={googleDisconnecting}
+            onConfirm={disconnectGoogle}
+            onClose={() => setShowGoogleDisconnect(false)}
           />
         )}
         {showDeleteModal && (
@@ -763,11 +861,21 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Тост результата подключения календаря */}
+      {calendarToast && <CalendarToast text={calendarToast} />}
+
       {/* Модалки */}
       {telegramLink && (
         <TelegramConnectModal
           telegramLink={telegramLink}
           onClose={() => setTelegramLink(null)}
+        />
+      )}
+      {showGoogleDisconnect && (
+        <GoogleDisconnectModal
+          loading={googleDisconnecting}
+          onConfirm={disconnectGoogle}
+          onClose={() => setShowGoogleDisconnect(false)}
         />
       )}
       {showDeleteModal && (
@@ -1067,7 +1175,7 @@ function PaymentsSection({ payments, setPayments, isMobile }) {
     </>
   )
 }
-function IntegrationsSection({ telegramConnected, connectTelegram, isMobile }) {
+function IntegrationsSection({ telegramConnected, connectTelegram, googleCal, onGoogleToggle, isMobile }) {
   const iconSize = isMobile ? 28 : 32
 
   // Оригинальные логотипы через CDN и локальные файлы
@@ -1088,13 +1196,18 @@ function IntegrationsSection({ telegramConnected, connectTelegram, isMobile }) {
   }
 
   // Универсальная строка интеграции
-  const IntegrationRow = ({ icon, label, value, onChange, disabled = false, last = false }) => (
+  const IntegrationRow = ({ icon, label, sub, value, onChange, disabled = false, last = false }) => (
     <Row
       last={last}
       left={
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {icon}
-          <div style={{ fontSize: 14, fontWeight: 500, color: disabled ? C.muted : C.text }}>{label}</div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: disabled ? C.muted : C.text }}>{label}</div>
+            {sub && (
+              <div style={{ fontSize: 12, color: '#16A34A', marginTop: 2 }}>{sub}</div>
+            )}
+          </div>
         </div>
       }
       right={<Toggle on={value} onClick={onChange} disabled={disabled} />}
@@ -1117,8 +1230,11 @@ function IntegrationsSection({ telegramConnected, connectTelegram, isMobile }) {
         <IntegrationRow
           icon={renderIcon('gcal', true)}
           label="Google Calendar"
-          value={false}
-          disabled
+          sub={googleCal.connected
+            ? (googleCal.email ? `Подключён · ${googleCal.email}` : 'Подключён')
+            : null}
+          value={googleCal.connected}
+          onChange={onGoogleToggle}
         />
         <IntegrationRow
           icon={renderIcon('apple', true)}
@@ -1483,6 +1599,109 @@ function SecuritySection({
 }
 
 // ============ МОДАЛКИ ============
+
+// Тост результата подключения/отключения календаря
+function CalendarToast({ text }) {
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: 24, left: '50%', transform: 'translateX(-50%)',
+      background: C.text, color: '#fff',
+      padding: '12px 20px', borderRadius: 10,
+      fontSize: 13, fontWeight: 500,
+      fontFamily: 'Inter, sans-serif',
+      zIndex: 300,
+      boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+      maxWidth: 'calc(100vw - 40px)',
+      textAlign: 'center',
+    }}>
+      {text}
+    </div>
+  )
+}
+
+// Модалка подтверждения отключения Google Calendar
+// (стиль по образцу модалки "Отменить запись?": розовый круг + красный значок,
+//  заголовок жирный, кнопки "Назад" бежевая / "Отключить" чёрная)
+function GoogleDisconnectModal({ loading, onConfirm, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 200, padding: 20,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: C.card, borderRadius: 20,
+          padding: '32px 28px 26px', maxWidth: 420, width: '100%',
+          fontFamily: 'Inter, sans-serif',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+          <div style={{
+            width: 60, height: 60, borderRadius: '50%',
+            background: '#FEE2E2',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <X size={28} color={C.danger} strokeWidth={2.5} />
+          </div>
+        </div>
+
+        <div style={{
+          fontSize: 22, fontWeight: 700, textAlign: 'center',
+          marginBottom: 10, color: C.text,
+        }}>
+          Отключить Google&nbsp;Calendar?
+        </div>
+        <div style={{
+          fontSize: 15, color: C.muted, textAlign: 'center',
+          lineHeight: 1.5, marginBottom: 26,
+        }}>
+          Синхронизация остановится. Подключить обратно можно в любой момент.
+        </div>
+
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, background: C.bg,
+              border: 'none', borderRadius: 12,
+              padding: '14px', fontSize: 15, fontWeight: 600,
+              color: C.text, cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            Назад
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            style={{
+              flex: 1, background: C.text, color: '#fff',
+              border: 'none', borderRadius: 12,
+              padding: '14px', fontSize: 15, fontWeight: 600,
+              cursor: loading ? 'default' : 'pointer',
+              opacity: loading ? 0.6 : 1,
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            {loading ? 'Отключаю…' : 'Отключить'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function TelegramConnectModal({ telegramLink, onClose }) {
   useEffect(() => {
