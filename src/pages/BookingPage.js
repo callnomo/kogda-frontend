@@ -895,16 +895,28 @@ export default function BookingPage() {
                 {/* Сообщение об ошибке бронирования — в стиле страницы, НЕ системный alert */}
                 {bookingError && (
                   <div style={{
-                    background: '#FEF2F2', border: '1.5px solid #FECACA',
-                    borderRadius: 12, padding: '14px 16px', marginBottom: 16,
+                    background: '#fff', border: '1.5px solid #E8E7E0',
+                    borderRadius: 12, padding: '20px 18px', marginBottom: 16,
+                    textAlign: 'center',
                   }}>
                     {bookingError.type === 'slot_taken' ? (
                       <>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#B91C1C', marginBottom: 4 }}>
-                          Это время только что заняли
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 6 }}>
+                          <span style={{
+                            display: 'inline-flex', width: 20, height: 20, borderRadius: '50%',
+                            background: '#E8FF47', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10"/>
+                              <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                          </span>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
+                            Слот уже занят
+                          </span>
                         </div>
-                        <div style={{ fontSize: 13, color: '#991B1B', marginBottom: 12, lineHeight: 1.5 }}>
-                          Пока вы заполняли форму, слот стал недоступен. Пожалуйста, выберите другое время.
+                        <div style={{ fontSize: 13, color: '#888', lineHeight: 1.5, marginBottom: 16 }}>
+                          Пока вы заполняли форму, выбранное время стало недоступно. Выберите другое время, чтобы продолжить.
                         </div>
                         <button
                           type="button"
@@ -914,8 +926,8 @@ export default function BookingPage() {
                             setStep(2)
                           }}
                           style={{
-                            background: '#111', color: '#fff', border: 'none',
-                            padding: '10px 18px', borderRadius: 10,
+                            background: '#fff', color: '#111', border: '1.5px solid #E8E7E0',
+                            padding: '10px 22px', borderRadius: 10,
                             fontSize: 13, fontWeight: 700, cursor: 'pointer',
                             fontFamily: 'Inter, sans-serif',
                           }}
@@ -924,14 +936,14 @@ export default function BookingPage() {
                         </button>
                       </>
                     ) : (
-                      <div style={{ fontSize: 13, color: '#991B1B', lineHeight: 1.5 }}>
+                      <div style={{ fontSize: 13, color: '#888', lineHeight: 1.5 }}>
                         Не удалось забронировать встречу. Проверьте соединение и попробуйте ещё раз.
                       </div>
                     )}
                   </div>
                 )}
 
-                <button type="submit" disabled={bookingLoading} style={{ width: '100%', background: '#E8FF47', color: '#111', border: 'none', padding: '15px', borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: 'pointer' }}>
+                <button type="submit" disabled={bookingLoading || !!bookingError} style={{ width: '100%', background: (bookingLoading || bookingError) ? '#E8E7E0' : '#E8FF47', color: (bookingLoading || bookingError) ? '#aaa' : '#111', border: 'none', padding: '15px', borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: (bookingLoading || bookingError) ? 'default' : 'pointer' }}>
                   {bookingLoading ? 'Отправляем...' : selectedMeeting?.require_confirm ? 'Отправить запрос' : 'Подтвердить встречу'}
                 </button>
               </form>
