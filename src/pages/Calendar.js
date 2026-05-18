@@ -121,6 +121,9 @@ export default function Calendar() {
   const [view, setView] = useState('week') // 'month' | 'week' | 'day'
   const [anchor, setAnchor] = useState(() => new Date()) // дата, относительно которой смотрим
   const [bookings, setBookings] = useState([])
+  // Занятость из личного Google-календаря коуча: [{ start, end }] (ISO).
+  // Без названий — scope freebusy. Сбой загрузки → [] (календарь работает).
+  const [googleBusy, setGoogleBusy] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const dayScrollRef = useRef(null)
@@ -136,7 +139,50 @@ export default function Calendar() {
         setError(true)
         setLoading(false)
       })
+
+    // Занятость из Google за широкое окно (−1 / +2 месяца от сегодня),
+    // чтобы хватало при листании недель/месяцев без дозапросов.
+    // Любой сбой (Google не подключён, ошибка) → пустой список,
+    // календарь просто не покажет занятость, брони не пострадают.
+    const gFrom = new Date()
+    gFrom.setMonth(gFrom.getMonth() - 1)
+    const gTo = new Date()
+    gTo.setMonth(gTo.getMonth() + 2)
+    axios.get(
+      `${API}/integrations/google/busy?from=${gFrom.toISOString()}&to=${gTo.toISOString()}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+      .then(res => setGoogleBusy(Array.isArray(res.data?.busy) ? res.data.busy : []))
+      .catch(() => setGoogleBusy([]))
   }, [])
+
+  // Занятость Google на конкретный день → позиции в сетке.
+  // hourPx — высота часа (Неделя/День разные), fromMidnight — отсчёт от 0:00 (вид День).
+  function busyForDay(day, hourPx, fromMidnight) {
+    return googleBusy
+      .map(g => {
+        const s = new Date(g.start)
+        const e = new Date(g.end)
+        if (isNaN(s.getTime()) || isNaN(e.getTime())) return null
+        if (!sameDay(s, day)) return null
+        const startMin = s.getHours() * 60 + s.getMinutes()
+        const endMin = e.getHours() * 60 + e.getMinutes()
+        const base = fromMidnight ? 0 : HOUR_START * 60
+        const top = ((startMin - base) / 60) * hourPx
+        const height = Math.max(((endMin - startMin) / 60) * hourPx, 22)
+        const isPast = e.getTime() < Date.now()
+        return { start: s, end: e, top, height, isPast }
+      })
+      .filter(Boolean)
+  }
+
+  // Есть ли занятость Google в этот день (для вида Месяц)
+  function hasBusyOnDay(day) {
+    return googleBusy.some(g => {
+      const s = new Date(g.start)
+      return !isNaN(s.getTime()) && sameDay(s, day)
+    })
+  }
 
   const today = new Date()
   const weekStart = startOfWeek(anchor)
@@ -524,6 +570,45 @@ export default function Calendar() {
                   )
                 })()}
 
+                {/* занятость из Google (под бронями) */}
+                {weekDays.map((day, dayIdx) => {
+                  const bs = busyForDay(day, HOUR_PX, false)
+                  return bs.map((b, bi) => {
+                    const st = STATUS.busy
+                    const colLeft = `calc(${GUTTER}px + (100% - ${GUTTER}px) * ${dayIdx}/7 + 3px)`
+                    const colWidth = `calc((100% - ${GUTTER}px) / 7 - 6px)`
+                    return (
+                      <div
+                        key={`busy-${dayIdx}-${bi}`}
+                        title={`${hhmm(b.start)}–${hhmm(b.end)} · Занято (личный календарь)`}
+                        style={{
+                          position: 'absolute',
+                          left: colLeft, width: colWidth,
+                          top: b.top, height: b.height,
+                          background: st.bg,
+                          borderRadius: 6,
+                          padding: '4px 7px',
+                          boxSizing: 'border-box',
+                          overflow: 'hidden',
+                          opacity: b.isPast ? 0.4 : 0.9,
+                          zIndex: 1,
+                        }}
+                      >
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: 4,
+                          fontSize: 11, fontWeight: 500, color: st.text,
+                        }}>
+                          <span style={{
+                            width: 5, height: 5, borderRadius: '50%',
+                            background: st.bar, flexShrink: 0,
+                          }} />
+                          Занято
+                        </div>
+                      </div>
+                    )
+                  })
+                })}
+
                 {/* события по дням */}
                 {weekDays.map((day, dayIdx) => {
                   const evs = eventsForDay(day)
@@ -547,6 +632,7 @@ export default function Calendar() {
                           boxSizing: 'border-box',
                           overflow: 'hidden',
                           opacity: isPast ? 0.45 : 1,
+                          zIndex: 2,
                         }}
                       >
                         <div style={{ fontSize: 11, fontWeight: 500, color: st.text }}>
@@ -638,6 +724,40 @@ export default function Calendar() {
                       </div>
                     )}
 
+                    {/* занятость Google (под бронями) */}
+                    {busyForDay(dayDate, DAY_HOUR_PX, true).map((b, bi) => {
+                      const st = STATUS.busy
+                      return (
+                        <div
+                          key={`busy-day-${bi}`}
+                          title={`${hhmm(b.start)}–${hhmm(b.end)} · Занято (личный календарь)`}
+                          style={{
+                            position: 'absolute',
+                            left: GUTTER + 6, right: 8,
+                            top: b.top, height: b.height,
+                            background: st.bg,
+                            borderRadius: 6,
+                            padding: '7px 10px',
+                            boxSizing: 'border-box',
+                            overflow: 'hidden',
+                            opacity: b.isPast ? 0.4 : 0.9,
+                            zIndex: 1,
+                          }}
+                        >
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            fontSize: 12, fontWeight: 500, color: st.text,
+                          }}>
+                            <span style={{
+                              width: 5, height: 5, borderRadius: '50%',
+                              background: st.bar, flexShrink: 0,
+                            }} />
+                            {hhmm(b.start)}–{hhmm(b.end)} · Занято
+                          </div>
+                        </div>
+                      )
+                    })}
+
                     {/* события — подробные карточки */}
                     {evs.map(({ booking, start, end, top, height, isPast }) => {
                       const sk = statusKey(booking.status)
@@ -656,6 +776,7 @@ export default function Calendar() {
                             boxSizing: 'border-box',
                             overflow: 'hidden',
                             opacity: isPast ? 0.45 : 1,
+                            zIndex: 2,
                           }}
                         >
                           <div style={{ fontSize: 12, fontWeight: 500, color: st.text }}>
@@ -797,6 +918,20 @@ export default function Calendar() {
                         {more > 0 && (
                           <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>
                             ещё {more}
+                          </div>
+                        )}
+
+                        {hasBusyOnDay(cellDate) && (
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            fontSize: 11, lineHeight: '15px',
+                            color: STATUS.busy.text, marginTop: 1,
+                          }}>
+                            <span style={{
+                              width: 6, height: 6, borderRadius: 2,
+                              background: STATUS.busy.bar, flexShrink: 0,
+                            }} />
+                            <span>Занято</span>
                           </div>
                         )}
                       </div>
