@@ -949,10 +949,10 @@ export default function Services() {
     <AppLayout rightColumn={rightColumn}>
       <style>{hideArrows}</style>
 
-      {/* Заголовок + добавить */}
+      {/* Заголовок + добавить — обёртка marginBottom 28 как на Записях */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 20, gap: 12
+        marginBottom: 28, gap: 12
       }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, fontFamily: 'Inter, sans-serif' }}>Услуги</h1>
         {!isMobile && addButtonDesktop}
